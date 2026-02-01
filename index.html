@@ -1,274 +1,220 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Wheel RPG Fusion Engine</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Character Wheel Game</title>
 <style>
-body{
-  font-family:Arial;
-  background:#0a0a0a;
-  color:white;
-  text-align:center;
-}
+  /* ---------------- GENERAL STYLES ---------------- */
+  body { font-family: Arial, sans-serif; background: #222; color: #eee; text-align:center; }
+  button { padding:10px 20px; margin:10px; cursor:pointer; }
 
-.panel{
-  background:#111;
-  margin:15px auto;
-  padding:20px;
-  border-radius:15px;
-  border: 2px solid cyan;
-  box-shadow: 0 0 10px cyan;
-  max-width:700px;
-}
-
-button{
-  padding:12px 20px;
-  margin:5px;
-  border:none;
-  border-radius:10px;
-  font-size:16px;
-  cursor:pointer;
-  transition: all 0.3s ease;
-}
-
-button:hover{
-  background:cyan;
-  color:black;
-}
-
-#portrait{
-  margin-top:10px;
-  width:180px;
-  border:3px solid cyan;
-  border-radius:15px;
-  transition: all 0.5s ease;
-}
-
-/* Portrait Effects */
-.effectRedGlow{ box-shadow: 0 0 20px red, 0 0 40px red; filter: saturate(1.2); }
-.effectFireAura{ box-shadow: 0 0 20px orange,0 0 30px yellow; animation: fireFlicker 1s infinite alternate; }
-.effectShadow{ filter: brightness(0.5) drop-shadow(0 0 15px black); }
-.effectIce{ box-shadow: 0 0 20px #00f,0 0 40px #0ff; filter: brightness(1.1); }
-.effectLightning{ box-shadow: 0 0 25px #fff,0 0 50px #ff0; animation: lightningFlicker 0.2s infinite alternate; }
-.effectPurpleMist{ box-shadow: 0 0 20px purple,0 0 40px #a0f; filter: hue-rotate(30deg); }
-.effectGoldAura{ box-shadow: 0 0 25px gold,0 0 50px #ff0; animation: glowPulse 2s infinite alternate; }
-
-@keyframes fireFlicker { 0% { transform: scale(1); } 50% { transform: scale(1.05) rotate(1deg); } 100% { transform: scale(1) rotate(-1deg); } }
-@keyframes lightningFlicker { 0% { filter: brightness(1); } 50% { filter: brightness(2); } 100% { filter: brightness(1.2); } }
-@keyframes glowPulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+  /* ---------------- WHEEL SECTION ---------------- */
+  .wheelContainer { margin:20px auto; width:300px; height:300px; position:relative; }
+  .wheel { width:100%; height:100%; border-radius:50%; border:5px solid #555; position:relative; }
+  .slice { position:absolute; width:50%; height:50%; top:0; left:50%; transform-origin:0% 100%; overflow:hidden; }
+  
+  /* ---------------- BATTLE SECTION ---------------- */
+  #battleContainer{
+    text-align:center;
+    margin-top:20px;
+    width:100%;
+    height:400px;
+    position:relative;
+    background-size:cover;
+    background-position:center;
+    transition:background 1s ease-in-out;
+  }
+  .battleChar{
+    display:inline-block;
+    position:relative;
+    width:200px; height:300px;
+    margin:50px;
+  }
+  .attackEffect, .particleEffect{
+    position:absolute; top:0; left:0;
+    width:100%; height:100%;
+    background-size:contain;
+    background-repeat:no-repeat;
+    pointer-events:none;
+    animation:none;
+  }
+  .damageText{
+    position:absolute; top:-30px; left:50%;
+    transform:translateX(-50%);
+    font-size:24px;
+    font-weight:bold;
+    color:red;
+    opacity:0;
+    transition: all 0.8s ease-out;
+  }
+  @keyframes swing{
+    0%{transform:rotate(0deg);}
+    50%{transform:rotate(20deg);}
+    100%{transform:rotate(0deg);}
+  }
+  @keyframes floatUp{
+    0%{transform:translateY(0px) scale(1); opacity:1;}
+    50%{transform:translateY(-20px) scale(1.2);}
+    100%{transform:translateY(-50px) scale(1); opacity:0;}
+  }
 </style>
 </head>
-
 <body>
-<h1>🎮 Wheel RPG Fusion Engine</h1>
 
-<!-- PLAYER PANEL -->
-<div class="panel" id="playerPanel">
-  <h2>Player Info</h2>
-  <input id="firstName" placeholder="First Name">
-  <input id="lastName" placeholder="Last Name">
-  <button id="spinBtn" onclick="spin()">Spin</button>
-  <div id="spinTimer">Next spin available in: 24h</div>
+<h1>Character Wheel Game</h1>
+
+<!-- ---------------- CHARACTER WHEELS ---------------- -->
+<div class="wheelContainer">
+  <div class="wheel" id="raceWheel">Race Wheel</div>
+  <div class="wheel" id="powerWheel">Power Wheel</div>
+  <div class="wheel" id="strengthWheel">Strength Wheel</div>
+  <div class="wheel" id="durabilityWheel">Durability Wheel</div>
+  <div class="wheel" id="regenWheel">Regen Wheel</div>
 </div>
 
-<!-- SPIN RESULTS PANEL -->
-<div class="panel" id="resultsPanel">
-  <h2>Spin Results</h2>
-  <div id="results"></div>
-  <div id="fusionResult">No fusion yet</div>
-  <img id="portrait" src="https://i.imgur.com/9QZ7Q9K.png">
-</div>
+<!-- ---------------- EVENT SPIN & BATTLE ---------------- -->
+<button onclick="spinEventWheel()">Spin PvE Event</button>
 
-<!-- PVE PANEL -->
-<div class="panel" id="pvePanel">
-  <h2>PvE Battle</h2>
-  <button onclick="fight()">Fight AI</button>
-  <div id="fightLog"></div>
-  <div id="playerStats">
-    <p>Traits Unlocked: <span id="traitsCount">0</span></p>
-    <p>Total Power: <span id="totalPower">0</span></p>
+<div id="battleContainer">
+  <!-- Player -->
+  <div id="playerBattle" class="battleChar">
+    <img id="playerPortrait" src="">
+    <div class="attackEffect" id="playerEffect"></div>
+    <div class="particleEffect" id="playerParticle1"></div>
+    <div class="particleEffect" id="playerParticle2"></div>
+    <div class="particleEffect" id="playerParticle3"></div>
+    <div class="damageText" id="playerDamage"></div>
+  </div>
+
+  <!-- Enemy -->
+  <div id="enemyBattle" class="battleChar">
+    <img id="enemyPortrait" src="images/base/enemy.png">
+    <div class="attackEffect" id="enemyEffect"></div>
+    <div class="particleEffect" id="enemyParticle1"></div>
+    <div class="particleEffect" id="enemyParticle2"></div>
+    <div class="particleEffect" id="enemyParticle3"></div>
+    <div class="damageText" id="enemyDamage"></div>
   </div>
 </div>
 
-<!-- ADMIN PANEL -->
-<div class="panel" id="adminPanel">
-  <h2>Admin</h2>
-  <input id="adminPass" placeholder="Password">
-  <button onclick="openAdmin()">Open Admin</button>
-  <div id="adminArea"></div>
-</div>
+<div id="fightLog"></div>
 
 <script>
-// ===== SETTINGS =====
-const ADMIN = "226wheel";
-const badWords = ["badword1","badword2"];
-const uniqueLastNames = ["Uchiha","Senju","Hyuga"]; // Only these lock last names
-
-// ===== WHEEL TEMPLATE =====
-let wheels = {
-  species:[
-    {name:"Human", chance:50, fusion:["life"], portraitEffect:""},
-    {name:"Vampire", chance:20, fusion:["vampire"], portraitEffect:"effectRedGlow", upgrades:{"blood":"Blood Overlord"}},
-    {name:"Elf", chance:30, fusion:["nature","magic"], portraitEffect:"effectPurpleMist"},
-    {name:"Uchiha", chance:5, fusion:["clan"], portraitEffect:"effectRedGlow", upgrades:{"Sharingan":"Sharingan Master"}}
-  ],
-  power:[
-    {name:"Blood Manipulation", chance:20, fusion:["blood"], portraitEffect:"effectRedGlow", upgrades:{"vampire":"Blood Overlord"}},
-    {name:"Fire", chance:40, fusion:["fire"], portraitEffect:"effectFireAura"},
-    {name:"Ice", chance:40, fusion:["ice"], portraitEffect:"effectIce"},
-    {name:"Shadow Cloak", chance:25, fusion:["shadow"], portraitEffect:"effectShadow"},
-    {name:"Lightning Strike", chance:15, fusion:["lightning"], portraitEffect:"effectLightning"},
-    {name:"Sharingan", chance:10, fusion:["power"], portraitEffect:"effectRedGlow", upgrades:{"Uchiha":"Sharingan Master"}},
-    {name:"Nine Tails", chance:5, fusion:["beast","chakra"], portraitEffect:"effectRedGlow"}
-  ],
-  weapon:[],
-  armor:[],
-  creature:[],
-  ability:[]
+/* ---------------- PLAYER CHARACTER DATA ---------------- */
+let currentCharacter = {
+  race: {name:"Vampire"},
+  power: {name:"Blood Overlord"},
+  wheels: {
+    strength: 10,
+    durability: 50,
+    regen: 4
+  }
 };
 
-// ===== UNLOCK STORAGE =====
-let unlocked = JSON.parse(localStorage.getItem("unlocked")||"{}");
+/* ---------------- EVENT WHEEL DATA ---------------- */
+const eventWheel = [
+  { name: "Golem Ambush", enemyRace: "Golem", enemyStrength: 15, enemyDurability: 60, enemyRegen: 3, background: "cave.png" },
+  { name: "Shadow Vampire Attack", enemyRace: "Vampire", enemyStrength: 12, enemyDurability: 30, enemyRegen: 5, background: "castle.png" },
+  { name: "Forest Bandits", enemyRace: "Elf", enemyStrength: 10, enemyDurability: 20, enemyRegen: 2, background: "forest.png" },
+  { name: "Uchiha Rival", enemyRace: "Uchiha", enemyStrength: 18, enemyDurability: 25, enemyRegen: 4, background: "uchiha.png" }
+];
 
-// ===== DAILY SPIN =====
-function canSpin(){
-  let last = localStorage.getItem("lastSpin");
-  if(!last) return true;
-  return Date.now() - last > 86400000; // 24h
+/* ---------------- PARTICLE EFFECTS ---------------- */
+function showParticleEffect(effectImage, particleSlot){
+  let slot = document.getElementById(particleSlot);
+  slot.style.backgroundImage = `url(${effectImage})`;
+  slot.style.animation = 'floatUp 0.8s forwards';
+  setTimeout(()=>{slot.style.backgroundImage=''; slot.style.animation='';},800);
 }
-
-// ===== NAME FILTER =====
-function validName(name){
-  name = name.toLowerCase();
-  for(let w of badWords){ if(name.includes(w)) return false; }
-  return true;
-}
-
-// ===== RANDOM PICK WITH % =====
-function pick(list){
-  let total = list.reduce((a,b)=>a+b.chance,0);
-  let roll = Math.random()*total;
-  let sum=0;
-  for(let item of list){
-    sum+=item.chance;
-    if(roll<=sum) return item;
+function getAttackEffect(power){
+  switch(power){
+    case "Fire": return 'images/effects/fireAura.png';
+    case "Ice": return 'images/effects/iceAura.png';
+    case "Shadow Cloak": return 'images/effects/shadow.png';
+    case "Blood Overlord": return 'images/effects/blood.png';
+    case "Lightning Strike": return 'images/effects/lightning.png';
+    case "Sharingan": return 'images/effects/sharingan.png';
+    case "Nine Tails": return 'images/effects/ninetails.png';
+    case "Rocks": return 'images/effects/rocks.png';
+    default: return '';
   }
 }
 
-// ===== SPIN ENGINE =====
-function spin(){
-  let fname = firstName.value.trim();
-  if(!validName(fname)){ alert("First name not allowed"); return; }
-  if(!canSpin()){ spinTimer.textContent="You can spin once per day"; return; }
-  localStorage.setItem("lastSpin",Date.now());
+/* ---------------- PLAYER STATS FROM WHEELS ---------------- */
+function getPlayerStatsFromWheels(){
+  return {
+    race: currentCharacter.race?.name,
+    hp: 100,
+    maxHP: 100,
+    strength: currentCharacter.wheels.strength || 5,
+    durability: currentCharacter.wheels.durability || 10,
+    regen: currentCharacter.wheels.regen || 2
+  };
+}
 
-  let result = {};
-  let allTraits = [];
+/* ---------------- BATTLE BACKGROUND ---------------- */
+function setBattleBackground(playerRace, enemyRace, bgImage){
+  let bg = bgImage ? `url(images/backgrounds/${bgImage})` : 'url(images/backgrounds/default_arena.png)';
+  document.getElementById('battleContainer').style.backgroundImage = bg;
+}
 
-  for(let key in wheels){
-    if(wheels[key].length>0){
-      let t = pick(wheels[key]);
-      result[key]=t;
-      allTraits.push(t);
-      unlock(key,t.name);
-    }
+/* ---------------- SPIN EVENT WHEEL ---------------- */
+function spinEventWheel(){
+  const eventIndex = Math.floor(Math.random() * eventWheel.length);
+  const selectedEvent = eventWheel[eventIndex];
+  fightEvent(selectedEvent);
+}
+
+/* ---------------- FIGHT FUNCTION ---------------- */
+function fightEvent(event){
+  const player = getPlayerStatsFromWheels();
+  const enemy = {
+    race: event.enemyRace,
+    hp: 100,
+    maxHP: 100,
+    strength: event.enemyStrength,
+    durability: event.enemyDurability,
+    regen: event.enemyRegen
+  };
+  setBattleBackground(player.race, enemy.race, event.background);
+
+  let maxTurns = 30;
+  let turn = 0;
+  let fightLogText = `Event: ${event.name}\n\n`;
+
+  while(player.hp > 0 && enemy.hp > 0 && turn < maxTurns){
+    turn++;
+
+    // Player attacks
+    let rawDamage = player.strength - enemy.durability*0.1;
+    let damage = Math.max(rawDamage,1);
+    enemy.hp -= damage;
+    enemy.hp += Math.min(enemy.regen, enemy.maxHP*0.1);
+    enemy.hp = Math.min(enemy.hp, enemy.maxHP);
+
+    // Enemy attacks
+    rawDamage = enemy.strength - player.durability*0.1;
+    damage = Math.max(rawDamage,1);
+    player.hp -= damage;
+    player.hp += Math.min(player.regen, player.maxHP*0.1);
+    player.hp = Math.min(player.hp, player.maxHP);
+
+    fightLogText += `Turn ${turn}: Player HP=${Math.round(player.hp)}, Enemy HP=${Math.round(enemy.hp)}\n`;
   }
 
-  showResults(result);
-  let fusion = autoFusion(allTraits);
-  assignLastName(allTraits);
-  showFusion(fusion, allTraits);
-}
+  // Determine winner
+  let winner;
+  if(player.hp <= 0 && enemy.hp <= 0) winner = "Draw";
+  else if(player.hp <= 0) winner = "Enemy Wins";
+  else if(enemy.hp <= 0) winner = "Player Wins";
+  else winner = player.hp > enemy.hp ? "Player Wins" : "Enemy Wins";
 
-// ===== UNLOCK =====
-function unlock(cat,trait){
-  if(!unlocked[cat]) unlocked[cat]=[];
-  if(!unlocked[cat].includes(trait)){
-    unlocked[cat].push(trait);
-    localStorage.setItem("unlocked",JSON.stringify(unlocked));
-  }
-}
+  fightLog.textContent = fightLogText + `\nResult: ${winner}`;
 
-// ===== SHOW RESULTS =====
-function showResults(r){
-  results.innerHTML="";
-  for(let k in r){ results.innerHTML+="<div>"+k+": "+r[k].name+"</div>"; }
-}
-
-// ===== AUTOMATIC FUSION =====
-function autoFusion(traits){
-  let tags=[];
-  traits.forEach(t=>tags.push(...t.fusion));
-
-  let fusionName=null;
-  for(let t of traits){
-    if(t.upgrades){ for(let tag in t.upgrades){ if(tags.includes(tag)) fusionName=t.upgrades[tag]; } }
-  }
-
-  if(!fusionName){ fusionName = traits.map(t=>t.name).join(" & "); }
-
-  let total=0;
-  traits.forEach(t=>total+=t.chance);
-  let rarity = total/traits.length;
-  let superRare=false;
-  if(rarity<15) superRare=true;
-
-  return {name:fusionName, rarity:rarity, superRare:superRare};
-}
-
-// ===== ASSIGN LAST NAME =====
-function assignLastName(traits){
-  lastName.readOnly=false;
-  for(let t of traits){
-    if(uniqueLastNames.includes(t.name)){
-      lastName.value=t.name;
-      lastName.readOnly=true;
-      localStorage.setItem("lastName", t.name);
-      return;
-    }
-  }
-  lastName.value=localStorage.getItem("lastName")||"";
-}
-
-// ===== SHOW FUSION & APPLY PORTRAIT EFFECTS =====
-function showFusion(fusion, traits){
-  fusionResult.textContent = `${firstName.value} ${lastName.value} → ${fusion.name} (Rarity: ${fusion.rarity.toFixed(2)}%)`;
-  portrait.className="";
-  traits.forEach(t=>{ if(t.portraitEffect) portrait.classList.add(t.portraitEffect); });
-  if(fusion.superRare) portrait.classList.add("effectGoldAura");
-
-  traitsCount.textContent=Object.keys(unlocked).reduce((sum,k)=>sum+unlocked[k].length,0);
-  totalPower.textContent=Math.floor(Math.random()*100 + traits.length*10);
-}
-
-// ===== PVE =====
-function fight(){
-  let power=Object.keys(unlocked).length*20 + Math.random()*50;
-  let enemy=Math.random()*150;
-  fightLog.textContent = power>enemy ? "Victory!" : "Defeat";
-}
-
-// ===== ADMIN =====
-function openAdmin(){
-  if(adminPass.value!==ADMIN){ alert("Wrong password"); return; }
-  adminArea.innerHTML = `
-    <input id="wheelName" placeholder="Wheel Name">
-    <input id="traitName" placeholder="Trait Name">
-    <input id="chance" placeholder="%">
-    <input id="fusionTags" placeholder="Comma-separated tags">
-    <input id="portraitEffect" placeholder="Portrait Effect">
-    <input id="upgrades" placeholder='Upgrades JSON e.g. {"vampire":"Blood Overlord"}'>
-    <button onclick="addTrait()">Add</button>
-  `;
-}
-function addTrait(){
-  let w = wheelName.value;
-  if(!wheels[w]) wheels[w]=[];
-  let tags = fusionTags.value.split(",").map(t=>t.trim());
-  let upgradesObj={};
-  try{ upgradesObj = JSON.parse(upgrades.value); }catch(e){}
-  wheels[w].push({name:traitName.value,chance:Number(chance.value),fusion:tags,portraitEffect:portraitEffect.value,upgrades:upgradesObj});
-  alert("Trait added!");
+  // Particle effects
+  showParticleEffect(getAttackEffect(player.power?.name), "playerParticle1");
+  showParticleEffect(getAttackEffect("Fire"), "enemyParticle1"); // Placeholder enemy power
 }
 </script>
 </body>
