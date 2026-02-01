@@ -5,16 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Character Wheel Game</title>
 <style>
-  /* ---------------- GENERAL STYLES ---------------- */
   body { font-family: Arial, sans-serif; background: #222; color: #eee; text-align:center; }
   button { padding:10px 20px; margin:10px; cursor:pointer; }
-
-  /* ---------------- WHEEL SECTION ---------------- */
-  .wheelContainer { margin:20px auto; width:300px; height:300px; position:relative; }
-  .wheel { width:100%; height:100%; border-radius:50%; border:5px solid #555; position:relative; }
-  .slice { position:absolute; width:50%; height:50%; top:0; left:50%; transform-origin:0% 100%; overflow:hidden; }
-  
-  /* ---------------- BATTLE SECTION ---------------- */
+  .wheelContainer { margin:20px auto; width:300px; height:300px; position:relative; border:5px solid #555; border-radius:50%; }
   #battleContainer{
     text-align:center;
     margin-top:20px;
@@ -25,72 +18,63 @@
     background-position:center;
     transition:background 1s ease-in-out;
   }
-  .battleChar{
-    display:inline-block;
-    position:relative;
-    width:200px; height:300px;
-    margin:50px;
-  }
-  .attackEffect, .particleEffect{
-    position:absolute; top:0; left:0;
-    width:100%; height:100%;
-    background-size:contain;
-    background-repeat:no-repeat;
-    pointer-events:none;
-    animation:none;
-  }
-  .damageText{
-    position:absolute; top:-30px; left:50%;
-    transform:translateX(-50%);
-    font-size:24px;
-    font-weight:bold;
-    color:red;
-    opacity:0;
-    transition: all 0.8s ease-out;
-  }
-  @keyframes swing{
-    0%{transform:rotate(0deg);}
-    50%{transform:rotate(20deg);}
-    100%{transform:rotate(0deg);}
-  }
-  @keyframes floatUp{
-    0%{transform:translateY(0px) scale(1); opacity:1;}
-    50%{transform:translateY(-20px) scale(1.2);}
-    100%{transform:translateY(-50px) scale(1); opacity:0;}
-  }
+  .battleChar{ display:inline-block; position:relative; width:200px; height:300px; margin:50px; }
+  .particleEffect{ position:absolute; top:0; left:0; width:100%; height:100%; background-size:contain; background-repeat:no-repeat; pointer-events:none; animation:none; }
+  .damageText{ position:absolute; top:-30px; left:50%; transform:translateX(-50%); font-size:24px; font-weight:bold; color:red; opacity:0; transition: all 0.8s ease-out; }
+  @keyframes floatUp{ 0%{transform:translateY(0px) scale(1); opacity:1;} 50%{transform:translateY(-20px) scale(1.2);} 100%{transform:translateY(-50px) scale(1); opacity:0;} }
 </style>
 </head>
 <body>
 
 <h1>Character Wheel Game</h1>
 
-<!-- ---------------- CHARACTER WHEELS ---------------- -->
-<div class="wheelContainer">
-  <div class="wheel" id="raceWheel">Race Wheel</div>
-  <div class="wheel" id="powerWheel">Power Wheel</div>
-  <div class="wheel" id="strengthWheel">Strength Wheel</div>
-  <div class="wheel" id="durabilityWheel">Durability Wheel</div>
-  <div class="wheel" id="regenWheel">Regen Wheel</div>
+<!-- ---------------- CHARACTER CREATION ---------------- -->
+<div style="display:flex; justify-content:center; margin-top:20px;">
+  <!-- Stats List -->
+  <div id="statList" style="width:200px; text-align:left; margin-right:50px;">
+    <h3>Character Stats</h3>
+    <p>Race: <span id="statRace">-</span></p>
+    <p>Power: <span id="statPower">-</span></p>
+    <p>Strength: <span id="statStrength">-</span></p>
+    <p>Durability: <span id="statDurability">-</span></p>
+    <p>Regen: <span id="statRegen">-</span></p>
+  </div>
+
+  <!-- Wheel Container -->
+  <div style="text-align:center;">
+    <div id="wheelTitle" style="margin-bottom:10px; font-weight:bold;">Spin for Race</div>
+    <div id="wheelContainer" class="wheelContainer"></div>
+    <button id="spinButton" onclick="spinCurrentWheel()">Spin</button>
+  </div>
 </div>
 
-<!-- ---------------- EVENT SPIN & BATTLE ---------------- -->
-<button onclick="spinEventWheel()">Spin PvE Event</button>
+<!-- ---------------- NAME INPUT ---------------- -->
+<div id="nameInputContainer" style="display:none; margin-top:20px;">
+  <label for="characterName">Enter your character's first name:</label>
+  <input type="text" id="characterName" maxlength="15" placeholder="First name..."
+         oninput="updateNamePreview()">
+  <span id="lastNameDisplay" style="margin-left:5px; font-weight:bold;"></span>
+  <button onclick="submitCharacterName()">Confirm Name</button>
+  <p id="nameError" style="color:red;"></p>
+</div>
+
+<!-- Live Preview -->
+<div id="namePreview" style="margin-top:10px; font-size:20px; font-weight:bold; color:#ffd700;"></div>
+
+<!-- ---------------- BATTLE ---------------- -->
+<button onclick="spinEventWheel()" style="margin-top:20px;">Spin PvE Event</button>
 
 <div id="battleContainer">
-  <!-- Player -->
   <div id="playerBattle" class="battleChar">
-    <img id="playerPortrait" src="">
-    <div class="attackEffect" id="playerEffect"></div>
+    <img id="playerPortrait" src="" style="width:100%; height:100%;">
     <div class="particleEffect" id="playerParticle1"></div>
     <div class="particleEffect" id="playerParticle2"></div>
     <div class="particleEffect" id="playerParticle3"></div>
     <div class="damageText" id="playerDamage"></div>
   </div>
 
-  <!-- Enemy -->
   <div id="enemyBattle" class="battleChar">
-    <img id="enemyPortrait" src="images/base/enemy.png">
-    <div class="attackEffect" id="enemyEffect"></div>
+    <img id="enemyPortrait" src="images/base/enemy.png" style="width:100%; height:100%;">
     <div class="particleEffect" id="enemyParticle1"></div>
     <div class="particleEffect" id="enemyParticle2"></div>
     <div class="particleEffect" id="enemyParticle3"></div>
@@ -101,32 +85,105 @@
 <div id="fightLog"></div>
 
 <script>
-/* ---------------- PLAYER CHARACTER DATA ---------------- */
-let currentCharacter = {
-  race: {name:"Vampire"},
-  power: {name:"Blood Overlord"},
-  wheels: {
-    strength: 10,
-    durability: 50,
-    regen: 4
-  }
-};
+// ---------------- Character Wheel Step-by-Step ----------------
+const wheels = [
+  { stat: "Race", options: ["Human","Vampire","Golem","Elf","Uchiha"] },
+  { stat: "Power", options: ["Fire","Ice","Shadow Cloak","Blood Overlord","Lightning Strike","Sharingan","Nine Tails"] },
+  { stat: "Strength", options: [5,10,15,20,25] },
+  { stat: "Durability", options: [10,20,30,40,50,60,70,80] },
+  { stat: "Regen", options: [1,2,3,4,5] }
+];
+let currentWheelIndex = 0;
+let tempCharacter = { wheels:{} };
 
-/* ---------------- EVENT WHEEL DATA ---------------- */
+function updateWheelDisplay(){
+  const wheelData = wheels[currentWheelIndex];
+  document.getElementById("wheelTitle").textContent = `Spin for ${wheelData.stat}`;
+}
+
+function spinCurrentWheel(){
+  const wheelData = wheels[currentWheelIndex];
+  const options = wheelData.options;
+  const result = options[Math.floor(Math.random()*options.length)];
+
+  switch(wheelData.stat){
+    case "Race": 
+      tempCharacter.race = {name: result}; 
+      // Lock last name if Uchiha
+      tempCharacter.lastName = (result === "Uchiha") ? "Uchiha" : "";
+      break;
+    case "Power": tempCharacter.power = {name: result}; break;
+    default: tempCharacter.wheels[wheelData.stat.toLowerCase()] = result; break;
+  }
+
+  updateStatList();
+  currentWheelIndex++;
+  if(currentWheelIndex < wheels.length){
+    updateWheelDisplay();
+  } else {
+    showNameInput();
+    document.getElementById("wheelContainer").style.display="none";
+    document.getElementById("spinButton").style.display="none";
+    document.getElementById("wheelTitle").style.display="none";
+  }
+}
+
+function updateStatList(){
+  document.getElementById("statRace").textContent = tempCharacter.race?.name || "-";
+  document.getElementById("statPower").textContent = tempCharacter.power?.name || "-";
+  document.getElementById("statStrength").textContent = tempCharacter.wheels.strength || "-";
+  document.getElementById("statDurability").textContent = tempCharacter.wheels.durability || "-";
+  document.getElementById("statRegen").textContent = tempCharacter.wheels.regen || "-";
+}
+updateWheelDisplay();
+
+// ---------------- NAME INPUT ----------------
+function showNameInput(){
+  document.getElementById('nameInputContainer').style.display = 'block';
+  document.getElementById('lastNameDisplay').textContent = tempCharacter.lastName || '';
+  updateNamePreview();
+}
+
+function updateNamePreview(){
+  let firstName = document.getElementById('characterName').value.trim();
+  let fullName = tempCharacter.lastName ? firstName + " " + tempCharacter.lastName : firstName;
+  document.getElementById('namePreview').textContent = fullName;
+}
+
+function submitCharacterName(){
+  let firstName = document.getElementById('characterName').value.trim();
+  let nameError = document.getElementById('nameError');
+  const bannedWords = ["badword1","badword2","curseword"];
+
+  if(firstName.length===0){ nameError.textContent="Name cannot be empty."; return; }
+  for(let word of bannedWords){ if(firstName.toLowerCase().includes(word)){ nameError.textContent="Inappropriate name."; return; } }
+
+  tempCharacter.name = tempCharacter.lastName ? firstName + " " + tempCharacter.lastName : firstName;
+  nameError.textContent="";
+  alert(`Character created! Name: ${tempCharacter.name}`);
+  document.getElementById('nameInputContainer').style.display='none';
+}
+
+// ---------------- EVENT WHEEL & BATTLE ----------------
 const eventWheel = [
-  { name: "Golem Ambush", enemyRace: "Golem", enemyStrength: 15, enemyDurability: 60, enemyRegen: 3, background: "cave.png" },
-  { name: "Shadow Vampire Attack", enemyRace: "Vampire", enemyStrength: 12, enemyDurability: 30, enemyRegen: 5, background: "castle.png" },
-  { name: "Forest Bandits", enemyRace: "Elf", enemyStrength: 10, enemyDurability: 20, enemyRegen: 2, background: "forest.png" },
-  { name: "Uchiha Rival", enemyRace: "Uchiha", enemyStrength: 18, enemyDurability: 25, enemyRegen: 4, background: "uchiha.png" }
+  { name:"Golem Ambush", enemyRace:"Golem", enemyStrength:15, enemyDurability:60, enemyRegen:3, background:"cave.png" },
+  { name:"Shadow Vampire Attack", enemyRace:"Vampire", enemyStrength:12, enemyDurability:30, enemyRegen:5, background:"castle.png" },
+  { name:"Forest Bandits", enemyRace:"Elf", enemyStrength:10, enemyDurability:20, enemyRegen:2, background:"forest.png" },
+  { name:"Uchiha Rival", enemyRace:"Uchiha", enemyStrength:18, enemyDurability:25, enemyRegen:4, background:"uchiha.png" }
 ];
 
-/* ---------------- PARTICLE EFFECTS ---------------- */
+function spinEventWheel(){
+  const eventIndex = Math.floor(Math.random() * eventWheel.length);
+  fightEvent(eventWheel[eventIndex]);
+}
+
 function showParticleEffect(effectImage, particleSlot){
   let slot = document.getElementById(particleSlot);
   slot.style.backgroundImage = `url(${effectImage})`;
   slot.style.animation = 'floatUp 0.8s forwards';
   setTimeout(()=>{slot.style.backgroundImage=''; slot.style.animation='';},800);
 }
+
 function getAttackEffect(power){
   switch(power){
     case "Fire": return 'images/effects/fireAura.png';
@@ -141,32 +198,23 @@ function getAttackEffect(power){
   }
 }
 
-/* ---------------- PLAYER STATS FROM WHEELS ---------------- */
 function getPlayerStatsFromWheels(){
   return {
-    race: currentCharacter.race?.name,
+    race: tempCharacter.race?.name,
     hp: 100,
     maxHP: 100,
-    strength: currentCharacter.wheels.strength || 5,
-    durability: currentCharacter.wheels.durability || 10,
-    regen: currentCharacter.wheels.regen || 2
+    strength: tempCharacter.wheels.strength || 5,
+    durability: tempCharacter.wheels.durability || 10,
+    regen: tempCharacter.wheels.regen || 2,
+    power: tempCharacter.power
   };
 }
 
-/* ---------------- BATTLE BACKGROUND ---------------- */
 function setBattleBackground(playerRace, enemyRace, bgImage){
   let bg = bgImage ? `url(images/backgrounds/${bgImage})` : 'url(images/backgrounds/default_arena.png)';
   document.getElementById('battleContainer').style.backgroundImage = bg;
 }
 
-/* ---------------- SPIN EVENT WHEEL ---------------- */
-function spinEventWheel(){
-  const eventIndex = Math.floor(Math.random() * eventWheel.length);
-  const selectedEvent = eventWheel[eventIndex];
-  fightEvent(selectedEvent);
-}
-
-/* ---------------- FIGHT FUNCTION ---------------- */
 function fightEvent(event){
   const player = getPlayerStatsFromWheels();
   const enemy = {
@@ -183,17 +231,14 @@ function fightEvent(event){
   let turn = 0;
   let fightLogText = `Event: ${event.name}\n\n`;
 
-  while(player.hp > 0 && enemy.hp > 0 && turn < maxTurns){
+  while(player.hp>0 && enemy.hp>0 && turn<maxTurns){
     turn++;
-
-    // Player attacks
     let rawDamage = player.strength - enemy.durability*0.1;
     let damage = Math.max(rawDamage,1);
     enemy.hp -= damage;
     enemy.hp += Math.min(enemy.regen, enemy.maxHP*0.1);
     enemy.hp = Math.min(enemy.hp, enemy.maxHP);
 
-    // Enemy attacks
     rawDamage = enemy.strength - player.durability*0.1;
     damage = Math.max(rawDamage,1);
     player.hp -= damage;
@@ -203,18 +248,15 @@ function fightEvent(event){
     fightLogText += `Turn ${turn}: Player HP=${Math.round(player.hp)}, Enemy HP=${Math.round(enemy.hp)}\n`;
   }
 
-  // Determine winner
   let winner;
-  if(player.hp <= 0 && enemy.hp <= 0) winner = "Draw";
-  else if(player.hp <= 0) winner = "Enemy Wins";
-  else if(enemy.hp <= 0) winner = "Player Wins";
-  else winner = player.hp > enemy.hp ? "Player Wins" : "Enemy Wins";
+  if(player.hp<=0 && enemy.hp<=0) winner="Draw";
+  else if(player.hp<=0) winner="Enemy Wins";
+  else if(enemy.hp<=0) winner="Player Wins";
+  else winner = player.hp>enemy.hp?"Player Wins":"Enemy Wins";
 
-  fightLog.textContent = fightLogText + `\nResult: ${winner}`;
-
-  // Particle effects
+  document.getElementById('fightLog').textContent = fightLogText+`\nResult: ${winner}`;
   showParticleEffect(getAttackEffect(player.power?.name), "playerParticle1");
-  showParticleEffect(getAttackEffect("Fire"), "enemyParticle1"); // Placeholder enemy power
+  showParticleEffect(getAttackEffect("Fire"), "enemyParticle1"); // placeholder enemy
 }
 </script>
 </body>
