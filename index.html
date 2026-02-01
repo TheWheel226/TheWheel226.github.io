@@ -1,1 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Wheel RPG Fusion Engine</title>
+<style>
+body{
+  font-family:Arial;
+  background:#0a0a0a;
+  color:white;
+  text-align:center;
+}
 
+.panel{
+  background:#111;
+  margin:15px auto;
+  padding:20px;
+  border-radius:15px;
+  border: 2px solid cyan;
+  box-shadow: 0 0 10px cyan;
+  max-width:700px;
+}
+
+button{
+  padding:12px 20px;
+  margin:5px;
+  border:none;
+  border-radius:10px;
+  font-size:16px;
+  cursor:pointer;
+  transition: all 0.3s ease;
+}
+
+button:hover{
+  background:cyan;
+  color:black;
+}
+
+#portrait{
+  margin-top:10px;
+  width:180px;
+  border:3px solid cyan;
+  border-radius:15px;
+  transition: all 0.5s ease;
+}
+
+/* Portrait Effects */
+.effectRedGlow{ box-shadow: 0 0 20px red, 0 0 40px red; filter: saturate(1.2); }
+.effectFireAura{ box-shadow: 0 0 20px orange,0 0 30px yellow; animation: fireFlicker 1s infinite alternate; }
+.effectShadow{ filter: brightness(0.5) drop-shadow(0 0 15px black); }
+.effectIce{ box-shadow: 0 0 20px #00f,0 0 40px #0ff; filter: brightness(1.1); }
+.effectLightning{ box-shadow: 0 0 25px #fff,0 0 50px #ff0; animation: lightningFlicker 0.2s infinite alternate; }
+.effectPurpleMist{ box-shadow: 0 0 20px purple,0 0 40px #a0f; filter: hue-rotate(30deg); }
+.effectGoldAura{ box-shadow: 0 0 25px gold,0 0 50px #ff0; animation: glowPulse 2s infinite alternate; }
+
+@keyframes fireFlicker { 0% { transform: scale(1); } 50% { transform: scale(1.05) rotate(1deg); } 100% { transform: scale(1) rotate(-1deg); } }
+@keyframes lightningFlicker { 0% { filter: brightness(1); } 50% { filter: brightness(2); } 100% { filter: brightness(1.2); } }
+@keyframes glowPulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+</style>
+</head>
+
+<body>
+<h1>🎮 Wheel RPG Fusion Engine</h1>
+
+<!-- PLAYER PANEL -->
+<div class="panel" id="playerPanel">
+  <h2>Player Info</h2>
+  <input id="firstName" placeholder="First Name">
+  <input id="lastName" placeholder="Last Name">
+  <button id="spinBtn" onclick="spin()">Spin</button>
+  <div id="spinTimer">Next spin available in: 24h</div>
+</div>
+
+<!-- SPIN RESULTS PANEL -->
+<div class="panel" id="resultsPanel">
+  <h2>Spin Results</h2>
+  <div id="results"></div>
+  <div id="fusionResult">No fusion yet</div>
+  <img id="portrait" src="https://i.imgur.com/9QZ7Q9K.png">
+</div>
+
+<!-- PVE PANEL -->
+<div class="panel" id="pvePanel">
+  <h2>PvE Battle</h2>
+  <button onclick="fight()">Fight AI</button>
+  <div id="fightLog"></div>
+  <div id="playerStats">
+    <p>Traits Unlocked: <span id="traitsCount">0</span></p>
+    <p>Total Power: <span id="totalPower">0</span></p>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="panel" id="adminPanel">
+  <h2>Admin</h2>
+  <input id="adminPass" placeholder="Password">
+  <button onclick="openAdmin()">Open Admin</button>
+  <div id="adminArea"></div>
+</div>
+
+<script>
+// ===== SETTINGS =====
+const ADMIN = "226wheel";
+const badWords = ["badword1","badword2"];
+const uniqueLastNames = ["Uchiha","Senju","Hyuga"]; // Only these lock last names
+
+// ===== WHEEL TEMPLATE =====
+let wheels = {
+  species:[
+    {name:"Human", chance:50, fusion:["life"], portraitEffect:""},
+    {name:"Vampire", chance:20, fusion:["vampire"], portraitEffect:"effectRedGlow", upgrades:{"blood":"Blood Overlord"}},
+    {name:"Elf", chance:30, fusion:["nature","magic"], portraitEffect:"effectPurpleMist"},
+    {name:"Uchiha", chance:5, fusion:["clan"], portraitEffect:"effectRedGlow", upgrades:{"Sharingan":"Sharingan Master"}}
+  ],
+  power:[
+    {name:"Blood Manipulation", chance:20, fusion:["blood"], portraitEffect:"effectRedGlow", upgrades:{"vampire":"Blood Overlord"}},
+    {name:"Fire", chance:40, fusion:["fire"], portraitEffect:"effectFireAura"},
+    {name:"Ice", chance:40, fusion:["ice"], portraitEffect:"effectIce"},
+    {name:"Shadow Cloak", chance:25, fusion:["shadow"], portraitEffect:"effectShadow"},
+    {name:"Lightning Strike", chance:15, fusion:["lightning"], portraitEffect:"effectLightning"},
+    {name:"Sharingan", chance:10, fusion:["power"], portraitEffect:"effectRedGlow", upgrades:{"Uchiha":"Sharingan Master"}},
+    {name:"Nine Tails", chance:5, fusion:["beast","chakra"], portraitEffect:"effectRedGlow"}
+  ],
+  weapon:[],
+  armor:[],
+  creature:[],
+  ability:[]
+};
+
+// ===== UNLOCK STORAGE =====
+let unlocked = JSON.parse(localStorage.getItem("unlocked")||"{}");
+
+// ===== DAILY SPIN =====
+function canSpin(){
+  let last = localStorage.getItem("lastSpin");
+  if(!last) return true;
+  return Date.now() - last > 86400000; // 24h
+}
+
+// ===== NAME FILTER =====
+function validName(name){
+  name = name.toLowerCase();
+  for(let w of badWords){ if(name.includes(w)) return false; }
+  return true;
+}
+
+// ===== RANDOM PICK WITH % =====
+function pick(list){
+  let total = list.reduce((a,b)=>a+b.chance,0);
+  let roll = Math.random()*total;
+  let sum=0;
+  for(let item of list){
+    sum+=item.chance;
+    if(roll<=sum) return item;
+  }
+}
+
+// ===== SPIN ENGINE =====
+function spin(){
+  let fname = firstName.value.trim();
+  if(!validName(fname)){ alert("First name not allowed"); return; }
+  if(!canSpin()){ spinTimer.textContent="You can spin once per day"; return; }
+  localStorage.setItem("lastSpin",Date.now());
+
+  let result = {};
+  let allTraits = [];
+
+  for(let key in wheels){
+    if(wheels[key].length>0){
+      let t = pick(wheels[key]);
+      result[key]=t;
+      allTraits.push(t);
+      unlock(key,t.name);
+    }
+  }
+
+  showResults(result);
+  let fusion = autoFusion(allTraits);
+  assignLastName(allTraits);
+  showFusion(fusion, allTraits);
+}
+
+// ===== UNLOCK =====
+function unlock(cat,trait){
+  if(!unlocked[cat]) unlocked[cat]=[];
+  if(!unlocked[cat].includes(trait)){
+    unlocked[cat].push(trait);
+    localStorage.setItem("unlocked",JSON.stringify(unlocked));
+  }
+}
+
+// ===== SHOW RESULTS =====
+function showResults(r){
+  results.innerHTML="";
+  for(let k in r){ results.innerHTML+="<div>"+k+": "+r[k].name+"</div>"; }
+}
+
+// ===== AUTOMATIC FUSION =====
+function autoFusion(traits){
+  let tags=[];
+  traits.forEach(t=>tags.push(...t.fusion));
+
+  let fusionName=null;
+  for(let t of traits){
+    if(t.upgrades){ for(let tag in t.upgrades){ if(tags.includes(tag)) fusionName=t.upgrades[tag]; } }
+  }
+
+  if(!fusionName){ fusionName = traits.map(t=>t.name).join(" & "); }
+
+  let total=0;
+  traits.forEach(t=>total+=t.chance);
+  let rarity = total/traits.length;
+  let superRare=false;
+  if(rarity<15) superRare=true;
+
+  return {name:fusionName, rarity:rarity, superRare:superRare};
+}
+
+// ===== ASSIGN LAST NAME =====
+function assignLastName(traits){
+  lastName.readOnly=false;
+  for(let t of traits){
+    if(uniqueLastNames.includes(t.name)){
+      lastName.value=t.name;
+      lastName.readOnly=true;
+      localStorage.setItem("lastName", t.name);
+      return;
+    }
+  }
+  lastName.value=localStorage.getItem("lastName")||"";
+}
+
+// ===== SHOW FUSION & APPLY PORTRAIT EFFECTS =====
+function showFusion(fusion, traits){
+  fusionResult.textContent = `${firstName.value} ${lastName.value} → ${fusion.name} (Rarity: ${fusion.rarity.toFixed(2)}%)`;
+  portrait.className="";
+  traits.forEach(t=>{ if(t.portraitEffect) portrait.classList.add(t.portraitEffect); });
+  if(fusion.superRare) portrait.classList.add("effectGoldAura");
+
+  traitsCount.textContent=Object.keys(unlocked).reduce((sum,k)=>sum+unlocked[k].length,0);
+  totalPower.textContent=Math.floor(Math.random()*100 + traits.length*10);
+}
+
+// ===== PVE =====
+function fight(){
+  let power=Object.keys(unlocked).length*20 + Math.random()*50;
+  let enemy=Math.random()*150;
+  fightLog.textContent = power>enemy ? "Victory!" : "Defeat";
+}
+
+// ===== ADMIN =====
+function openAdmin(){
+  if(adminPass.value!==ADMIN){ alert("Wrong password"); return; }
+  adminArea.innerHTML = `
+    <input id="wheelName" placeholder="Wheel Name">
+    <input id="traitName" placeholder="Trait Name">
+    <input id="chance" placeholder="%">
+    <input id="fusionTags" placeholder="Comma-separated tags">
+    <input id="portraitEffect" placeholder="Portrait Effect">
+    <input id="upgrades" placeholder='Upgrades JSON e.g. {"vampire":"Blood Overlord"}'>
+    <button onclick="addTrait()">Add</button>
+  `;
+}
+function addTrait(){
+  let w = wheelName.value;
+  if(!wheels[w]) wheels[w]=[];
+  let tags = fusionTags.value.split(",").map(t=>t.trim());
+  let upgradesObj={};
+  try{ upgradesObj = JSON.parse(upgrades.value); }catch(e){}
+  wheels[w].push({name:traitName.value,chance:Number(chance.value),fusion:tags,portraitEffect:portraitEffect.value,upgrades:upgradesObj});
+  alert("Trait added!");
+}
+</script>
+</body>
+</html>
