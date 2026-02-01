@@ -6,57 +6,163 @@
 
 <style>
 body{
-font-family: Arial;
-background:black;
+margin:0;
+font-family:Arial;
+background:radial-gradient(circle,#111,#000);
 color:white;
 text-align:center;
-padding:30px;
 }
 
-button{
-padding:15px;
-font-size:18px;
-border-radius:10px;
-border:none;
+h1{
 margin-top:20px;
 }
 
-.box{
+.container{
+max-width:900px;
+margin:auto;
+padding:20px;
+}
+
+.wheel{
 margin:20px auto;
 padding:20px;
-width:250px;
-background:#222;
+background:#1a1a1a;
+border-radius:20px;
+box-shadow:0 0 20px rgba(255,255,255,0.1);
+}
+
+.result{
+font-size:24px;
+margin-top:10px;
+}
+
+button{
+padding:12px 25px;
+margin:10px;
+font-size:18px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+}
+
+.saveBox{
+margin-top:30px;
+padding:20px;
+background:#111;
 border-radius:15px;
-font-size:22px;
+}
+
+input{
+padding:10px;
+border-radius:8px;
+border:none;
+margin:5px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🎲 Character Generator 🎲</h1>
+<div class="container">
 
-<div class="box" id="result">Press Generate</div>
+<h1>🎲 Character Wheel Generator 🎲</h1>
 
-<button onclick="generate()">Generate Character</button>
+<div class="wheel">
+<h2>Generated Character</h2>
+<div id="characterResult" class="result">Press Spin</div>
+<img id="characterImage" width="200">
+</div>
+
+<button onclick="spin()">SPIN WHEELS</button>
+<button onclick="saveCharacter()">SAVE CHARACTER</button>
+
+<div class="saveBox">
+<h3>Saved Characters</h3>
+<div id="savedList"></div>
+</div>
+
+<div class="saveBox">
+<h3>Admin Trait Add</h3>
+<input id="adminPass" placeholder="Password">
+<input id="newTrait" placeholder="Add New Species">
+<button onclick="addTrait()">Add Trait</button>
+</div>
+
+</div>
 
 <script>
 
-const species = ["Human","Elf","Robot","Alien"];
-const powers = ["Fire","Ice","Time","Teleport"];
-const personality = ["Brave","Funny","Serious","Calm"];
+// ===== ADMIN PASSWORD =====
+const ADMIN_PASSWORD = "226wheel"; // You can change this
 
+// ===== CHARACTER DATA =====
+let species = [
+{name:"Human",img:"https://i.imgur.com/9QZ7Q9K.png"},
+{name:"Elf",img:"https://i.imgur.com/1X6G7YB.png"},
+{name:"Robot",img:"https://i.imgur.com/0Z8FQZR.png"},
+{name:"Alien",img:"https://i.imgur.com/FpQXG2S.png"}
+];
+
+let powers = ["Fire","Ice","Time","Teleport","Lightning"];
+let personality = ["Brave","Funny","Calm","Serious","Chaotic"];
+let weapon = ["Sword","Laser Gun","Bow","Magic Staff","Hammer"];
+
+// ===== RANDOM PICK =====
 function random(arr){
 return arr[Math.floor(Math.random()*arr.length)];
 }
 
-function generate(){
-let character =
-random(species)+" / "+
-random(powers)+" / "+
-random(personality);
+// ===== SPIN FUNCTION =====
+function spin(){
 
-document.getElementById("result").textContent = character;
+let s = random(species);
+let p = random(powers);
+let per = random(personality);
+let w = random(weapon);
+
+let result = s.name+" | "+p+" | "+per+" | "+w;
+
+document.getElementById("characterResult").textContent = result;
+document.getElementById("characterImage").src = s.img;
+}
+
+// ===== SAVE SYSTEM =====
+function saveCharacter(){
+
+let char = document.getElementById("characterResult").textContent;
+if(char === "Press Spin") return;
+
+let saved = JSON.parse(localStorage.getItem("characters") || "[]");
+saved.push(char);
+localStorage.setItem("characters", JSON.stringify(saved));
+
+showSaved();
+}
+
+function showSaved(){
+let saved = JSON.parse(localStorage.getItem("characters") || "[]");
+let html = saved.map(c => "<div>"+c+"</div>").join("");
+document.getElementById("savedList").innerHTML = html;
+}
+showSaved();
+
+// ===== ADMIN ADD TRAIT =====
+function addTrait(){
+
+let pass = document.getElementById("adminPass").value;
+let trait = document.getElementById("newTrait").value;
+
+if(pass !== ADMIN_PASSWORD){
+alert("Wrong password");
+return;
+}
+
+species.push({
+name:trait,
+img:"https://i.imgur.com/9QZ7Q9K.png"
+});
+
+alert("Trait Added!");
 }
 
 </script>
