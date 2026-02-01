@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Wheel RPG</title>
+<title>Wheel Engine Base</title>
 
 <style>
 body{
@@ -12,31 +12,12 @@ color:white;
 text-align:center;
 }
 
-.wheel{
-width:220px;
-height:220px;
-margin:auto;
-border-radius:50%;
-border:6px solid cyan;
-transition: transform 4s ease-out;
-position:relative;
-}
-
-.sliceLabel{
-position:absolute;
-width:100%;
-top:50%;
-left:0;
-transform-origin:center left;
-font-size:14px;
-}
-
 .panel{
 background:#111;
 margin:20px auto;
 padding:20px;
 border-radius:15px;
-max-width:600px;
+max-width:700px;
 }
 
 button{
@@ -44,36 +25,40 @@ padding:12px 20px;
 margin:8px;
 border:none;
 border-radius:10px;
-font-size:16px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🎮 Wheel RPG 🎡</h1>
+<h1>🎮 Wheel Engine Base</h1>
 
 <div class="panel">
 <input id="playerName" placeholder="Character Name">
-<button onclick="spin()">Spin (1 per day)</button>
+<button onclick="spin()">Spin</button>
+<div id="spinTimer"></div>
 </div>
 
 <div class="panel">
-<div class="wheel" id="wheel"></div>
-<div id="result">Spin to generate</div>
-<img id="portrait" width="180">
+<h3>Results</h3>
+<div id="results"></div>
 </div>
 
 <div class="panel">
-<h3>PvE Battle</h3>
-<button onclick="fightAI()">Fight Enemy</button>
-<div id="battleLog"></div>
+<h3>Fusion Lab (Coming Soon)</h3>
+<div id="fusionPreview">No fusion yet</div>
 </div>
 
 <div class="panel">
-<h3>Admin Dashboard</h3>
+<h3>PvE Test</h3>
+<button onclick="fight()">Fight AI</button>
+<div id="fightLog"></div>
+</div>
+
+<div class="panel">
+<h3>Admin</h3>
 <input id="adminPass" placeholder="Password">
-<button onclick="showAdmin()">Open Admin</button>
+<button onclick="openAdmin()">Open</button>
 <div id="adminArea"></div>
 </div>
 
@@ -83,77 +68,65 @@ font-size:16px;
 const ADMIN = "226wheel";
 
 // ===== BAD WORD FILTER =====
-const badWords = ["badword1","badword2","badword3"];
+const badWords = ["badword1","badword2"];
 
-// ===== TRAITS WITH % RARITY =====
-let species = [
-{name:"Human", chance:40, img:"https://i.imgur.com/9QZ7Q9K.png"},
-{name:"Elf", chance:25, img:"https://i.imgur.com/1X6G7YB.png"},
-{name:"Robot", chance:20, img:"https://i.imgur.com/0Z8FQZR.png"},
-{name:"Celestial", chance:10, img:"https://i.imgur.com/FpQXG2S.png"},
-{name:"Void Titan", chance:5, img:"https://i.imgur.com/tV6KQbG.png"}
-];
+// ===== WHEEL SYSTEM BASE =====
+let wheels = {
 
-// ===== UNLOCK SYSTEM =====
-let unlocked = JSON.parse(localStorage.getItem("unlocked")||"[]");
+species:[
+{name:"Human",chance:50,fusion:["life"]},
+{name:"Elf",chance:30,fusion:["nature"]},
+{name:"Void",chance:20,fusion:["dark"]}
+],
 
-// ===== DAILY SPIN CHECK =====
-function canSpin(){
+power:[
+{name:"Fire",chance:40,fusion:["fire"]},
+{name:"Ice",chance:40,fusion:["ice"]},
+{name:"Time",chance:20,fusion:["time"]}
+]
 
-let last = localStorage.getItem("lastSpin");
-if(!last) return true;
+};
 
-let now = Date.now();
-return now - last > 86400000; // 24 hours
-}
+// ===== UNLOCK STORAGE =====
+let unlocked = JSON.parse(localStorage.getItem("unlocked")||"{}");
 
 // ===== NAME FILTER =====
 function validName(name){
 
 name = name.toLowerCase();
+
 for(let w of badWords){
 if(name.includes(w)) return false;
 }
+
 return true;
 }
 
-// ===== % RANDOM PICK =====
-function weightedPick(list){
+// ===== DAILY SPIN =====
+function canSpin(){
+
+let last = localStorage.getItem("lastSpin");
+
+if(!last) return true;
+
+return Date.now() - last > 86400000;
+}
+
+// ===== % RANDOM =====
+function pick(list){
 
 let total = list.reduce((a,b)=>a+b.chance,0);
 let roll = Math.random()*total;
 
-let sum = 0;
+let sum=0;
+
 for(let item of list){
-sum += item.chance;
-if(roll <= sum) return item;
+sum+=item.chance;
+if(roll<=sum) return item;
 }
 }
 
-// ===== WHEEL DRAW =====
-function drawWheel(){
-
-wheel.innerHTML="";
-
-let total = species.length;
-let degPer = 360/total;
-
-species.forEach((s,i)=>{
-
-let label = document.createElement("div");
-label.className="sliceLabel";
-label.style.transform=
-"rotate("+(i*degPer)+"deg) translate(110px) rotate(90deg)";
-label.textContent=s.name;
-
-wheel.appendChild(label);
-
-});
-
-}
-drawWheel();
-
-// ===== SPIN =====
+// ===== SPIN ENGINE =====
 function spin(){
 
 let name = playerName.value;
@@ -164,83 +137,104 @@ return;
 }
 
 if(!canSpin()){
-alert("You can spin once per day");
+spinTimer.textContent = "Spin available tomorrow";
 return;
 }
 
 localStorage.setItem("lastSpin",Date.now());
 
-let spinDeg = 1440 + Math.random()*360;
-wheel.style.transform="rotate("+spinDeg+"deg)";
+let result = {};
 
-setTimeout(()=>{
+for(let key in wheels){
+result[key] = pick(wheels[key]);
+unlock(key,result[key].name);
+}
 
-let pick = weightedPick(species);
-
-result.textContent = name+" the "+pick.name;
-portrait.src = pick.img;
-
-unlockCheck(pick.name);
-
-},3800);
+showResults(result);
+previewFusion(result);
 
 }
 
-// ===== UNLOCK CHECK =====
-function unlockCheck(trait){
+// ===== UNLOCK =====
+function unlock(cat,trait){
 
-if(!unlocked.includes(trait)){
-unlocked.push(trait);
+if(!unlocked[cat]) unlocked[cat]=[];
+
+if(!unlocked[cat].includes(trait)){
+unlocked[cat].push(trait);
 localStorage.setItem("unlocked",JSON.stringify(unlocked));
 }
 
 }
 
-// ===== PVE =====
-function fightAI(){
+// ===== SHOW RESULTS =====
+function showResults(r){
 
-let power = unlocked.length * 10 + Math.random()*50;
-let enemy = Math.random()*120;
+results.innerHTML="";
 
-if(power > enemy){
-battleLog.textContent = "You won! Power "+Math.floor(power);
-}else{
-battleLog.textContent = "Enemy won!";
+for(let k in r){
+results.innerHTML += "<div>"+k+": "+r[k].name+"</div>";
 }
+
+}
+
+// ===== FUSION PREVIEW =====
+function previewFusion(r){
+
+let tags=[];
+
+for(let k in r){
+tags.push(...r[k].fusion);
+}
+
+fusionPreview.textContent =
+"Fusion Tags: "+tags.join(", ");
+
+}
+
+// ===== PVE =====
+function fight(){
+
+let power = Object.keys(unlocked).length * 20 + Math.random()*50;
+let enemy = Math.random()*150;
+
+fightLog.textContent =
+power>enemy ? "Victory!" : "Defeat";
 
 }
 
 // ===== ADMIN =====
-function showAdmin(){
+function openAdmin(){
 
-if(adminPass.value !== ADMIN){
+if(adminPass.value!==ADMIN){
 alert("Wrong password");
 return;
 }
 
 adminArea.innerHTML = `
-<input id="newTrait" placeholder="Species Name">
-<input id="chance" placeholder="% Chance">
-<input id="img" placeholder="Image URL">
-<button onclick="addTrait()">Add Trait</button>
+<input id="wheelName" placeholder="Wheel Name">
+<input id="traitName" placeholder="Trait">
+<input id="chance" placeholder="%">
+<button onclick="addTrait()">Add</button>
 `;
 
 }
 
 function addTrait(){
 
-species.push({
-name:newTrait.value,
+let w = wheelName.value;
+if(!wheels[w]) wheels[w]=[];
+
+wheels[w].push({
+name:traitName.value,
 chance:Number(chance.value),
-img:img.value
+fusion:["custom"]
 });
 
-drawWheel();
 alert("Added!");
 
 }
 
 </script>
-
 </body>
 </html>
