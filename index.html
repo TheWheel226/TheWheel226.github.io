@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Character Wheel Generator</title>
+
+<style>
+body{
+font-family: Arial;
+background:black;
+color:white;
+text-align:center;
+padding:30px;
+}
+
+button{
+padding:15px;
+font-size:18px;
+border-radius:10px;
+border:none;
+margin-top:20px;
+}
+
+.box{
+margin:20px auto;
+padding:20px;
+width:250px;
+background:#222;
+border-radius:15px;
+font-size:22px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎲 Character Generator 🎲</h1>
+
+<div class="box" id="result">Press Generate</div>
+
+<button onclick="generate()">Generate Character</button>
+
+<script>
+
+const species = ["Human","Elf","Robot","Alien"];
+const powers = ["Fire","Ice","Time","Teleport"];
+const personality = ["Brave","Funny","Serious","Calm"];
+
+function random(arr){
+return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function generate(){
+let character =
+random(species)+" / "+
+random(powers)+" / "+
+random(personality);
+
+document.getElementById("result").textContent = character;
+}
+
+</script>
+
+</body>
+</html>
