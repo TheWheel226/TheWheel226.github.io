@@ -512,25 +512,27 @@ function rarityPercentFor(category, value){
    THEMES (Background hooks)
 ========================= */
 
-const RACE_THEME_BG = {
-  "Vampire": "images/backgrounds/castle.svg",
-  "Golem": "images/backgrounds/cave.svg",
-  "Goblin": "images/backgrounds/forest.svg",
-  "Human": "images/backgrounds/city.svg",
-  "God": "images/backgrounds/celestial.svg",
-  "Default": "images/backgrounds/default_arena.svg"
+const RACE_THEME = {
+  Vampire: { img: "images/backgrounds/castle.svg",     grad: "linear-gradient(135deg, rgba(120,0,30,.55), rgba(0,0,0,.75))" },
+  Golem:   { img: "images/backgrounds/cave.svg",       grad: "linear-gradient(135deg, rgba(90,70,40,.55), rgba(0,0,0,.75))" },
+  Goblin:  { img: "images/backgrounds/forest.svg",     grad: "linear-gradient(135deg, rgba(0,110,60,.50), rgba(0,0,0,.75))" },
+  Human:   { img: "images/backgrounds/city.svg",       grad: "linear-gradient(135deg, rgba(30,70,140,.50), rgba(0,0,0,.75))" },
+  God:     { img: "images/backgrounds/celestial.svg",  grad: "linear-gradient(135deg, rgba(140,120,255,.45), rgba(0,0,0,.75))" },
+  Default: { img: "images/backgrounds/default_arena.svg", grad: "linear-gradient(135deg, rgba(79,104,255,.30), rgba(0,0,0,.78))" }
 };
 
 function applyRaceTheme(race){
-  const bg = RACE_THEME_BG[race] || RACE_THEME_BG.Default || "";
   const bgLayer = document.getElementById("bgLayer");
-  if(bg){
-    bgLayer.style.backgroundImage = `url('${bg}')`;
-    bgLayer.style.opacity = 0.26;
-  }else{
-    bgLayer.style.backgroundImage = "";
-    bgLayer.style.opacity = 0.0;
-  }
+  const theme = RACE_THEME[race] || RACE_THEME.Default;
+
+  // cache-buster so GitHub Pages updates immediately if you change images
+  const bust = `?v=${encodeURIComponent(race)}_${Date.now()}`;
+
+  // Always show a visible change (gradient), then image on top if it loads
+  bgLayer.style.backgroundImage = `${theme.grad}, url('${theme.img}${bust}')`;
+  bgLayer.style.opacity = 0.30; // a bit stronger so it’s obvious
+  bgLayer.style.backgroundSize = "cover";
+  bgLayer.style.backgroundPosition = "center";
 }
 
 /* =========================
@@ -545,7 +547,7 @@ const FUSIONS = [
   { conditions:["Soul eater","Necromancy"], result:"Death Monarch", tier:"Rare" },
   { conditions:["Toon force","God"], result:"Cartoon Creator", tier:"Divine" }
 ];
-
+  
 function findFusion(traits){
   for(const f of FUSIONS){
     if(f.conditions.every(c => traits.includes(c))) return f;
