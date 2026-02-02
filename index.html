@@ -1,300 +1,1439 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Trait Fighters</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wheel RPG</title>
 
 <style>
-body{
+  :root{
+    --bg:#0a0f1c;
+    --panel:#111a33;
+    --panel2:#18224a;
+    --text:#e8eeff;
+    --muted:#9fb0ff;
+    --accent:#4b7cff;
+    --accent2:#6a94ff;
+    --danger:#ff4b6e;
+    --good:#36d399;
+  }
+
+  *{box-sizing:border-box}
+  body{
     margin:0;
-    font-family:Arial, sans-serif;
-    background:#0a0f1c;
-    color:white;
-}
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
 
-#game{
+  /* Background layer */
+  #bgLayer{
+    position:fixed;
+    inset:0;
+    background-size:cover;
+    background-position:center;
+    opacity:0.22;
+    filter:saturate(1.1) contrast(1.05);
+    pointer-events:none;
+    transition: background-image .6s ease, opacity .6s ease;
+  }
+  #bgVignette{
+    position:fixed;
+    inset:0;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.65) 70%, rgba(0,0,0,0.85) 100%);
+    pointer-events:none;
+  }
+
+  #game{
+    position:relative;
     display:flex;
-    height:100vh;
-}
+    min-height:100vh;
+  }
 
-/* LEFT PANEL */
-#statsPanel{
-    width:260px;
-    background:#111a33;
-    padding:20px;
-    border-right:2px solid #1f2a55;
-}
+  /* Left stats panel */
+  #left{
+    width:280px;
+    background: rgba(17,26,51,0.92);
+    border-right: 2px solid rgba(79,104,255,0.25);
+    padding:18px;
+    backdrop-filter: blur(6px);
+  }
 
-.stat{
-    margin:10px 0;
+  .title{
+    font-weight:800;
+    letter-spacing:.5px;
+    margin:0 0 10px 0;
+  }
+
+  .sub{
+    color: var(--muted);
+    margin:0 0 16px 0;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .stat{
+    background: rgba(24,34,74,0.9);
+    border: 1px solid rgba(79,104,255,0.18);
+    border-radius:10px;
     padding:10px;
-    background:#18224a;
-    border-radius:6px;
-}
+    margin:10px 0;
+  }
+  .stat .k{color:var(--muted); font-size:12px;}
+  .stat .v{font-size:16px; font-weight:700; margin-top:2px; word-break: break-word;}
 
-/* RIGHT SIDE */
-#mainPanel{
+  .pillRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .pill{
+    font-size:12px;
+    padding:6px 8px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.2);
+    color: var(--text);
+  }
+
+  /* Main area */
+  #main{
     flex:1;
     display:flex;
     flex-direction:column;
+    padding:18px;
+    gap:14px;
+  }
+
+  .row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+
+  .panel{
+    background: rgba(17,26,51,0.78);
+    border: 1px solid rgba(79,104,255,0.2);
+    border-radius:14px;
+    padding:14px;
+    backdrop-filter: blur(6px);
+  }
+
+  #topBar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+
+  .btn{
+    border:none;
+    border-radius:10px;
+    padding:10px 12px;
+    background: var(--accent);
+    color:white;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .btn:hover{ background: var(--accent2); }
+  .btn.secondary{
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+  .btn.secondary:hover{ background: rgba(255,255,255,0.12); }
+  .btn.danger{ background: #d63b57; }
+  .btn.danger:hover{ background: #ff4b6e; }
+
+  .tabs{display:flex; gap:10px; flex-wrap:wrap;}
+  .tab{
+    padding:8px 10px;
+    border-radius:10px;
+    cursor:pointer;
+    border:1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.2);
+    color: var(--text);
+    font-weight:700;
+    font-size:13px;
+  }
+  .tab.active{
+    background: rgba(79,104,255,0.25);
+    border-color: rgba(79,104,255,0.4);
+  }
+
+  /* Wheel area */
+  #wheelPanel{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    align-items:flex-start;
+  }
+
+  #wheelBox{
+    width:360px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+  }
+
+  #wheelTitle{
+    font-size:18px;
+    font-weight:900;
+  }
+  #wheelHint{
+    font-size:12px;
+    color: var(--muted);
+  }
+
+  canvas{
+    border-radius:50%;
+    background: rgba(0,0,0,0.25);
+    border: 2px solid rgba(79,104,255,0.35);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+
+  #pointer{
+    width:0;height:0;
+    border-left:14px solid transparent;
+    border-right:14px solid transparent;
+    border-bottom:22px solid rgba(255,255,255,0.92);
+    margin-top:-8px;
+    filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.4));
+  }
+
+  #resultCard{
+    flex:1;
+    min-width:280px;
+  }
+  .big{
+    font-size:20px;
+    font-weight:900;
+  }
+  .muted{color:var(--muted)}
+  .mono{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    white-space:pre-wrap;
+  }
+
+  input{
+    width:min(420px, 100%);
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.25);
+    color: var(--text);
+    outline:none;
+  }
+
+  /* Battle visuals */
+  #battleArena{
+    position:relative;
+    min-height:260px;
+    border-radius:14px;
+    overflow:hidden;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  #battleBg{
+    position:absolute; inset:0;
+    background-size:cover;
+    background-position:center;
+    opacity:.35;
+    filter: blur(0px) saturate(1.1);
+    transition: background-image .6s ease, opacity .6s ease;
+  }
+  #battleOverlay{
+    position:absolute; inset:0;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 70%, rgba(0,0,0,0.7) 100%);
+  }
+  #fighters{
+    position:relative;
+    display:flex;
+    justify-content:space-around;
+    align-items:flex-end;
+    height:260px;
+    padding:14px;
+    gap:12px;
+  }
+  .fighter{
+    width:42%;
+    max-width:380px;
+    min-width:220px;
+    height:100%;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    align-items:center;
+    gap:8px;
+  }
+  .portrait{
+    width:160px;
+    height:180px;
+    border-radius:14px;
+    border: 2px solid rgba(79,104,255,0.35);
+    background: rgba(0,0,0,0.3);
+    display:flex;
     align-items:center;
     justify-content:center;
-}
+    font-weight:900;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    position:relative;
+    overflow:hidden;
+  }
+  .portrait .label{
+    position:absolute;
+    bottom:8px; left:8px; right:8px;
+    font-size:12px;
+    color: rgba(255,255,255,0.9);
+    text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    text-align:left;
+  }
+  .hpbar{
+    width:180px;
+    height:12px;
+    border-radius:999px;
+    background: rgba(255,255,255,0.1);
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.12);
+  }
+  .hpfill{
+    height:100%;
+    width:100%;
+    background: linear-gradient(90deg, rgba(54,211,153,1), rgba(79,104,255,1));
+    transition: width .25s ease;
+  }
+  .floatText{
+    position:absolute;
+    top:34px;
+    font-weight:900;
+    opacity:0;
+    transform: translateY(0px);
+    transition: opacity .1s, transform .6s;
+    pointer-events:none;
+    text-shadow: 0 3px 10px rgba(0,0,0,0.8);
+  }
+  .fx{
+    position:absolute; inset:0;
+    pointer-events:none;
+    opacity:0;
+    transition: opacity .1s;
+  }
+  @keyframes shake {
+    0%{ transform: translate(0,0) }
+    25%{ transform: translate(-3px,2px) }
+    50%{ transform: translate(3px,-2px) }
+    75%{ transform: translate(-2px,-2px) }
+    100%{ transform: translate(0,0) }
+  }
+  .shake{ animation: shake .25s linear; }
 
-button{
-    padding:12px 20px;
-    margin:10px;
-    border:none;
-    border-radius:6px;
-    background:#4b7cff;
-    color:white;
-    font-size:16px;
-    cursor:pointer;
-}
-
-button:hover{
-    background:#6a94ff;
-}
-
-#wheelBox{
-    text-align:center;
-    padding:30px;
-    background:#121c3d;
-    border-radius:12px;
-    min-width:300px;
-}
-
-#result{
-    font-size:24px;
-    margin-top:15px;
-}
-
-/* NAME INPUT */
-#nameScreen{
-    display:none;
-    text-align:center;
-}
+  /* Codex list */
+  .list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-height:240px;
+    overflow:auto;
+    padding-right:6px;
+  }
+  .item{
+    padding:10px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.2);
+  }
+  .item .small{font-size:12px; color:var(--muted); margin-top:4px}
 </style>
 </head>
 
 <body>
+<div id="bgLayer"></div>
+<div id="bgVignette"></div>
 
 <div id="game">
+  <aside id="left">
+    <h2 class="title">Wheel RPG</h2>
+    <p class="sub">Spin one wheel at a time. Stats fill in on the left. Then name your character and fight.</p>
 
-<!-- LEFT STATS PANEL -->
-<div id="statsPanel">
-<h2>Character Stats</h2>
+    <div class="stat"><div class="k">Name</div><div class="v" id="s_name">---</div></div>
+    <div class="stat"><div class="k">Race</div><div class="v" id="s_race">---</div></div>
+    <div class="stat"><div class="k">Power</div><div class="v" id="s_power">---</div></div>
+    <div class="stat"><div class="k">Weapon</div><div class="v" id="s_weapon">---</div></div>
 
-<div class="stat">Name: <span id="statName">---</span></div>
-<div class="stat">Strength: <span id="statStrength">---</span></div>
-<div class="stat">Durability: <span id="statDurability">---</span></div>
-<div class="stat">Luck: <span id="statLuck">---</span></div>
-<div class="stat">Trait: <span id="statTrait">---</span></div>
+    <div class="stat"><div class="k">Strength</div><div class="v" id="s_str">---</div></div>
+    <div class="stat"><div class="k">Durability</div><div class="v" id="s_dur">---</div></div>
+    <div class="stat"><div class="k">Regen</div><div class="v" id="s_regen">---</div></div>
 
-</div>
+    <div class="pillRow">
+      <span class="pill" id="pill_mode">Mode: Build</span>
+      <span class="pill" id="pill_fusion">Fusion: ---</span>
+    </div>
 
-<!-- MAIN AREA -->
-<div id="mainPanel">
+    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn secondary" onclick="saveGame()">Save</button>
+      <button class="btn secondary" onclick="loadGame()">Load</button>
+      <button class="btn danger" onclick="resetGame()">Reset</button>
+    </div>
+  </aside>
 
-<div id="wheelBox">
-<h2 id="wheelTitle">Roll Strength</h2>
+  <main id="main">
+    <div class="panel" id="topBar">
+      <div class="tabs">
+        <div class="tab active" id="tab_build" onclick="setTab('build')">Build</div>
+        <div class="tab" id="tab_pve" onclick="setTab('pve')">PvE</div>
+        <div class="tab" id="tab_pvp" onclick="setTab('pvp')">PvP</div>
+        <div class="tab" id="tab_codex" onclick="setTab('codex')">Codex</div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn secondary" onclick="finishBuildEarly()">Finish Build</button>
+      </div>
+    </div>
 
-<button onclick="spinWheel()">SPIN</button>
+    <!-- BUILD TAB -->
+    <section class="row" id="view_build">
+      <div class="panel" id="wheelPanel" style="flex:1;">
+        <div id="wheelBox">
+          <div id="wheelTitle">Spin for Race</div>
+          <div id="wheelHint">Tip: tomorrow you’ll send images and we’ll plug them into these themes.</div>
+          <div id="pointer"></div>
+          <canvas id="wheelCanvas" width="320" height="320"></canvas>
+          <button class="btn" id="spinBtn" onclick="startSpin()">SPIN</button>
+          <div class="muted" style="font-size:12px;">Wheel order: Race → Power → Weapon → Strength → Durability → Regen</div>
+        </div>
 
-<div id="result"></div>
-</div>
+        <div class="panel" id="resultCard">
+          <div class="big" id="spinResult">Result: ---</div>
+          <div class="muted" id="spinMeta" style="margin-top:6px;">Rarity: ---</div>
 
-<!-- NAME INPUT SCREEN -->
-<div id="nameScreen">
-<h2>Name Your Character</h2>
-<input id="nameInput" placeholder="Enter name">
-<br>
-<button onclick="saveName()">Confirm</button>
-</div>
+          <div style="margin-top:12px; border-top:1px solid rgba(255,255,255,0.12); padding-top:12px;">
+            <div class="big">Name after creation</div>
+            <div class="muted" style="margin-top:6px;">
+              After the last wheel, you’ll name your character. If a unique last name is locked later, only first name changes.
+            </div>
 
-<!-- GAME MODE SCREEN -->
-<div id="modeScreen" style="display:none">
-<h2>Select Mode</h2>
-<button onclick="enterMode('pvp')">PvP Arena</button>
-<button onclick="enterMode('pve')">PvE World</button>
-<button onclick="enterMode('fusion')">Fusion Lab</button>
-</div>
+            <div id="nameBox" style="display:none; margin-top:10px;">
+              <input id="nameInput" maxlength="18" placeholder="Enter first name..." oninput="updateNamePreview()"/>
+              <div style="margin-top:8px;">
+                <span class="muted">Preview:</span>
+                <span id="namePreview" style="font-weight:900; margin-left:6px;"></span>
+              </div>
+              <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn" onclick="confirmName()">Confirm Name</button>
+                <button class="btn secondary" onclick="skipName()">Skip</button>
+              </div>
+              <div id="nameError" style="color:var(--danger); margin-top:8px; font-weight:700;"></div>
+            </div>
+          </div>
 
-</div>
+          <div style="margin-top:12px; border-top:1px solid rgba(255,255,255,0.12); padding-top:12px;">
+            <div class="big">Fusion</div>
+            <div class="muted" id="fusionText" style="margin-top:6px;">---</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PVE TAB -->
+    <section class="row" id="view_pve" style="display:none;">
+      <div class="panel" style="flex:1;">
+        <div class="big">PvE Event Wheel</div>
+        <div class="muted" style="margin-top:6px;">Spin an event, then fight the encounter. (We’ll add your full event list later.)</div>
+
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn" onclick="spinEvent()">Spin Event</button>
+          <button class="btn secondary" onclick="fightPvE()">Fight PvE</button>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="big" id="eventName">Event: ---</div>
+          <div class="muted" id="eventDesc" style="margin-top:6px;">---</div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <div class="big">Battle Arena</div>
+          <div id="battleArena" style="margin-top:10px;">
+            <div id="battleBg"></div>
+            <div id="battleOverlay"></div>
+            <div id="fighters">
+              <div class="fighter" id="f_player">
+                <div class="portrait" id="p_portrait">
+                  <div class="label" id="p_label">Player</div>
+                  <div class="fx" id="p_fx"></div>
+                  <div class="floatText" id="p_float"></div>
+                </div>
+                <div class="hpbar"><div class="hpfill" id="p_hp"></div></div>
+              </div>
+
+              <div class="fighter" id="f_enemy">
+                <div class="portrait" id="e_portrait">
+                  <div class="label" id="e_label">Enemy</div>
+                  <div class="fx" id="e_fx"></div>
+                  <div class="floatText" id="e_float"></div>
+                </div>
+                <div class="hpbar"><div class="hpfill" id="e_hp"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="mono" id="battleLog" style="margin-top:10px; color:rgba(255,255,255,0.9);">---</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PVP TAB -->
+    <section class="row" id="view_pvp" style="display:none;">
+      <div class="panel" style="flex:1;">
+        <div class="big">PvP Arena (Simulator)</div>
+        <div class="muted" style="margin-top:6px;">
+          Uses soft scaling (no caps). Lucky builds are stronger, but scaling prevents infinite gaps.
+        </div>
+
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn" onclick="simulatePvP()">Simulate PvP Fight</button>
+          <button class="btn secondary" onclick="generateOpponent()">New Opponent</button>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="big">Opponent</div>
+          <div class="muted" id="oppLine" style="margin-top:6px;">---</div>
+        </div>
+
+        <div class="mono" id="pvpLog" style="margin-top:10px;">---</div>
+      </div>
+    </section>
+
+    <!-- CODEX TAB -->
+    <section class="row" id="view_codex" style="display:none;">
+      <div class="panel" style="flex:1;">
+        <div class="big">Codex</div>
+        <div class="muted" style="margin-top:6px;">Fusions you’ve discovered are saved here.</div>
+
+        <div class="list" id="codexList" style="margin-top:12px;"></div>
+      </div>
+    </section>
+  </main>
 </div>
 
 <script>
+/* =========================
+   DATA (YOUR WHEELS)
+========================= */
 
-/* -------------------------
-   GAME STATE
--------------------------- */
-
-let stats = {
-    name: "",
-    strength: null,
-    durability: null,
-    luck: null,
-    trait: null
+const WHEELS = {
+  race: [
+    "Human","Orc","Cyborg","Giant","Demi human","Golem","Dragon","Vampire","Hivemind","Shinigami",
+    "Soul eater","Demon","Alien","God","Hybrid","Gnome","Goblin","Zombie","Skeleton"
+  ],
+  power: [
+    "No power","Adaptation","Art creation","Bankai","Future sight","Gravity manipulation","Kaioken",
+    "Titan transformation","Devil fruit","Necromancy","Immortal","Flight","Power eater","Tailed beast",
+    "Ice manipulation","Time manipulation","Electric","Invisibility","Mimicry","Regeneration","Toon force",
+    "Shapeshifting","Cloning","Final form","Weapon creation","Laser vision","Eight gates","Curse mark",
+    "One for all","Heavenly restriction","Fire manipulation","Teleportation","Telekinesis","Golem creation"
+  ],
+  weapon: [
+    "No weapon","Bow","Meatball launcher","Guitar","Nunchucks","Axe","Rocket launcher","Knife","Infinity gauntlet",
+    "Daggers","Demon slayer sword","Omnitrix","Sword","Escanors axe","Scythe","Pistol","Wooden shield",
+    "Blades of chaos","Samehada","Green lantern ring","Uzumaki chains","Magic staff","Bat","Water gun","Hammer",
+    "Brass knuckles","Piece of bread","Stick"
+  ],
+  strength: [5,10,15,20,25,30,35,40,50,60,70,80,90,100],
+  durability: [10,15,20,25,30,40,50,60,70,80,90,100],
+  regen: [0,1,2,3,4,5,6,7,8,9,10]
 };
 
-let wheelStep = 0;
+// Simple rarity %s for hype (we’ll fine-tune later)
+function rarityPercentFor(category, value){
+  // You can replace with real weighted tables later.
+  // For now: just based on index position.
+  const arr = WHEELS[category];
+  const idx = arr.indexOf(value);
+  if(idx < 0) return 10;
+  const p = 100 - Math.floor((idx/(arr.length-1))*90); // earlier slices look “less rare” visually
+  return Math.max(1, Math.min(95, p));
+}
 
-const wheelOrder = [
-    "strength",
-    "durability",
-    "luck",
-    "trait"
+/* =========================
+   FUSION SYSTEM (STARTER)
+   (We’ll expand with tons more)
+========================= */
+
+const FUSIONS = [
+  { conditions:["Vampire","Regeneration"], result:"Blood Overlord", tier:"Rare" },
+  { conditions:["Golem","Fire manipulation"], result:"Magma Titan", tier:"Rare" },
+  { conditions:["Human","Tailed beast"], result:"Perfect Jinchuriki", tier:"Legendary" },
+  { conditions:["God","Time manipulation"], result:"Time Deity", tier:"Legendary" },
+  { conditions:["Soul eater","Necromancy"], result:"Death Monarch", tier:"Rare" },
+  { conditions:["Toon force","God"], result:"Cartoon Creator", tier:"Divine" }
 ];
 
-/* -------------------------
-   ROLL TABLES
--------------------------- */
-
-function rollStrength(){
-    return randomRange(10,100);
+function findFusion(traits){
+  for(const f of FUSIONS){
+    if(f.conditions.every(c => traits.includes(c))) return f;
+  }
+  return null;
 }
 
-function rollDurability(){
-    return randomRange(10,100);
+/* =========================
+   THEMES (HOOKS FOR YOUR IMAGES)
+   Put your images in:
+   images/backgrounds/<file>.png
+========================= */
+
+const RACE_THEME_BG = {
+  "Vampire": "images/backgrounds/castle.png",
+  "Golem": "images/backgrounds/cave.png",
+  "Elf": "images/backgrounds/forest.png",
+  "Human": "images/backgrounds/city.png",
+  "God": "images/backgrounds/celestial.png",
+  "Dragon": "images/backgrounds/dragon_lair.png",
+  "Shinigami": "images/backgrounds/shadow_realm.png",
+  "Default": ""
+};
+
+function applyRaceTheme(race){
+  const bg = RACE_THEME_BG[race] || RACE_THEME_BG.Default || "";
+  const bgLayer = document.getElementById("bgLayer");
+  if(bg){
+    bgLayer.style.backgroundImage = `url('${bg}')`;
+    bgLayer.style.opacity = 0.26;
+  }else{
+    bgLayer.style.backgroundImage = "";
+    bgLayer.style.opacity = 0.0;
+  }
 }
 
-function rollLuck(){
-    return randomRange(1,50);
+/* =========================
+   GAME STATE + SAVE
+========================= */
+
+const STORE_KEY = "wheel_rpg_save_v1";
+
+let state = {
+  tab: "build",
+  buildStep: 0, // 0 race, 1 power, 2 weapon, 3 str, 4 dur, 5 regen
+  spinning: false,
+
+  character: {
+    name: "",
+    lockedLastName: "", // later if you use unique last names
+    race: null,
+    power: null,
+    weapon: null,
+    strength: null,
+    durability: null,
+    regen: null,
+    fusion: null
+  },
+
+  codex: {
+    fusions: [] // {name, tier, discoveredAt}
+  },
+
+  pve: {
+    currentEvent: null
+  },
+
+  pvp: {
+    opponent: null
+  }
+};
+
+function saveGame(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  toast("Saved!");
+}
+function loadGame(){
+  const raw = localStorage.getItem(STORE_KEY);
+  if(!raw){ toast("No save found."); return; }
+  try{
+    state = JSON.parse(raw);
+    refreshUI();
+    toast("Loaded!");
+  }catch{
+    toast("Save corrupted.");
+  }
+}
+function resetGame(){
+  localStorage.removeItem(STORE_KEY);
+  state.buildStep = 0;
+  state.spinning = false;
+  state.character = { name:"", lockedLastName:"", race:null, power:null, weapon:null, strength:null, durability:null, regen:null, fusion:null };
+  state.codex = { fusions:[] };
+  state.pve = { currentEvent:null };
+  state.pvp = { opponent:null };
+  setTab("build");
+  refreshUI();
+  toast("Reset complete.");
 }
 
-function rollTrait(){
+/* =========================
+   TABS
+========================= */
 
-    let roll = Math.random()*100;
+function setTab(tab){
+  state.tab = tab;
+  document.getElementById("tab_build").classList.toggle("active", tab==="build");
+  document.getElementById("tab_pve").classList.toggle("active", tab==="pve");
+  document.getElementById("tab_pvp").classList.toggle("active", tab==="pvp");
+  document.getElementById("tab_codex").classList.toggle("active", tab==="codex");
 
-    if(roll < 50) return "Common Trait";
-    if(roll < 80) return "Rare Trait";
-    if(roll < 95) return "Legendary Trait";
-    return "Divine Trait";
+  document.getElementById("view_build").style.display = tab==="build" ? "" : "none";
+  document.getElementById("view_pve").style.display = tab==="pve" ? "" : "none";
+  document.getElementById("view_pvp").style.display = tab==="pvp" ? "" : "none";
+  document.getElementById("view_codex").style.display = tab==="codex" ? "" : "none";
+
+  document.getElementById("pill_mode").textContent =
+    tab==="build" ? "Mode: Build" :
+    tab==="pve" ? "Mode: PvE" :
+    tab==="pvp" ? "Mode: PvP" : "Mode: Codex";
+
+  refreshUI();
 }
 
-/* -------------------------
-   CORE SPIN
--------------------------- */
+/* =========================
+   WHEEL SPINNER (CANVAS)
+========================= */
 
-function spinWheel(){
+const canvas = document.getElementById("wheelCanvas");
+const ctx = canvas.getContext("2d");
 
-    let current = wheelOrder[wheelStep];
-    let value;
+let wheelAngle = 0;
+let spinVel = 0;
+let targetStopAngle = 0;
+let currentWheelItems = [];
 
-    if(current === "strength") value = rollStrength();
-    if(current === "durability") value = rollDurability();
-    if(current === "luck") value = rollLuck();
-    if(current === "trait") value = rollTrait();
-
-    stats[current] = value;
-
-    document.getElementById("result").innerText = value;
-
-    updateStatsPanel();
-
-    wheelStep++;
-
-    setTimeout(nextWheelStep, 900);
+function getCurrentStepKey(){
+  return ["race","power","weapon","strength","durability","regen"][state.buildStep] || "race";
 }
 
-/* -------------------------
-   FLOW CONTROL
--------------------------- */
+function wheelTitleFor(stepKey){
+  return stepKey==="race" ? "Spin for Race" :
+         stepKey==="power" ? "Spin for Power" :
+         stepKey==="weapon" ? "Spin for Weapon" :
+         stepKey==="strength" ? "Spin for Strength" :
+         stepKey==="durability" ? "Spin for Durability" :
+         stepKey==="regen" ? "Spin for Regen" : "Spin";
+}
 
-function nextWheelStep(){
+function setWheelItems(stepKey){
+  currentWheelItems = WHEELS[stepKey].map(String);
+  drawWheel();
+}
 
-    if(wheelStep >= wheelOrder.length){
-        showNameScreen();
-        return;
+function drawWheel(){
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const r = Math.min(W,H)/2 - 8;
+
+  ctx.clearRect(0,0,W,H);
+
+  const n = currentWheelItems.length;
+  if(n === 0) return;
+
+  const slice = (Math.PI*2)/n;
+
+  // outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r+2, 0, Math.PI*2);
+  ctx.strokeStyle = "rgba(255,255,255,0.15)";
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  for(let i=0;i<n;i++){
+    const a0 = wheelAngle + i*slice;
+    const a1 = a0 + slice;
+
+    // alternating colors
+    const even = i%2===0;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,a0,a1);
+    ctx.closePath();
+    ctx.fillStyle = even ? "rgba(79,104,255,0.35)" : "rgba(54,211,153,0.25)";
+    ctx.fill();
+
+    // slice border
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // text
+    const label = currentWheelItems[i];
+    const mid = (a0+a1)/2;
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(mid);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = "bold 12px system-ui";
+    ctx.fillText(shorten(label, 18), r-10, 4);
+    ctx.restore();
+  }
+
+  // center
+  ctx.beginPath();
+  ctx.arc(cx,cy,36,0,Math.PI*2);
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.font = "900 12px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText("SPIN", cx, cy+4);
+}
+
+function startSpin(){
+  if(state.spinning) return;
+
+  const stepKey = getCurrentStepKey();
+  setWheelItems(stepKey);
+
+  state.spinning = true;
+  document.getElementById("spinBtn").disabled = true;
+
+  const n = currentWheelItems.length;
+  const slice = (Math.PI*2)/n;
+
+  // Choose result index (simple random now; we can make weighted later)
+  const resultIndex = Math.floor(Math.random()*n);
+
+  // pointer is at top (angle = -90deg). We want the chosen slice to end under pointer.
+  // pointer angle in canvas space: -Math.PI/2
+  const pointerAngle = -Math.PI/2;
+
+  // slice mid angle at final:
+  const sliceMid = (resultIndex + 0.5) * slice;
+
+  // We want wheelAngle + sliceMid = pointerAngle  (mod 2pi)
+  // => wheelAngle = pointerAngle - sliceMid + k*2pi
+  const baseStop = pointerAngle - sliceMid;
+
+  const spins = 6 + Math.floor(Math.random()*4); // 6-9 full spins for drama
+  targetStopAngle = baseStop + spins * Math.PI*2;
+
+  // start velocity
+  spinVel = 0.45 + Math.random()*0.2;
+
+  animateSpin(stepKey, resultIndex);
+}
+
+function animateSpin(stepKey, resultIndex){
+  const friction = 0.985;
+
+  function frame(){
+    // move
+    wheelAngle += spinVel;
+
+    // approach stop (smooth decel)
+    const remaining = targetStopAngle - wheelAngle;
+    if(remaining < 0.8){
+      // ease toward stop
+      wheelAngle += remaining * 0.12;
+      spinVel *= 0.92;
+    }else{
+      spinVel *= friction;
     }
 
-    let next = wheelOrder[wheelStep];
+    drawWheel();
 
-    document.getElementById("wheelTitle").innerText =
-        "Roll " + capitalize(next);
+    // stop condition
+    if(Math.abs(targetStopAngle - wheelAngle) < 0.01 && spinVel < 0.02){
+      wheelAngle = targetStopAngle;
+      drawWheel();
+      state.spinning = false;
+      document.getElementById("spinBtn").disabled = false;
 
-    document.getElementById("result").innerText = "";
-}
-
-function showNameScreen(){
-    document.getElementById("wheelBox").style.display = "none";
-    document.getElementById("nameScreen").style.display = "block";
-}
-
-function saveName(){
-
-    let name = document.getElementById("nameInput").value;
-
-    if(!name){
-        alert("Enter a name!");
-        return;
+      const value = currentWheelItems[resultIndex];
+      onSpinResult(stepKey, value);
+      return;
     }
 
-    stats.name = name;
+    requestAnimationFrame(frame);
+  }
 
-    updateStatsPanel();
-
-    document.getElementById("nameScreen").style.display = "none";
-    document.getElementById("modeScreen").style.display = "block";
+  requestAnimationFrame(frame);
 }
 
-/* -------------------------
-   MODES
--------------------------- */
+function onSpinResult(stepKey, value){
+  // Save into character
+  const c = state.character;
 
-function enterMode(mode){
+  if(stepKey==="race") c.race = value;
+  if(stepKey==="power") c.power = value;
+  if(stepKey==="weapon") c.weapon = value;
+  if(stepKey==="strength") c.strength = Number(value);
+  if(stepKey==="durability") c.durability = Number(value);
+  if(stepKey==="regen") c.regen = Number(value);
 
-    if(mode === "pvp"){
-        alert("Entering PvP Arena (build later)");
+  // Apply theme immediately after race
+  if(stepKey==="race") applyRaceTheme(value);
+
+  // Show result + meta
+  document.getElementById("spinResult").textContent = `Result: ${value}`;
+  const rp = rarityPercentFor(stepKey, stepKey==="strength"||stepKey==="durability"||stepKey==="regen" ? Number(value) : value);
+  document.getElementById("spinMeta").textContent = `Rarity (placeholder): ${rp}%`;
+
+  // Next step
+  state.buildStep++;
+  if(state.buildStep > 5) state.buildStep = 6;
+
+  // Fusion check anytime we have race+power
+  updateFusion();
+
+  // Update wheel title and UI
+  refreshUI();
+
+  // If build complete -> show naming
+  if(isBuildComplete()){
+    showNaming();
+  }
+
+  saveGame(); // autosave after each spin
+}
+
+/* =========================
+   BUILD FLOW + NAME
+========================= */
+
+function isBuildComplete(){
+  const c = state.character;
+  return c.race && c.power && c.weapon && c.strength!==null && c.durability!==null && c.regen!==null;
+}
+
+function showNaming(){
+  document.getElementById("nameBox").style.display = "";
+  updateNamePreview();
+}
+
+const BANNED = ["porn","sex","nazi","rape"]; // add more later
+
+function updateNamePreview(){
+  const first = document.getElementById("nameInput").value.trim();
+  const last = state.character.lockedLastName ? ` ${state.character.lockedLastName}` : "";
+  document.getElementById("namePreview").textContent = (first || "") + last;
+}
+
+function confirmName(){
+  const first = document.getElementById("nameInput").value.trim();
+  const err = document.getElementById("nameError");
+
+  if(!first){
+    err.textContent = "Name cannot be empty.";
+    return;
+  }
+  const low = first.toLowerCase();
+  for(const w of BANNED){
+    if(low.includes(w)){
+      err.textContent = "That name isn’t allowed.";
+      return;
+    }
+  }
+
+  const last = state.character.lockedLastName ? ` ${state.character.lockedLastName}` : "";
+  state.character.name = first + last;
+
+  err.textContent = "";
+  document.getElementById("nameBox").style.display = "none";
+  toast("Name saved!");
+  refreshUI();
+  saveGame();
+}
+
+function skipName(){
+  state.character.name = "Unnamed";
+  document.getElementById("nameBox").style.display = "none";
+  refreshUI();
+  saveGame();
+}
+
+function finishBuildEarly(){
+  // If you want to quickly test fights without completing everything
+  if(!state.character.race) state.character.race = "Human";
+  if(!state.character.power) state.character.power = "No power";
+  if(!state.character.weapon) state.character.weapon = "No weapon";
+  if(state.character.strength===null) state.character.strength = 20;
+  if(state.character.durability===null) state.character.durability = 30;
+  if(state.character.regen===null) state.character.regen = 2;
+
+  applyRaceTheme(state.character.race);
+  updateFusion();
+  refreshUI();
+  toast("Build filled for testing.");
+  saveGame();
+}
+
+/* =========================
+   FUSION + CODEX
+========================= */
+
+function updateFusion(){
+  const c = state.character;
+  const traits = [c.race, c.power].filter(Boolean);
+  const fusion = findFusion(traits);
+  c.fusion = fusion ? fusion.result : null;
+
+  document.getElementById("pill_fusion").textContent = `Fusion: ${c.fusion || "---"}`;
+  document.getElementById("fusionText").textContent = fusion
+    ? `${fusion.result} (Tier: ${fusion.tier}) unlocked by: ${fusion.conditions.join(" + ")}`
+    : "No fusion found for current traits (yet).";
+
+  if(fusion){
+    discoverFusion(fusion.result, fusion.tier);
+  }
+}
+
+function discoverFusion(name, tier){
+  const list = state.codex.fusions;
+  if(list.some(x => x.name === name)) return;
+  list.unshift({ name, tier, discoveredAt: new Date().toISOString() });
+  refreshCodex();
+  toast(`Discovered fusion: ${name}!`);
+}
+
+function refreshCodex(){
+  const box = document.getElementById("codexList");
+  box.innerHTML = "";
+  const list = state.codex.fusions;
+  if(list.length === 0){
+    box.innerHTML = `<div class="item"><div style="font-weight:900;">No fusions discovered yet</div><div class="small">Spin traits and trigger your first fusion.</div></div>`;
+    return;
+  }
+  for(const f of list){
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = `
+      <div style="font-weight:900;">${escapeHtml(f.name)} <span class="muted" style="font-weight:700;">(${escapeHtml(f.tier)})</span></div>
+      <div class="small">Discovered: ${new Date(f.discoveredAt).toLocaleString()}</div>
+    `;
+    box.appendChild(el);
+  }
+}
+
+/* =========================
+   PvE EVENTS + FIGHT
+========================= */
+
+const PVE_EVENTS = [
+  { name:"Golem Ambush", enemyRace:"Golem", enemyPower:"Golem creation", enemyWeapon:"Hammer", str:18, dur:55, regen:2, bg:"images/backgrounds/cave.png",
+    desc:"A heavy enemy rushes from the rocks." },
+  { name:"Vampire Raid", enemyRace:"Vampire", enemyPower:"Regeneration", enemyWeapon:"Knife", str:16, dur:35, regen:5, bg:"images/backgrounds/castle.png",
+    desc:"Fast strikes and healing between attacks." },
+  { name:"Forest Hunters", enemyRace:"Goblin", enemyPower:"Invisibility", enemyWeapon:"Bow", str:14, dur:25, regen:1, bg:"images/backgrounds/forest.png",
+    desc:"Quick ranged attacks from the shadows." },
+  { name:"Divine Test", enemyRace:"God", enemyPower:"Time manipulation", enemyWeapon:"Magic staff", str:22, dur:40, regen:3, bg:"images/backgrounds/celestial.png",
+    desc:"A dangerous opponent bends the flow of battle." }
+];
+
+function spinEvent(){
+  const ev = PVE_EVENTS[Math.floor(Math.random()*PVE_EVENTS.length)];
+  state.pve.currentEvent = ev;
+  document.getElementById("eventName").textContent = `Event: ${ev.name}`;
+  document.getElementById("eventDesc").textContent = ev.desc;
+  toast("Event selected!");
+  saveGame();
+}
+
+function fightPvE(){
+  if(!state.pve.currentEvent){
+    toast("Spin an event first.");
+    return;
+  }
+  if(!isBuildComplete()){
+    toast("Finish your build first (or use Finish Build).");
+    return;
+  }
+  runBattle({
+    mode:"pve",
+    player: buildFighterFromCharacter(state.character, true),
+    enemy: buildFighterFromEvent(state.pve.currentEvent),
+    arenaBg: pickArenaBg(state.character.race, state.pve.currentEvent.enemyRace, state.pve.currentEvent.bg)
+  });
+}
+
+/* =========================
+   PvP (SOFT SCALING, NO CAPS)
+========================= */
+
+function generateOpponent(){
+  // quick opponent generator using same wheels
+  const opp = {
+    name: "Opponent",
+    race: WHEELS.race[Math.floor(Math.random()*WHEELS.race.length)],
+    power: WHEELS.power[Math.floor(Math.random()*WHEELS.power.length)],
+    weapon: WHEELS.weapon[Math.floor(Math.random()*WHEELS.weapon.length)],
+    strength: Number(WHEELS.strength[Math.floor(Math.random()*WHEELS.strength.length)]),
+    durability: Number(WHEELS.durability[Math.floor(Math.random()*WHEELS.durability.length)]),
+    regen: Number(WHEELS.regen[Math.floor(Math.random()*WHEELS.regen.length)])
+  };
+
+  const fusion = findFusion([opp.race, opp.power]);
+  opp.fusion = fusion ? fusion.result : null;
+
+  state.pvp.opponent = opp;
+  document.getElementById("oppLine").textContent =
+    `${opp.race} | ${opp.power} | ${opp.weapon} | STR ${opp.strength} DUR ${opp.durability} REG ${opp.regen}` + (opp.fusion? ` | Fusion: ${opp.fusion}`:"");
+
+  saveGame();
+  toast("New opponent generated.");
+}
+
+function simulatePvP(){
+  if(!isBuildComplete()){
+    toast("Finish your build first (or use Finish Build).");
+    return;
+  }
+  if(!state.pvp.opponent){
+    generateOpponent();
+  }
+
+  const p = buildFighterFromCharacter(state.character, false);
+  const e = buildFighterFromOpponent(state.pvp.opponent);
+
+  const log = runBattleSimPvP(p, e);
+  document.getElementById("pvpLog").textContent = log;
+}
+
+/* Soft scaling power (no caps) */
+function pvpScale(totalPower){
+  // strong advantage still exists, but compressed
+  return Math.pow(totalPower, 0.78) * 7;
+}
+
+function totalPowerFromStats(f){
+  // Simple starter power score:
+  // regen weighted because it’s strong
+  return (f.strength*2) + (f.durability*1.6) + (f.regen*25) + (f.bonusPower||0);
+}
+
+function runBattleSimPvP(player, enemy){
+  // Convert to scaled PvP power
+  const pTotal = totalPowerFromStats(player);
+  const eTotal = totalPowerFromStats(enemy);
+
+  const pScaled = pvpScale(pTotal);
+  const eScaled = pvpScale(eTotal);
+
+  // HP based on durability
+  let pHP = 120 + player.durability*2.2;
+  let eHP = 120 + enemy.durability*2.2;
+  const pMax = pHP, eMax = eHP;
+
+  let turn = 0;
+  const maxTurns = 40;
+  let log = `PvP (soft scaling)\nPlayerScaled=${pScaled.toFixed(1)} EnemyScaled=${eScaled.toFixed(1)}\n\n`;
+
+  while(pHP>0 && eHP>0 && turn<maxTurns){
+    turn++;
+
+    // damage: scaled power / 12 with some randomness
+    const pDmg = Math.max( (pScaled/12) * rand(0.9,1.1), 1 );
+    const eDmg = Math.max( (eScaled/12) * rand(0.9,1.1), 1 );
+
+    eHP -= pDmg;
+    pHP -= eDmg;
+
+    // regen each turn (percent-ish)
+    pHP += Math.min(player.regen, pMax*0.10);
+    eHP += Math.min(enemy.regen, eMax*0.10);
+
+    pHP = Math.min(pHP, pMax);
+    eHP = Math.min(eHP, eMax);
+
+    // anti-infinite: enrage after 25 turns (damage ramps)
+    if(turn>25){
+      eHP -= pDmg*0.05*(turn-25);
+      pHP -= eDmg*0.05*(turn-25);
     }
 
-    if(mode === "pve"){
-        alert("Entering PvE World (build later)");
+    log += `T${turn}: P=${Math.max(0,pHP).toFixed(0)}  E=${Math.max(0,eHP).toFixed(0)}\n`;
+  }
+
+  let winner = "Draw";
+  if(pHP<=0 && eHP>0) winner = "Enemy Wins";
+  if(eHP<=0 && pHP>0) winner = "Player Wins";
+  if(turn>=maxTurns){
+    winner = pHP>eHP ? "Player Wins (time)" : "Enemy Wins (time)";
+  }
+
+  log += `\nResult: ${winner}\n`;
+  return log;
+}
+
+/* =========================
+   VISUAL BATTLE (PvE)
+========================= */
+
+function runBattle({mode, player, enemy, arenaBg}){
+  const logEl = document.getElementById("battleLog");
+  const bgEl = document.getElementById("battleBg");
+
+  bgEl.style.backgroundImage = arenaBg ? `url('${arenaBg}')` : "";
+
+  // Labels + portraits (simple text for now; we’ll swap to images later)
+  document.getElementById("p_label").textContent = `${state.character.name || "Player"} • ${player.race}`;
+  document.getElementById("e_label").textContent = `${enemy.name} • ${enemy.race}`;
+
+  // Show “portrait text”
+  document.getElementById("p_portrait").style.backgroundImage = "";
+  document.getElementById("e_portrait").style.backgroundImage = "";
+
+  // HP
+  let pHP = player.maxHP, eHP = enemy.maxHP;
+  const pMax = pHP, eMax = eHP;
+
+  setHP("p_hp", pHP, pMax);
+  setHP("e_hp", eHP, eMax);
+
+  logEl.textContent = `${mode.toUpperCase()} BATTLE\n${player.race} vs ${enemy.race}\n\n`;
+
+  // Turn loop (animated)
+  let turn = 0;
+  const maxTurns = 35;
+
+  function step(){
+    turn++;
+    if(turn>maxTurns || pHP<=0 || eHP<=0){
+      const winner =
+        pHP<=0 && eHP<=0 ? "Draw" :
+        pHP<=0 ? "Enemy Wins" :
+        eHP<=0 ? "Player Wins" :
+        (pHP>eHP ? "Player Wins (time)" : "Enemy Wins (time)");
+      logEl.textContent += `\nResult: ${winner}\n`;
+      toast(winner);
+      return;
     }
 
-    if(mode === "fusion"){
-        alert("Entering Fusion Lab (build later)");
+    // damage formula uses STR vs DUR, plus minimum damage
+    let pDmg = Math.max(player.strength - enemy.durability*0.10, 1);
+    let eDmg = Math.max(enemy.strength - player.durability*0.10, 1);
+
+    // minimum damage = 1% enemy maxHP (prevents stalemates)
+    pDmg = Math.max(pDmg, eMax*0.01);
+    eDmg = Math.max(eDmg, pMax*0.01);
+
+    eHP -= pDmg;
+    pHP -= eDmg;
+
+    // regen capped at 10% maxHP
+    pHP += Math.min(player.regen, pMax*0.10);
+    eHP += Math.min(enemy.regen, eMax*0.10);
+    pHP = Math.min(pHP, pMax);
+    eHP = Math.min(eHP, eMax);
+
+    // visuals
+    popFloat("e_float", `-${pDmg.toFixed(0)}`, true);
+    popFloat("p_float", `-${eDmg.toFixed(0)}`, false);
+    shake("e_portrait");
+    shake("p_portrait");
+
+    setHP("p_hp", pHP, pMax);
+    setHP("e_hp", eHP, eMax);
+
+    logEl.textContent += `T${turn}: P=${Math.max(0,pHP).toFixed(0)}  E=${Math.max(0,eHP).toFixed(0)}\n`;
+
+    // Enrage after 20 turns
+    if(turn>20){
+      eHP -= pDmg*0.05*(turn-20);
+      pHP -= eDmg*0.05*(turn-20);
     }
+
+    setTimeout(step, 450);
+  }
+
+  step();
 }
 
-/* -------------------------
-   UI UPDATE
--------------------------- */
-
-function updateStatsPanel(){
-
-    document.getElementById("statName").innerText =
-        stats.name || "---";
-
-    document.getElementById("statStrength").innerText =
-        stats.strength ?? "---";
-
-    document.getElementById("statDurability").innerText =
-        stats.durability ?? "---";
-
-    document.getElementById("statLuck").innerText =
-        stats.luck ?? "---";
-
-    document.getElementById("statTrait").innerText =
-        stats.trait ?? "---";
+function setHP(id, hp, max){
+  const pct = Math.max(0, Math.min(100, (hp/max)*100));
+  document.getElementById(id).style.width = pct + "%";
 }
 
-/* -------------------------
-   HELPERS
--------------------------- */
-
-function randomRange(min,max){
-    return Math.floor(Math.random()*(max-min+1))+min;
+function popFloat(id, text, isEnemy){
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.style.left = isEnemy ? "60%" : "40%";
+  el.style.color = isEnemy ? "rgba(255,75,110,1)" : "rgba(255,75,110,1)";
+  el.style.opacity = "1";
+  el.style.transform = "translateY(-24px)";
+  setTimeout(()=>{
+    el.style.opacity = "0";
+    el.style.transform = "translateY(-46px)";
+  }, 50);
+  setTimeout(()=>{
+    el.style.opacity = "0";
+    el.style.transform = "translateY(0px)";
+  }, 650);
 }
 
-function capitalize(str){
-    return str.charAt(0).toUpperCase()+str.slice(1);
+function shake(portraitId){
+  const el = document.getElementById(portraitId);
+  el.classList.remove("shake");
+  void el.offsetWidth;
+  el.classList.add("shake");
 }
 
-/* INIT */
-updateStatsPanel();
+/* =========================
+   FIGHTER BUILDERS
+========================= */
 
+function buildFighterFromCharacter(c, isPvE){
+  const fusion = findFusion([c.race, c.power]);
+  const bonusPower =
+    fusion?.tier === "Rare" ? 80 :
+    fusion?.tier === "Legendary" ? 150 :
+    fusion?.tier === "Divine" ? 260 : 0;
+
+  // PvE uses raw stats
+  return {
+    name: c.name || "Player",
+    race: c.race,
+    power: c.power,
+    weapon: c.weapon,
+    strength: c.strength,
+    durability: c.durability,
+    regen: c.regen,
+    bonusPower,
+    maxHP: 140 + c.durability*2.4
+  };
+}
+
+function buildFighterFromEvent(ev){
+  const fusion = findFusion([ev.enemyRace, ev.enemyPower]);
+  const bonusPower =
+    fusion?.tier === "Rare" ? 80 :
+    fusion?.tier === "Legendary" ? 150 :
+    fusion?.tier === "Divine" ? 260 : 0;
+
+  return {
+    name: "Enemy",
+    race: ev.enemyRace,
+    power: ev.enemyPower,
+    weapon: ev.enemyWeapon,
+    strength: ev.str,
+    durability: ev.dur,
+    regen: ev.regen,
+    bonusPower,
+    maxHP: 140 + ev.dur*2.4
+  };
+}
+
+function buildFighterFromOpponent(o){
+  const fusion = findFusion([o.race, o.power]);
+  const bonusPower =
+    fusion?.tier === "Rare" ? 80 :
+    fusion?.tier === "Legendary" ? 150 :
+    fusion?.tier === "Divine" ? 260 : 0;
+
+  return {
+    name: o.name || "Opponent",
+    race: o.race,
+    power: o.power,
+    weapon: o.weapon,
+    strength: o.strength,
+    durability: o.durability,
+    regen: o.regen,
+    bonusPower
+  };
+}
+
+function pickArenaBg(playerRace, enemyRace, eventBg){
+  // Dominant background: player race or event background if provided
+  if(eventBg) return eventBg;
+  return RACE_THEME_BG[playerRace] || RACE_THEME_BG[enemyRace] || "";
+}
+
+/* =========================
+   UI REFRESH
+========================= */
+
+function refreshUI(){
+  // wheel title
+  const stepKey = getCurrentStepKey();
+  document.getElementById("wheelTitle").textContent = wheelTitleFor(stepKey);
+
+  // stats panel
+  const c = state.character;
+  document.getElementById("s_name").textContent = c.name || "---";
+  document.getElementById("s_race").textContent = c.race || "---";
+  document.getElementById("s_power").textContent = c.power || "---";
+  document.getElementById("s_weapon").textContent = c.weapon || "---";
+  document.getElementById("s_str").textContent = (c.strength ?? "---");
+  document.getElementById("s_dur").textContent = (c.durability ?? "---");
+  document.getElementById("s_regen").textContent = (c.regen ?? "---");
+
+  // fusion
+  document.getElementById("pill_fusion").textContent = `Fusion: ${c.fusion || "---"}`;
+
+  // codex
+  refreshCodex();
+
+  // pvp opponent line
+  if(state.pvp.opponent){
+    const o = state.pvp.opponent;
+    document.getElementById("oppLine").textContent =
+      `${o.race} | ${o.power} | ${o.weapon} | STR ${o.strength} DUR ${o.durability} REG ${o.regen}` + (o.fusion? ` | Fusion: ${o.fusion}`:"");
+  }else{
+    document.getElementById("oppLine").textContent = "---";
+  }
+
+  // battle arena default bg to player race
+  const battleBg = document.getElementById("battleBg");
+  const bg = RACE_THEME_BG[c.race] || "";
+  battleBg.style.backgroundImage = bg ? `url('${bg}')` : "";
+
+  // show name box only if build complete and name missing
+  if(isBuildComplete() && !c.name){
+    document.getElementById("nameBox").style.display = "";
+  }
+
+  // redraw wheel
+  setWheelItems(stepKey);
+}
+
+function toast(msg){
+  // minimal toast using console + quick flash
+  console.log(msg);
+  document.getElementById("spinMeta").textContent = msg;
+  setTimeout(()=>{
+    // restore meta if we can
+    const stepKey = getCurrentStepKey();
+    const last = document.getElementById("spinResult").textContent.replace("Result: ","");
+    if(last && last !== "---"){
+      const rp = rarityPercentFor(stepKey, (stepKey==="strength"||stepKey==="durability"||stepKey==="regen") ? Number(last) : last);
+      document.getElementById("spinMeta").textContent = `Rarity (placeholder): ${rp}%`;
+    }
+  }, 900);
+}
+
+/* =========================
+   UTIL
+========================= */
+
+function shorten(s, n){
+  s = String(s);
+  return s.length>n ? s.slice(0,n-1)+"…" : s;
+}
+function rand(a,b){ return a + Math.random()*(b-a); }
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/* =========================
+   INIT
+========================= */
+
+(function init(){
+  loadGame(); // auto-load if exists
+  if(!state.pvp.opponent) generateOpponent();
+  applyRaceTheme(state.character.race || "Human");
+  updateFusion();
+  refreshUI();
+})();
 </script>
-
 </body>
 </html>
