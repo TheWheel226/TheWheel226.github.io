@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#062019"/>
+      <stop offset="1" stop-color="#020a07"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="35%" cy="25%" r="45%">
+      <stop offset="0" stop-color="#36d399" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#36d399" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <rect width="1600" height="900" fill="url(#sun)"/>
+
+  <!-- trees -->
+  <g fill="#071a12">
+    <rect x="120" y="260" width="70" height="520"/>
+    <rect x="300" y="220" width="80" height="560"/>
+    <rect x="540" y="240" width="75" height="540"/>
+    <rect x="760" y="210" width="95" height="570"/>
+    <rect x="1040" y="250" width="85" height="530"/>
+    <rect x="1280" y="230" width="90" height="550"/>
+  </g>
+
+  <!-- canopy -->
+  <g fill="#0a2b1e" opacity="0.95">
+    <circle cx="160" cy="260" r="160"/>
+    <circle cx="340" cy="230" r="170"/>
+    <circle cx="580" cy="250" r="160"/>
+    <circle cx="810" cy="220" r="190"/>
+    <circle cx="1080" cy="260" r="170"/>
+    <circle cx="1325" cy="240" r="180"/>
+  </g>
+
+  <!-- ground -->
+  <path d="M0,720 C260,650 520,760 820,700 C1120,640 1340,760 1600,700 L1600,900 L0,900 Z" fill="#04110c"/>
+</svg>
