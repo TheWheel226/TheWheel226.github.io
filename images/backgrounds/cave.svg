@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1422"/>
+      <stop offset="1" stop-color="#04070c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="65%" r="60%">
+      <stop offset="0" stop-color="#36d399" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#36d399" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#glow)"/>
+
+  <!-- rock layers -->
+  <g fill="#0f1b2e">
+    <path d="M0,720 C240,650 400,760 640,700 C900,630 1100,760 1600,700 L1600,900 L0,900 Z"/>
+    <path d="M0,600 C260,520 420,650 680,590 C980,520 1200,670 1600,610 L1600,900 L0,900 Z" opacity="0.85"/>
+    <path d="M0,470 C300,390 520,540 820,470 C1100,400 1280,520 1600,470 L1600,900 L0,900 Z" opacity="0.65"/>
+  </g>
+
+  <!-- stalactites -->
+  <g fill="#0b1220" opacity="0.9">
+    <path d="M120,0 L180,0 L150,140 Z"/>
+    <path d="M420,0 L520,0 L470,210 Z"/>
+    <path d="M820,0 L900,0 L860,170 Z"/>
+    <path d="M1180,0 L1260,0 L1220,190 Z"/>
+    <path d="M1450,0 L1550,0 L1500,160 Z"/>
+  </g>
+</svg>
