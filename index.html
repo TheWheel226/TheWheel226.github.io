@@ -9,13 +9,11 @@
   :root{
     --bg:#0a0f1c;
     --panel:rgba(17,26,51,0.82);
-    --panel2:rgba(24,34,74,0.92);
     --border:rgba(79,104,255,0.22);
     --text:#e8eeff;
     --muted:#9fb0ff;
     --accent:#4b7cff;
     --accent2:#6a94ff;
-    --good:#36d399;
     --bad:#ff4b6e;
   }
   *{box-sizing:border-box}
@@ -30,7 +28,7 @@
     position:fixed; inset:0;
     background-size:cover;
     background-position:center;
-    opacity:0.24;
+    opacity:0.30;
     filter:saturate(1.1) contrast(1.05);
     transition: background-image .6s ease, opacity .6s ease;
     pointer-events:none;
@@ -96,6 +94,11 @@
   .row{display:flex; gap:14px; flex-wrap:wrap;}
   .big{font-size:20px; font-weight:1000}
   .muted{color:var(--muted)}
+  .mono{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    white-space:pre-wrap;
+    color:rgba(255,255,255,0.92);
+  }
 
   #wheelBox{width:360px; display:flex; flex-direction:column; align-items:center; gap:10px;}
   #wheelTitle{font-size:18px; font-weight:1000}
@@ -123,11 +126,6 @@
     background: rgba(0,0,0,0.25);
     color: var(--text);
     outline:none;
-  }
-  .mono{
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    white-space:pre-wrap;
-    color:rgba(255,255,255,0.92);
   }
 
   /* battle visuals */
@@ -262,7 +260,6 @@
 
       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <button class="btn secondary" onclick="finishBuildEarly()">Finish Build</button>
-
         <button class="btn secondary" id="btnMute" onclick="toggleMute()">🔊</button>
         <div class="muted" style="font-size:12px;">Volume</div>
         <input id="volSlider" type="range" min="0" max="100" value="60"
@@ -276,7 +273,7 @@
         <div class="row" style="align-items:flex-start;">
           <div id="wheelBox">
             <div id="wheelTitle">Spin for Race</div>
-            <div id="wheelHint">Smoother spin + tick-per-slice + softer whoosh sound.</div>
+            <div id="wheelHint">Smooth slowdown + no late speed-up + softer whoosh.</div>
             <div id="pointer"></div>
             <canvas id="wheelCanvas" width="320" height="320"></canvas>
             <button class="btn" id="spinBtn" onclick="startSpin()">SPIN</button>
@@ -329,17 +326,14 @@
             <div class="muted">Name</div>
             <div class="big" id="s_name">---</div>
           </div>
-
           <div class="panel" style="flex:1; min-width:260px;">
             <div class="muted">Race</div>
             <div class="big" id="s_race">---</div>
           </div>
-
           <div class="panel" style="flex:1; min-width:260px;">
             <div class="muted">Power</div>
             <div class="big" id="s_power">---</div>
           </div>
-
           <div class="panel" style="flex:1; min-width:260px;">
             <div class="muted">Weapon</div>
             <div class="big" id="s_weapon">---</div>
@@ -351,17 +345,14 @@
             <div class="muted">Strength</div>
             <div class="big" id="s_str">---</div>
           </div>
-
           <div class="panel" style="flex:1; min-width:260px;">
             <div class="muted">Durability</div>
             <div class="big" id="s_dur">---</div>
           </div>
-
           <div class="panel" style="flex:1; min-width:260px;">
             <div class="muted">Regen</div>
             <div class="big" id="s_regen">---</div>
           </div>
-
           <div class="panel" style="flex:1; min-width:260px;">
             <div class="muted">Fusion</div>
             <div class="big" id="s_fusion">---</div>
@@ -465,18 +456,15 @@
 /* =========================
    SETTINGS
 ========================= */
-
-const DEV_MODE = true;
-
-const STORE_KEY = "wheel_rpg_save_full_v2";
-const SOUND_STORE_KEY = "wheel_rpg_sound_v3";
+const DEV_MODE = true; // testing = unlimited builds
+const STORE_KEY = "wheel_rpg_save_full_v3";
+const SOUND_STORE_KEY = "wheel_rpg_sound_v4";
 const DAILY_BUILD_KEY = "wheel_rpg_last_build_day_v1";
 const TIMEZONE = "America/Chicago";
 
 /* =========================
    DATA (WHEELS)
 ========================= */
-
 const WHEELS = {
   race: [
     "Human","Orc","Cyborg","Giant","Demi human","Golem","Dragon","Vampire","Hivemind","Shinigami",
@@ -509,45 +497,59 @@ function rarityPercentFor(category, value){
 }
 
 /* =========================
-   THEMES (Background hooks)
+   THEMES (Background hooks) - GitHub Pages safe
 ========================= */
-
 const RACE_THEME = {
-  Vampire: { img: "images/backgrounds/castle.svg",     grad: "linear-gradient(135deg, rgba(120,0,30,.55), rgba(0,0,0,.75))" },
-  Golem:   { img: "images/backgrounds/cave.svg",       grad: "linear-gradient(135deg, rgba(90,70,40,.55), rgba(0,0,0,.75))" },
-  Goblin:  { img: "images/backgrounds/forest.svg",     grad: "linear-gradient(135deg, rgba(0,110,60,.50), rgba(0,0,0,.75))" },
-  Human:   { img: "images/backgrounds/city.svg",       grad: "linear-gradient(135deg, rgba(30,70,140,.50), rgba(0,0,0,.75))" },
-  God:     { img: "images/backgrounds/celestial.svg",  grad: "linear-gradient(135deg, rgba(140,120,255,.45), rgba(0,0,0,.75))" },
-  Default: { img: "images/backgrounds/default_arena.svg", grad: "linear-gradient(135deg, rgba(79,104,255,.30), rgba(0,0,0,.78))" }
+  Vampire: { img: "images/backgrounds/castle.svg",     grad: "linear-gradient(135deg, rgba(120,0,30,.55), rgba(0,0,0,.78))" },
+  Golem:   { img: "images/backgrounds/cave.svg",       grad: "linear-gradient(135deg, rgba(90,70,40,.55), rgba(0,0,0,.78))" },
+  Goblin:  { img: "images/backgrounds/forest.svg",     grad: "linear-gradient(135deg, rgba(0,110,60,.55), rgba(0,0,0,.78))" },
+  Human:   { img: "images/backgrounds/city.svg",       grad: "linear-gradient(135deg, rgba(30,70,140,.55), rgba(0,0,0,.78))" },
+  God:     { img: "images/backgrounds/celestial.svg",  grad: "linear-gradient(135deg, rgba(140,120,255,.50), rgba(0,0,0,.78))" },
+  Default: { img: "images/backgrounds/default_arena.svg", grad: "linear-gradient(135deg, rgba(79,104,255,.35), rgba(0,0,0,.80))" }
 };
+
+function absAsset(relPath){
+  return new URL(relPath, window.location.href).toString();
+}
 
 function applyRaceTheme(race){
   const bgLayer = document.getElementById("bgLayer");
+  if(!bgLayer) return;
+
   const theme = RACE_THEME[race] || RACE_THEME.Default;
 
-  // cache-buster so GitHub Pages updates immediately if you change images
-  const bust = `?v=${encodeURIComponent(race)}_${Date.now()}`;
-
-  // Always show a visible change (gradient), then image on top if it loads
-  bgLayer.style.backgroundImage = `${theme.grad}, url('${theme.img}${bust}')`;
-  bgLayer.style.opacity = 0.30; // a bit stronger so it’s obvious
+  // immediate visible change even if image missing
+  bgLayer.style.backgroundImage = theme.grad;
+  bgLayer.style.opacity = 0.38;
   bgLayer.style.backgroundSize = "cover";
   bgLayer.style.backgroundPosition = "center";
+
+  // preload image then apply
+  const imgUrl = absAsset(theme.img) + `?v=${Date.now()}`;
+  const pre = new Image();
+  pre.onload = () => {
+    bgLayer.style.backgroundImage = `${theme.grad}, url("${imgUrl}")`;
+    bgLayer.style.opacity = 0.38;
+  };
+  pre.onerror = () => {
+    bgLayer.style.backgroundImage = theme.grad;
+    bgLayer.style.opacity = 0.38;
+  };
+  pre.src = imgUrl;
 }
 
 /* =========================
-   FUSIONS (Starter examples)
+   FUSIONS
 ========================= */
-
 const FUSIONS = [
   { conditions:["Vampire","Regeneration"], result:"Blood Overlord", tier:"Rare" },
   { conditions:["Golem","Fire manipulation"], result:"Magma Titan", tier:"Rare" },
   { conditions:["Human","Tailed beast"], result:"Perfect Jinchuriki", tier:"Legendary" },
   { conditions:["God","Time manipulation"], result:"Time Deity", tier:"Legendary" },
   { conditions:["Soul eater","Necromancy"], result:"Death Monarch", tier:"Rare" },
-  { conditions:["Toon force","God"], result:"Cartoon Creator", tier:"Divine" }
+  { conditions:["God","Toon force"], result:"Cartoon Creator", tier:"Divine" } // works: race + power
 ];
-  
+
 function findFusion(traits){
   for(const f of FUSIONS){
     if(f.conditions.every(c => traits.includes(c))) return f;
@@ -558,7 +560,6 @@ function findFusion(traits){
 /* =========================
    STATE + SAVE
 ========================= */
-
 let state = {
   tab: "build",
   buildStep: 0,
@@ -604,13 +605,13 @@ function resetGame(){
   state.buildStep = 0;
   state.spinning = false;
   state.buildLocked = false;
-
   state.character = { name:"", lockedLastName:"", race:null, power:null, weapon:null, strength:null, durability:null, regen:null, fusion:null };
   state.codex = { fusions:[] };
   state.pve = { currentEvent:null };
   state.pvp = { opponent:null };
 
   setTab("build");
+  applyRaceTheme("Default");
   refreshUI();
   refreshCodex();
   toast("Reset complete.");
@@ -619,7 +620,6 @@ function resetGame(){
 /* =========================
    DAILY BUILD LOCK HELPERS
 ========================= */
-
 function getTodayKeyTZ(){
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: TIMEZONE,
@@ -642,9 +642,8 @@ function formatCountdown(ms){
 }
 
 /* =========================
-   PROCEDURAL SOUND ENGINE (Softer whoosh)
+   PROCEDURAL SOUND ENGINE (soft whoosh)
 ========================= */
-
 let soundState = { volume: 0.6, muted: false };
 let lastTickSliceIndex = null;
 
@@ -687,7 +686,6 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 let masterGain = null;
 
-// spin layers
 let spinWhirr = null;
 let spinNoise = null;
 let spinNoiseGain = null;
@@ -703,7 +701,6 @@ function setMasterVolume(v){
   if(!masterGain) return;
   masterGain.gain.value = soundState.muted ? 0 : v;
 }
-
 document.addEventListener("touchstart", ()=>{ ensureAudio(); audioCtx.resume(); }, { once:true });
 document.addEventListener("click", ()=>{ ensureAudio(); audioCtx.resume(); }, { once:true });
 
@@ -745,7 +742,6 @@ function playTick(){
   noise(0.02, 0.10, 3600);
   tone(1180, 0.02, "square", 0.05);
 }
-
 function playSpinLoop(){
   ensureAudio();
   stopSpinLoop();
@@ -763,7 +759,7 @@ function playSpinLoop(){
   whirrFilter.Q.setValueAtTime(0.6, t0);
 
   whirrGain.gain.setValueAtTime(0.001, t0);
-  whirrGain.gain.exponentialRampToValueAtTime(0.035, t0 + 0.10);
+  whirrGain.gain.exponentialRampToValueAtTime(0.032, t0 + 0.12);
 
   const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 1.0, audioCtx.sampleRate);
   const d = buffer.getChannelData(0);
@@ -780,7 +776,7 @@ function playSpinLoop(){
 
   spinNoiseGain = audioCtx.createGain();
   spinNoiseGain.gain.setValueAtTime(0.001, t0);
-  spinNoiseGain.gain.exponentialRampToValueAtTime(0.030, t0 + 0.12);
+  spinNoiseGain.gain.exponentialRampToValueAtTime(0.028, t0 + 0.14);
 
   spinWhirr.connect(whirrFilter);
   whirrFilter.connect(whirrGain);
@@ -793,7 +789,6 @@ function playSpinLoop(){
   spinWhirr.start(t0);
   spinNoise.start(t0);
 }
-
 function stopSpinLoop(){
   if(!audioCtx) return;
   const t0 = audioCtx.currentTime;
@@ -807,7 +802,6 @@ function stopSpinLoop(){
   if(spinNoise){ try{ spinNoise.stop(t0 + 0.11); }catch{} spinNoise = null; }
   spinNoiseGain = null;
 }
-
 function setSpinPitchFromVelocity(v){
   if(!audioCtx || !spinWhirr) return;
   const t0 = audioCtx.currentTime;
@@ -820,7 +814,6 @@ function setSpinPitchFromVelocity(v){
     spinNoiseGain.gain.setTargetAtTime(Math.max(0.001, ng), t0, 0.06);
   }
 }
-
 function playRarityStinger(percent){
   if(percent <= 2){
     tone(784, 0.18, "triangle", 0.20);
@@ -853,7 +846,6 @@ function playLose(){
 /* =========================
    TABS
 ========================= */
-
 function setTab(tab){
   state.tab = tab;
 
@@ -873,12 +865,10 @@ function setTab(tab){
 /* =========================
    WHEEL (Canvas)
 ========================= */
-
 const canvas = document.getElementById("wheelCanvas");
 const ctx = canvas.getContext("2d");
 
 let wheelAngle = 0;
-let spinVel = 0;
 let targetStopAngle = 0;
 let currentWheelItems = [];
 
@@ -955,8 +945,12 @@ function drawWheel(){
   ctx.fillText("SPIN", cx, cy+4);
 }
 
+/* ---------- Easing spin (fixes the late speed-up) ---------- */
+function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
 function startSpin(){
   if(state.buildLocked){ toast("Character is locked. Reset to build again."); return; }
+
   if(!DEV_MODE){
     const today = getTodayKeyTZ();
     const lastBuild = localStorage.getItem(DAILY_BUILD_KEY);
@@ -965,6 +959,7 @@ function startSpin(){
       return;
     }
   }
+
   if(state.spinning) return;
 
   const stepKey = getCurrentStepKey();
@@ -987,18 +982,21 @@ function startSpin(){
   const spins = 5 + Math.floor(Math.random()*3);
   targetStopAngle = baseStop + spins * Math.PI*2;
 
-  /* FIX: slower, less chaotic start speed */
-  spinVel = 0.22 + Math.random()*0.08;
-
   animateSpin(stepKey, resultIndex);
 }
 
 function animateSpin(stepKey, resultIndex){
-  /* FIX: smoother decel */
-  const friction = 0.992;
+  const start = wheelAngle;
+  const end = targetStopAngle;
 
-  function frame(){
-    wheelAngle += spinVel;
+  const duration = 4200 + Math.random()*900; // smooth + not too fast
+  const t0 = performance.now();
+
+  function frame(now){
+    const t = Math.min(1, (now - t0) / duration);
+    const e = easeOutCubic(t);
+
+    wheelAngle = start + (end - start) * e;
 
     const n = currentWheelItems.length;
     if(n > 0){
@@ -1013,34 +1011,23 @@ function animateSpin(stepKey, resultIndex){
       }
     }
 
-    setSpinPitchFromVelocity(spinVel);
-
-    const remaining = targetStopAngle - wheelAngle;
-
-    /* FIX: smoother approach and braking */
-    if(remaining < 1.2){
-      wheelAngle += remaining * 0.08;
-      spinVel *= 0.955;
-    }else{
-      spinVel *= friction;
-    }
+    const v = (1 - e) * 0.35; // fake velocity for pitch
+    setSpinPitchFromVelocity(v);
 
     drawWheel();
 
-    if(Math.abs(targetStopAngle - wheelAngle) < 0.01 && spinVel < 0.02){
-      wheelAngle = targetStopAngle;
+    if(t >= 1){
+      wheelAngle = end;
       drawWheel();
 
       state.spinning = false;
       document.getElementById("spinBtn").disabled = false;
-
       stopSpinLoop();
 
       const value = currentWheelItems[resultIndex];
       onSpinResult(stepKey, value);
       return;
     }
-
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -1079,7 +1066,6 @@ function onSpinResult(stepKey, value){
 /* =========================
    BUILD FLOW + NAME
 ========================= */
-
 function isBuildComplete(){
   const c = state.character;
   return c.race && c.power && c.weapon && c.strength!==null && c.durability!==null && c.regen!==null;
@@ -1096,9 +1082,7 @@ function showNaming(){
   updateNamePreview();
   saveGame();
 }
-
 const BANNED = ["porn","sex","nazi","rape"];
-
 function updateNamePreview(){
   const first = document.getElementById("nameInput").value.trim();
   const last = state.character.lockedLastName ? ` ${state.character.lockedLastName}` : "";
@@ -1153,7 +1137,6 @@ function finishBuildEarly(){
 /* =========================
    FUSION + CODEX
 ========================= */
-
 function updateFusion(){
   const c = state.character;
   const traits = [c.race, c.power].filter(Boolean);
@@ -1199,7 +1182,6 @@ function refreshCodex(){
 /* =========================
    PvE EVENTS + VISUAL FIGHT
 ========================= */
-
 const PVE_EVENTS = [
   { name:"Golem Ambush", enemyRace:"Golem", enemyPower:"Golem creation", enemyWeapon:"Hammer", str:18, dur:55, regen:2, bg:"images/backgrounds/cave.svg",
     desc:"A heavy enemy rushes from the rocks." },
@@ -1226,7 +1208,7 @@ function fightPvE(){
     mode:"pve",
     player: buildFighterFromCharacter(state.character),
     enemy: buildFighterFromEvent(state.pve.currentEvent),
-    arenaBg: state.pve.currentEvent.bg || (RACE_THEME_BG[state.character.race] || RACE_THEME_BG.Default)
+    arenaBg: state.pve.currentEvent.bg || (RACE_THEME[state.character.race]?.img || RACE_THEME.Default.img)
   });
 }
 
@@ -1234,7 +1216,7 @@ function runBattle({mode, player, enemy, arenaBg}){
   const logEl = document.getElementById("battleLog");
   const bgEl = document.getElementById("battleBg");
 
-  bgEl.style.backgroundImage = arenaBg ? `url('${arenaBg}')` : "";
+  bgEl.style.backgroundImage = arenaBg ? `url("${absAsset(arenaBg)}?v=${Date.now()}")` : "";
 
   document.getElementById("p_label").textContent = `${state.character.name || "Player"} • ${player.race}`;
   document.getElementById("e_label").textContent = `Enemy • ${enemy.race}`;
@@ -1263,10 +1245,8 @@ function runBattle({mode, player, enemy, arenaBg}){
         (pHP>eHP ? "Player Wins (time)" : "Enemy Wins (time)");
 
       logEl.textContent += `\nResult: ${winner}\n`;
-
       if(winner.includes("Player Wins")) playWin();
       else if(winner.includes("Enemy Wins")) playLose();
-
       toast(winner);
       return;
     }
@@ -1274,6 +1254,7 @@ function runBattle({mode, player, enemy, arenaBg}){
     let pDmg = Math.max(player.strength - enemy.durability*0.10, 1);
     let eDmg = Math.max(enemy.strength - player.durability*0.10, 1);
 
+    // prevents infinite fights
     pDmg = Math.max(pDmg, eMax*0.01);
     eDmg = Math.max(eDmg, pMax*0.01);
 
@@ -1336,7 +1317,6 @@ function shake(portraitId){
 /* =========================
    PvP (SOFT SCALING)
 ========================= */
-
 function generateOpponent(){
   const opp = {
     name: "Opponent",
@@ -1428,7 +1408,6 @@ function runBattleSimPvP(player, enemy){
 /* =========================
    FIGHTER BUILDERS
 ========================= */
-
 function buildFighterFromCharacter(c){
   const fusion = findFusion([c.race, c.power]);
   const bonusPower =
@@ -1489,7 +1468,6 @@ function buildFighterFromOpponent(o){
 /* =========================
    UI REFRESH + TOAST
 ========================= */
-
 function refreshUI(){
   const stepKey = getCurrentStepKey();
   document.getElementById("wheelTitle").textContent = wheelTitleFor(stepKey);
@@ -1506,7 +1484,6 @@ function refreshUI(){
   document.getElementById("s_fusion").textContent = c.fusion || "---";
 
   document.getElementById("spinBtn").disabled = !!state.buildLocked;
-
   setWheelItems(stepKey);
 }
 
@@ -1519,7 +1496,6 @@ function toast(msg){
 /* =========================
    UTIL
 ========================= */
-
 function shorten(s, n){
   s = String(s);
   return s.length>n ? s.slice(0,n-1)+"…" : s;
@@ -1537,14 +1513,11 @@ function escapeHtml(s){
 /* =========================
    INIT
 ========================= */
-
 (function init(){
   loadSoundSettings();
   loadGame();
-
   if(!state.pvp.opponent) generateOpponent();
-
-  applyRaceTheme(state.character.race || "Human");
+  applyRaceTheme(state.character.race || "Default");
   updateFusion();
   refreshCodex();
   refreshUI();
