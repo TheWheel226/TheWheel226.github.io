@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Wheel RPG</title>
+
 <style>
   :root{
     --bg:#0a0f1c;
@@ -41,37 +42,8 @@
   }
 
   #app{position:relative; min-height:100vh; display:flex;}
-  #left{
-    width:280px;
-    padding:16px;
-    background:rgba(17,26,51,0.92);
-    border-right:2px solid var(--border);
-    backdrop-filter: blur(6px);
-  }
-  .title{margin:0; font-weight:900; letter-spacing:.4px}
-  .sub{margin:8px 0 14px; color:var(--muted); font-size:13px; line-height:1.3}
-
-  .stat{
-    background:var(--panel2);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:10px;
-    margin:10px 0;
-  }
-  .k{color:var(--muted); font-size:12px;}
-  .v{font-weight:900; font-size:16px; margin-top:3px; word-break:break-word}
-
-  .pillRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-  .pill{
-    border:1px solid rgba(255,255,255,0.14);
-    background:rgba(0,0,0,0.18);
-    border-radius:999px;
-    padding:6px 8px;
-    font-size:12px;
-    font-weight:800;
-  }
-
   #main{flex:1; padding:16px; display:flex; flex-direction:column; gap:14px;}
+
   .panel{
     background:var(--panel);
     border:1px solid var(--border);
@@ -122,7 +94,8 @@
   .btn.danger:hover{background:var(--bad)}
 
   .row{display:flex; gap:14px; flex-wrap:wrap;}
-  .col{display:flex; flex-direction:column; gap:14px;}
+  .big{font-size:20px; font-weight:1000}
+  .muted{color:var(--muted)}
 
   #wheelBox{width:360px; display:flex; flex-direction:column; align-items:center; gap:10px;}
   #wheelTitle{font-size:18px; font-weight:1000}
@@ -142,14 +115,6 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.42);
   }
 
-  .big{font-size:20px; font-weight:1000}
-  .muted{color:var(--muted)}
-  .mono{
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    white-space:pre-wrap;
-    color:rgba(255,255,255,0.92);
-  }
-
   input{
     width:min(420px, 100%);
     padding:10px 12px;
@@ -158,6 +123,11 @@
     background: rgba(0,0,0,0.25);
     color: var(--text);
     outline:none;
+  }
+  .mono{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    white-space:pre-wrap;
+    color:rgba(255,255,255,0.92);
   }
 
   /* battle visuals */
@@ -268,9 +238,8 @@
   }
   .item .small{font-size:12px; color:var(--muted); margin-top:4px}
 
-  /* small responsive */
   @media (max-width: 860px){
-    #left{display:none}
+    #main{padding:12px}
     #wheelBox{width:100%}
   }
 </style>
@@ -281,42 +250,11 @@
 <div id="bgVignette"></div>
 
 <div id="app">
-  <aside id="left">
-    <h2 class="title">Wheel RPG</h2>
-    <p class="sub">
-      Spin one wheel at a time. Stats fill in on the left.
-      When you finish, you name the character and can fight.
-    </p>
-
-    <div class="stat"><div class="k">Name</div><div class="v" id="s_name">---</div></div>
-    <div class="stat"><div class="k">Race</div><div class="v" id="s_race">---</div></div>
-    <div class="stat"><div class="k">Power</div><div class="v" id="s_power">---</div></div>
-    <div class="stat"><div class="k">Weapon</div><div class="v" id="s_weapon">---</div></div>
-    <div class="stat"><div class="k">Strength</div><div class="v" id="s_str">---</div></div>
-    <div class="stat"><div class="k">Durability</div><div class="v" id="s_dur">---</div></div>
-    <div class="stat"><div class="k">Regen</div><div class="v" id="s_regen">---</div></div>
-
-    <div class="pillRow">
-      <span class="pill" id="pill_mode">Mode: Build</span>
-      <span class="pill" id="pill_fusion">Fusion: ---</span>
-    </div>
-
-    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn secondary" onclick="saveGame()">Save</button>
-      <button class="btn secondary" onclick="loadGame()">Load</button>
-      <!-- TESTING ONLY. Later you'll remove this button. -->
-      <button class="btn danger" onclick="resetGame()">Reset</button>
-    </div>
-
-    <div class="muted" style="margin-top:10px; font-size:12px;">
-      DEV_MODE is currently <b>ON</b> in code for testing.
-    </div>
-  </aside>
-
   <main id="main">
     <div class="panel" id="topBar">
       <div class="tabs">
         <div class="tab active" id="tab_build" onclick="setTab('build')">Build</div>
+        <div class="tab" id="tab_stats" onclick="setTab('stats')">Stats</div>
         <div class="tab" id="tab_pve" onclick="setTab('pve')">PvE</div>
         <div class="tab" id="tab_pvp" onclick="setTab('pvp')">PvP</div>
         <div class="tab" id="tab_codex" onclick="setTab('codex')">Codex</div>
@@ -338,7 +276,7 @@
         <div class="row" style="align-items:flex-start;">
           <div id="wheelBox">
             <div id="wheelTitle">Spin for Race</div>
-            <div id="wheelHint">Procedural sound + tick-per-slice + slowdown pitch.</div>
+            <div id="wheelHint">Smoother spin + tick-per-slice + softer whoosh sound.</div>
             <div id="pointer"></div>
             <canvas id="wheelCanvas" width="320" height="320"></canvas>
             <button class="btn" id="spinBtn" onclick="startSpin()">SPIN</button>
@@ -349,7 +287,7 @@
 
           <div class="panel" style="flex:1; min-width:280px;">
             <div class="big" id="spinResult">Result: ---</div>
-            <div class="muted" id="spinMeta" style="margin-top:6px;">Rarity: ---</div>
+            <div class="muted" id="spinMeta" style="margin-top:6px;">---</div>
 
             <div style="margin-top:12px; border-top:1px solid rgba(255,255,255,0.12); padding-top:12px;">
               <div class="big">Name your character</div>
@@ -376,6 +314,68 @@
               <div class="muted" id="fusionText" style="margin-top:6px;">---</div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section id="view_stats" class="row" style="display:none;">
+      <div class="panel" style="flex:1;">
+        <div class="big">Your Character</div>
+        <div class="muted" style="margin-top:6px;">Everything you rolled is shown here.</div>
+
+        <div class="row" style="margin-top:12px;">
+          <div class="panel" style="flex:1; min-width:260px;">
+            <div class="muted">Name</div>
+            <div class="big" id="s_name">---</div>
+          </div>
+
+          <div class="panel" style="flex:1; min-width:260px;">
+            <div class="muted">Race</div>
+            <div class="big" id="s_race">---</div>
+          </div>
+
+          <div class="panel" style="flex:1; min-width:260px;">
+            <div class="muted">Power</div>
+            <div class="big" id="s_power">---</div>
+          </div>
+
+          <div class="panel" style="flex:1; min-width:260px;">
+            <div class="muted">Weapon</div>
+            <div class="big" id="s_weapon">---</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <div class="panel" style="flex:1; min-width:260px;">
+            <div class="muted">Strength</div>
+            <div class="big" id="s_str">---</div>
+          </div>
+
+          <div class="panel" style="flex:1; min-width:260px;">
+            <div class="muted">Durability</div>
+            <div class="big" id="s_dur">---</div>
+          </div>
+
+          <div class="panel" style="flex:1; min-width:260px;">
+            <div class="muted">Regen</div>
+            <div class="big" id="s_regen">---</div>
+          </div>
+
+          <div class="panel" style="flex:1; min-width:260px;">
+            <div class="muted">Fusion</div>
+            <div class="big" id="s_fusion">---</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn secondary" onclick="saveGame()">Save</button>
+          <button class="btn secondary" onclick="loadGame()">Load</button>
+          <button class="btn danger" onclick="resetGame()">Reset</button>
+        </div>
+
+        <div class="muted" style="margin-top:10px; font-size:12px;">
+          DEV_MODE is ON for testing (no daily lock).
         </div>
       </div>
     </section>
@@ -466,19 +466,15 @@
    SETTINGS
 ========================= */
 
-// ✅ Testing switch:
-// true  = unlimited builds (no daily lock)
-// false = daily lock ON (and later you remove Reset button)
 const DEV_MODE = true;
 
-const STORE_KEY = "wheel_rpg_save_full_v1";
-const SOUND_STORE_KEY = "wheel_rpg_sound_v2";
+const STORE_KEY = "wheel_rpg_save_full_v2";
+const SOUND_STORE_KEY = "wheel_rpg_sound_v3";
 const DAILY_BUILD_KEY = "wheel_rpg_last_build_day_v1";
 const TIMEZONE = "America/Chicago";
 
 /* =========================
    DATA (WHEELS)
-   Replace these arrays with your real wheels anytime.
 ========================= */
 
 const WHEELS = {
@@ -504,8 +500,6 @@ const WHEELS = {
   regen: [0,1,2,3,4,5,6,7,8,9,10]
 };
 
-// Placeholder rarity %: later you can swap to your real rarity tables.
-// Smaller % = rarer.
 function rarityPercentFor(category, value){
   const arr = WHEELS[category].map(String);
   const idx = arr.indexOf(String(value));
@@ -516,7 +510,6 @@ function rarityPercentFor(category, value){
 
 /* =========================
    THEMES (Background hooks)
-   You already made images/backgrounds/
 ========================= */
 
 const RACE_THEME_BG = {
@@ -542,7 +535,6 @@ function applyRaceTheme(race){
 
 /* =========================
    FUSIONS (Starter examples)
-   You can add a LOT more later.
 ========================= */
 
 const FUSIONS = [
@@ -567,9 +559,9 @@ function findFusion(traits){
 
 let state = {
   tab: "build",
-  buildStep: 0,        // 0 race, 1 power, 2 weapon, 3 str, 4 dur, 5 regen
+  buildStep: 0,
   spinning: false,
-  buildLocked: false,  // locks when naming starts
+  buildLocked: false,
 
   character: {
     name: "",
@@ -592,7 +584,6 @@ function saveGame(){
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
   toast("Saved!");
 }
-
 function loadGame(){
   const raw = localStorage.getItem(STORE_KEY);
   if(!raw){ refreshUI(); refreshCodex(); return; }
@@ -605,7 +596,6 @@ function loadGame(){
     toast("Save corrupted.");
   }
 }
-
 function resetGame(){
   localStorage.removeItem(STORE_KEY);
 
@@ -636,14 +626,12 @@ function getTodayKeyTZ(){
     day: "2-digit"
   }).format(new Date());
 }
-
 function msUntilNextLocalMidnight(){
   const now = new Date();
   const next = new Date(now);
   next.setHours(24,0,0,0);
   return Math.max(0, next - now);
 }
-
 function formatCountdown(ms){
   const totalMin = Math.ceil(ms / 60000);
   const h = Math.floor(totalMin / 60);
@@ -652,8 +640,7 @@ function formatCountdown(ms){
 }
 
 /* =========================
-   PROCEDURAL SOUND ENGINE
-   No sound files required.
+   PROCEDURAL SOUND ENGINE (Softer whoosh)
 ========================= */
 
 let soundState = { volume: 0.6, muted: false };
@@ -671,18 +658,15 @@ function loadSoundSettings(){
   syncSoundUI();
   setMasterVolume(soundState.volume);
 }
-
 function saveSoundSettings(){
   localStorage.setItem(SOUND_STORE_KEY, JSON.stringify(soundState));
 }
-
 function syncSoundUI(){
   const slider = document.getElementById("volSlider");
   const btn = document.getElementById("btnMute");
   if(slider) slider.value = Math.round(soundState.volume * 100);
   if(btn) btn.textContent = soundState.muted ? "🔇" : "🔊";
 }
-
 function setVolumeFromSlider(){
   const slider = document.getElementById("volSlider");
   if(!slider) return;
@@ -690,7 +674,6 @@ function setVolumeFromSlider(){
   setMasterVolume(soundState.volume);
   saveSoundSettings();
 }
-
 function toggleMute(){
   soundState.muted = !soundState.muted;
   setMasterVolume(soundState.volume);
@@ -714,13 +697,11 @@ function ensureAudio(){
   masterGain.connect(audioCtx.destination);
   setMasterVolume(soundState.volume);
 }
-
 function setMasterVolume(v){
   if(!masterGain) return;
   masterGain.gain.value = soundState.muted ? 0 : v;
 }
 
-// iOS resume on first user gesture
 document.addEventListener("touchstart", ()=>{ ensureAudio(); audioCtx.resume(); }, { once:true });
 document.addEventListener("click", ()=>{ ensureAudio(); audioCtx.resume(); }, { once:true });
 
@@ -736,16 +717,14 @@ function tone(freq, duration, type="sine", gain=0.2){
   osc.connect(g); g.connect(masterGain);
   osc.start(t0); osc.stop(t0 + duration);
 }
-
 function noise(duration=0.06, gain=0.15, filterHz=2500){
   ensureAudio();
   const t0 = audioCtx.currentTime;
   const len = Math.floor(audioCtx.sampleRate * duration);
   const buffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
   const data = buffer.getChannelData(0);
-  for(let i=0;i<len;i++){
-    data[i] = (Math.random()*2 - 1) * (1 - i/len);
-  }
+  for(let i=0;i<len;i++) data[i] = (Math.random()*2 - 1) * (1 - i/len);
+
   const src = audioCtx.createBufferSource();
   src.buffer = buffer;
 
@@ -760,11 +739,9 @@ function noise(duration=0.06, gain=0.15, filterHz=2500){
   src.connect(filt); filt.connect(g); g.connect(masterGain);
   src.start(t0);
 }
-
 function playTick(){
-  // mechanical click feel
-  noise(0.02, 0.12, 3500);
-  tone(1200, 0.02, "square", 0.06);
+  noise(0.02, 0.10, 3600);
+  tone(1180, 0.02, "square", 0.05);
 }
 
 function playSpinLoop(){
@@ -772,15 +749,20 @@ function playSpinLoop(){
   stopSpinLoop();
   const t0 = audioCtx.currentTime;
 
-  // whirr oscillator
   spinWhirr = audioCtx.createOscillator();
   const whirrGain = audioCtx.createGain();
-  spinWhirr.type = "sawtooth";
-  spinWhirr.frequency.setValueAtTime(140, t0);
-  whirrGain.gain.setValueAtTime(0.001, t0);
-  whirrGain.gain.exponentialRampToValueAtTime(0.06, t0 + 0.08);
+  const whirrFilter = audioCtx.createBiquadFilter();
 
-  // noise loop
+  spinWhirr.type = "triangle";
+  spinWhirr.frequency.setValueAtTime(120, t0);
+
+  whirrFilter.type = "lowpass";
+  whirrFilter.frequency.setValueAtTime(900, t0);
+  whirrFilter.Q.setValueAtTime(0.6, t0);
+
+  whirrGain.gain.setValueAtTime(0.001, t0);
+  whirrGain.gain.exponentialRampToValueAtTime(0.035, t0 + 0.10);
+
   const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 1.0, audioCtx.sampleRate);
   const d = buffer.getChannelData(0);
   for(let i=0;i<d.length;i++) d[i] = Math.random()*2 - 1;
@@ -791,15 +773,20 @@ function playSpinLoop(){
 
   const noiseFilter = audioCtx.createBiquadFilter();
   noiseFilter.type = "bandpass";
-  noiseFilter.frequency.setValueAtTime(900, t0);
-  noiseFilter.Q.setValueAtTime(0.8, t0);
+  noiseFilter.frequency.setValueAtTime(850, t0);
+  noiseFilter.Q.setValueAtTime(0.75, t0);
 
   spinNoiseGain = audioCtx.createGain();
   spinNoiseGain.gain.setValueAtTime(0.001, t0);
-  spinNoiseGain.gain.exponentialRampToValueAtTime(0.04, t0 + 0.1);
+  spinNoiseGain.gain.exponentialRampToValueAtTime(0.030, t0 + 0.12);
 
-  spinWhirr.connect(whirrGain); whirrGain.connect(masterGain);
-  spinNoise.connect(noiseFilter); noiseFilter.connect(spinNoiseGain); spinNoiseGain.connect(masterGain);
+  spinWhirr.connect(whirrFilter);
+  whirrFilter.connect(whirrGain);
+  whirrGain.connect(masterGain);
+
+  spinNoise.connect(noiseFilter);
+  noiseFilter.connect(spinNoiseGain);
+  spinNoiseGain.connect(masterGain);
 
   spinWhirr.start(t0);
   spinNoise.start(t0);
@@ -812,60 +799,53 @@ function stopSpinLoop(){
   if(spinNoiseGain){
     spinNoiseGain.gain.cancelScheduledValues(t0);
     spinNoiseGain.gain.setValueAtTime(Math.max(0.001, spinNoiseGain.gain.value), t0);
-    spinNoiseGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08);
+    spinNoiseGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.10);
   }
-
-  if(spinWhirr){ try{ spinWhirr.stop(t0 + 0.09); }catch{} spinWhirr = null; }
-  if(spinNoise){ try{ spinNoise.stop(t0 + 0.09); }catch{} spinNoise = null; }
+  if(spinWhirr){ try{ spinWhirr.stop(t0 + 0.11); }catch{} spinWhirr = null; }
+  if(spinNoise){ try{ spinNoise.stop(t0 + 0.11); }catch{} spinNoise = null; }
   spinNoiseGain = null;
 }
 
 function setSpinPitchFromVelocity(v){
   if(!audioCtx || !spinWhirr) return;
   const t0 = audioCtx.currentTime;
-  const freq = 80 + v * 320;
-  spinWhirr.frequency.setTargetAtTime(freq, t0, 0.03);
+
+  const freq = 85 + v * 240;
+  spinWhirr.frequency.setTargetAtTime(freq, t0, 0.04);
 
   if(spinNoiseGain){
-    const ng = 0.015 + v * 0.06;
-    spinNoiseGain.gain.setTargetAtTime(Math.max(0.001, ng), t0, 0.05);
+    const ng = 0.010 + v * 0.045;
+    spinNoiseGain.gain.setTargetAtTime(Math.max(0.001, ng), t0, 0.06);
   }
 }
 
 function playRarityStinger(percent){
   if(percent <= 2){
-    // divine: rising chord
-    tone(784, 0.18, "triangle", 0.22);
-    setTimeout(()=>tone(988, 0.22, "triangle", 0.22), 60);
-    setTimeout(()=>tone(1175, 0.28, "triangle", 0.22), 120);
+    tone(784, 0.18, "triangle", 0.20);
+    setTimeout(()=>tone(988, 0.22, "triangle", 0.20), 60);
+    setTimeout(()=>tone(1175, 0.28, "triangle", 0.20), 120);
   }else if(percent <= 6){
-    // legendary
-    tone(659, 0.16, "triangle", 0.20);
-    setTimeout(()=>tone(988, 0.24, "triangle", 0.20), 80);
+    tone(659, 0.16, "triangle", 0.18);
+    setTimeout(()=>tone(988, 0.24, "triangle", 0.18), 80);
   }else if(percent <= 15){
-    // rare
-    tone(523, 0.14, "triangle", 0.18);
-    setTimeout(()=>tone(784, 0.18, "triangle", 0.16), 70);
+    tone(523, 0.14, "triangle", 0.16);
+    setTimeout(()=>tone(784, 0.18, "triangle", 0.14), 70);
   }else{
-    // common
-    tone(392, 0.08, "sine", 0.14);
+    tone(392, 0.08, "sine", 0.12);
   }
 }
-
 function playHit(){
-  noise(0.04, 0.22, 1800);
-  tone(160, 0.06, "square", 0.10);
+  noise(0.04, 0.18, 1800);
+  tone(160, 0.06, "square", 0.08);
 }
-
 function playWin(){
-  tone(523, 0.14, "triangle", 0.22);
-  setTimeout(()=>tone(659, 0.16, "triangle", 0.22), 70);
-  setTimeout(()=>tone(784, 0.22, "triangle", 0.22), 140);
+  tone(523, 0.14, "triangle", 0.20);
+  setTimeout(()=>tone(659, 0.16, "triangle", 0.20), 70);
+  setTimeout(()=>tone(784, 0.22, "triangle", 0.20), 140);
 }
-
 function playLose(){
-  tone(220, 0.22, "sawtooth", 0.20);
-  setTimeout(()=>tone(164, 0.28, "sawtooth", 0.18), 90);
+  tone(220, 0.22, "triangle", 0.18);
+  setTimeout(()=>tone(164, 0.28, "triangle", 0.16), 90);
 }
 
 /* =========================
@@ -876,19 +856,16 @@ function setTab(tab){
   state.tab = tab;
 
   document.getElementById("tab_build").classList.toggle("active", tab==="build");
+  document.getElementById("tab_stats").classList.toggle("active", tab==="stats");
   document.getElementById("tab_pve").classList.toggle("active", tab==="pve");
   document.getElementById("tab_pvp").classList.toggle("active", tab==="pvp");
   document.getElementById("tab_codex").classList.toggle("active", tab==="codex");
 
   document.getElementById("view_build").style.display = tab==="build" ? "" : "none";
+  document.getElementById("view_stats").style.display = tab==="stats" ? "" : "none";
   document.getElementById("view_pve").style.display = tab==="pve" ? "" : "none";
   document.getElementById("view_pvp").style.display = tab==="pvp" ? "" : "none";
   document.getElementById("view_codex").style.display = tab==="codex" ? "" : "none";
-
-  document.getElementById("pill_mode").textContent =
-    tab==="build" ? "Mode: Build" :
-    tab==="pve" ? "Mode: PvE" :
-    tab==="pvp" ? "Mode: PvP" : "Mode: Codex";
 }
 
 /* =========================
@@ -906,7 +883,6 @@ let currentWheelItems = [];
 function getCurrentStepKey(){
   return ["race","power","weapon","strength","durability","regen"][state.buildStep] || "race";
 }
-
 function wheelTitleFor(stepKey){
   return stepKey==="race" ? "Spin for Race" :
          stepKey==="power" ? "Spin for Power" :
@@ -915,12 +891,10 @@ function wheelTitleFor(stepKey){
          stepKey==="durability" ? "Spin for Durability" :
          stepKey==="regen" ? "Spin for Regen" : "Spin";
 }
-
 function setWheelItems(stepKey){
   currentWheelItems = WHEELS[stepKey].map(String);
   drawWheel();
 }
-
 function drawWheel(){
   const W = canvas.width, H = canvas.height;
   const cx = W/2, cy = H/2;
@@ -980,13 +954,7 @@ function drawWheel(){
 }
 
 function startSpin(){
-  // Build lock (bug fix)
-  if(state.buildLocked){
-    toast("Character is locked. Reset to spin again.");
-    return;
-  }
-
-  // Daily lock (OFF in DEV_MODE)
+  if(state.buildLocked){ toast("Character is locked. Reset to build again."); return; }
   if(!DEV_MODE){
     const today = getTodayKeyTZ();
     const lastBuild = localStorage.getItem(DAILY_BUILD_KEY);
@@ -995,7 +963,6 @@ function startSpin(){
       return;
     }
   }
-
   if(state.spinning) return;
 
   const stepKey = getCurrentStepKey();
@@ -1009,27 +976,28 @@ function startSpin(){
 
   const n = currentWheelItems.length;
   const slice = (Math.PI*2)/n;
-
   const resultIndex = Math.floor(Math.random()*n);
 
   const pointerAngle = -Math.PI/2;
   const sliceMid = (resultIndex + 0.5) * slice;
   const baseStop = pointerAngle - sliceMid;
 
-  const spins = 6 + Math.floor(Math.random()*4);
+  const spins = 5 + Math.floor(Math.random()*3);
   targetStopAngle = baseStop + spins * Math.PI*2;
 
-  spinVel = 0.45 + Math.random()*0.2;
+  /* FIX: slower, less chaotic start speed */
+  spinVel = 0.22 + Math.random()*0.08;
+
   animateSpin(stepKey, resultIndex);
 }
 
 function animateSpin(stepKey, resultIndex){
-  const friction = 0.985;
+  /* FIX: smoother decel */
+  const friction = 0.992;
 
   function frame(){
     wheelAngle += spinVel;
 
-    // Tick per slice
     const n = currentWheelItems.length;
     if(n > 0){
       const slice = (Math.PI*2)/n;
@@ -1043,13 +1011,14 @@ function animateSpin(stepKey, resultIndex){
       }
     }
 
-    // Slowdown pitch
     setSpinPitchFromVelocity(spinVel);
 
     const remaining = targetStopAngle - wheelAngle;
-    if(remaining < 0.8){
-      wheelAngle += remaining * 0.12;
-      spinVel *= 0.92;
+
+    /* FIX: smoother approach and braking */
+    if(remaining < 1.2){
+      wheelAngle += remaining * 0.08;
+      spinVel *= 0.955;
     }else{
       spinVel *= friction;
     }
@@ -1072,7 +1041,6 @@ function animateSpin(stepKey, resultIndex){
 
     requestAnimationFrame(frame);
   }
-
   requestAnimationFrame(frame);
 }
 
@@ -1114,13 +1082,11 @@ function isBuildComplete(){
   const c = state.character;
   return c.race && c.power && c.weapon && c.strength!==null && c.durability!==null && c.regen!==null;
 }
-
 function showNaming(){
   state.buildLocked = true;
   document.getElementById("nameBox").style.display = "";
   document.getElementById("spinBtn").disabled = true;
 
-  // stamp daily build used (only when live)
   if(!DEV_MODE){
     localStorage.setItem(DAILY_BUILD_KEY, getTodayKeyTZ());
   }
@@ -1136,22 +1102,15 @@ function updateNamePreview(){
   const last = state.character.lockedLastName ? ` ${state.character.lockedLastName}` : "";
   document.getElementById("namePreview").textContent = (first || "") + last;
 }
-
 function confirmName(){
   const first = document.getElementById("nameInput").value.trim();
   const err = document.getElementById("nameError");
 
-  if(!first){
-    err.textContent = "Name cannot be empty.";
-    return;
-  }
+  if(!first){ err.textContent = "Name cannot be empty."; return; }
 
   const low = first.toLowerCase();
   for(const w of BANNED){
-    if(low.includes(w)){
-      err.textContent = "That name isn’t allowed.";
-      return;
-    }
+    if(low.includes(w)){ err.textContent = "That name isn’t allowed."; return; }
   }
 
   const last = state.character.lockedLastName ? ` ${state.character.lockedLastName}` : "";
@@ -1164,16 +1123,13 @@ function confirmName(){
   refreshUI();
   saveGame();
 }
-
 function skipName(){
   state.character.name = "Unnamed";
   document.getElementById("nameBox").style.display = "none";
   refreshUI();
   saveGame();
 }
-
 function finishBuildEarly(){
-  // quick testing helper
   if(!state.character.race) state.character.race = "Human";
   if(!state.character.power) state.character.power = "No power";
   if(!state.character.weapon) state.character.weapon = "No weapon";
@@ -1202,7 +1158,6 @@ function updateFusion(){
   const fusion = findFusion(traits);
   c.fusion = fusion ? fusion.result : null;
 
-  document.getElementById("pill_fusion").textContent = `Fusion: ${c.fusion || "---"}`;
   document.getElementById("fusionText").textContent = fusion
     ? `${fusion.result} (Tier: ${fusion.tier}) unlocked by: ${fusion.conditions.join(" + ")}`
     : "No fusion found for current traits (yet).";
@@ -1211,7 +1166,6 @@ function updateFusion(){
     discoverFusion(fusion.result, fusion.tier);
   }
 }
-
 function discoverFusion(name, tier){
   const list = state.codex.fusions;
   if(list.some(x => x.name === name)) return;
@@ -1219,7 +1173,6 @@ function discoverFusion(name, tier){
   refreshCodex();
   toast(`Discovered fusion: ${name}!`);
 }
-
 function refreshCodex(){
   const box = document.getElementById("codexList");
   box.innerHTML = "";
@@ -1264,16 +1217,9 @@ function spinEvent(){
   toast("Event selected!");
   saveGame();
 }
-
 function fightPvE(){
-  if(!state.pve.currentEvent){
-    toast("Spin an event first.");
-    return;
-  }
-  if(!isBuildComplete()){
-    toast("Finish your build first (or use Finish Build).");
-    return;
-  }
+  if(!state.pve.currentEvent){ toast("Spin an event first."); return; }
+  if(!isBuildComplete()){ toast("Finish your build first (or use Finish Build)."); return; }
   runBattle({
     mode:"pve",
     player: buildFighterFromCharacter(state.character),
@@ -1323,18 +1269,15 @@ function runBattle({mode, player, enemy, arenaBg}){
       return;
     }
 
-    // damage model
     let pDmg = Math.max(player.strength - enemy.durability*0.10, 1);
     let eDmg = Math.max(enemy.strength - player.durability*0.10, 1);
 
-    // minimum damage prevents infinite fights
     pDmg = Math.max(pDmg, eMax*0.01);
     eDmg = Math.max(eDmg, pMax*0.01);
 
     eHP -= pDmg;
     pHP -= eDmg;
 
-    // regen (up to 10% max hp per turn)
     pHP += Math.min(player.regen, pMax*0.10);
     eHP += Math.min(enemy.regen, eMax*0.10);
 
@@ -1342,7 +1285,6 @@ function runBattle({mode, player, enemy, arenaBg}){
     eHP = Math.min(eHP, eMax);
 
     playHit();
-
     popFloat("e_float", `-${pDmg.toFixed(0)}`);
     popFloat("p_float", `-${eDmg.toFixed(0)}`);
     shake("e_portrait");
@@ -1353,7 +1295,6 @@ function runBattle({mode, player, enemy, arenaBg}){
 
     logEl.textContent += `T${turn}: P=${Math.max(0,pHP).toFixed(0)}  E=${Math.max(0,eHP).toFixed(0)}\n`;
 
-    // enrage after 20 turns
     if(turn>20){
       eHP -= pDmg*0.05*(turn-20);
       pHP -= eDmg*0.05*(turn-20);
@@ -1361,7 +1302,6 @@ function runBattle({mode, player, enemy, arenaBg}){
 
     setTimeout(step, 450);
   }
-
   step();
 }
 
@@ -1369,7 +1309,6 @@ function setHP(id, hp, max){
   const pct = Math.max(0, Math.min(100, (hp/max)*100));
   document.getElementById(id).style.width = pct + "%";
 }
-
 function popFloat(id, text){
   const el = document.getElementById(id);
   el.textContent = text;
@@ -1385,7 +1324,6 @@ function popFloat(id, text){
     el.style.transform = "translateY(0px)";
   }, 650);
 }
-
 function shake(portraitId){
   const el = document.getElementById(portraitId);
   el.classList.remove("shake");
@@ -1422,20 +1360,13 @@ function generateOpponent(){
 function pvpScale(totalPower){
   return Math.pow(totalPower, 0.78) * 7;
 }
-
 function totalPowerFromStats(f){
   const bonus = f.bonusPower || 0;
   return (f.strength*2) + (f.durability*1.6) + (f.regen*25) + bonus;
 }
-
 function simulatePvP(){
-  if(!isBuildComplete()){
-    toast("Finish your build first (or use Finish Build).");
-    return;
-  }
-  if(!state.pvp.opponent){
-    generateOpponent();
-  }
+  if(!isBuildComplete()){ toast("Finish your build first (or use Finish Build)."); return; }
+  if(!state.pvp.opponent){ generateOpponent(); }
 
   const p = buildFighterFromCharacter(state.character);
   const e = buildFighterFromOpponent(state.pvp.opponent);
@@ -1443,7 +1374,6 @@ function simulatePvP(){
   const log = runBattleSimPvP(p, e);
   document.getElementById("pvpLog").textContent = log;
 }
-
 function runBattleSimPvP(player, enemy){
   const pTotal = totalPowerFromStats(player);
   const eTotal = totalPowerFromStats(enemy);
@@ -1516,7 +1446,6 @@ function buildFighterFromCharacter(c){
     maxHP: 140 + c.durability*2.4
   };
 }
-
 function buildFighterFromEvent(ev){
   const fusion = findFusion([ev.enemyRace, ev.enemyPower]);
   const bonusPower =
@@ -1536,7 +1465,6 @@ function buildFighterFromEvent(ev){
     maxHP: 140 + ev.dur*2.4
   };
 }
-
 function buildFighterFromOpponent(o){
   const fusion = findFusion([o.race, o.power]);
   const bonusPower =
@@ -1565,6 +1493,7 @@ function refreshUI(){
   document.getElementById("wheelTitle").textContent = wheelTitleFor(stepKey);
 
   const c = state.character;
+
   document.getElementById("s_name").textContent = c.name || "---";
   document.getElementById("s_race").textContent = c.race || "---";
   document.getElementById("s_power").textContent = c.power || "---";
@@ -1572,17 +1501,14 @@ function refreshUI(){
   document.getElementById("s_str").textContent = (c.strength ?? "---");
   document.getElementById("s_dur").textContent = (c.durability ?? "---");
   document.getElementById("s_regen").textContent = (c.regen ?? "---");
-  document.getElementById("pill_fusion").textContent = `Fusion: ${c.fusion || "---"}`;
+  document.getElementById("s_fusion").textContent = c.fusion || "---";
 
-  // disable spin if build locked
   document.getElementById("spinBtn").disabled = !!state.buildLocked;
 
-  // redraw wheel
   setWheelItems(stepKey);
 }
 
 function toast(msg){
-  // show in spinMeta, also console
   console.log(msg);
   const meta = document.getElementById("spinMeta");
   if(meta) meta.textContent = msg;
