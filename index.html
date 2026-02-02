@@ -26,7 +26,6 @@
     color: var(--text);
   }
 
-  /* Background layer */
   #bgLayer{
     position:fixed;
     inset:0;
@@ -50,7 +49,6 @@
     min-height:100vh;
   }
 
-  /* Left stats panel */
   #left{
     width:280px;
     background: rgba(17,26,51,0.92);
@@ -92,7 +90,6 @@
     color: var(--text);
   }
 
-  /* Main area */
   #main{
     flex:1;
     display:flex;
@@ -120,6 +117,7 @@
     justify-content:space-between;
     align-items:center;
     gap:12px;
+    flex-wrap:wrap;
   }
 
   .btn{
@@ -156,7 +154,6 @@
     border-color: rgba(79,104,255,0.4);
   }
 
-  /* Wheel area */
   #wheelPanel{
     display:flex;
     gap:14px;
@@ -179,6 +176,7 @@
   #wheelHint{
     font-size:12px;
     color: var(--muted);
+    text-align:center;
   }
 
   canvas{
@@ -221,7 +219,6 @@
     outline:none;
   }
 
-  /* Battle visuals */
   #battleArena{
     position:relative;
     min-height:260px;
@@ -235,7 +232,6 @@
     background-size:cover;
     background-position:center;
     opacity:.35;
-    filter: blur(0px) saturate(1.1);
     transition: background-image .6s ease, opacity .6s ease;
   }
   #battleOverlay{
@@ -276,6 +272,8 @@
     box-shadow: 0 10px 25px rgba(0,0,0,0.35);
     position:relative;
     overflow:hidden;
+    text-align:center;
+    padding:10px;
   }
   .portrait .label{
     position:absolute;
@@ -309,12 +307,6 @@
     pointer-events:none;
     text-shadow: 0 3px 10px rgba(0,0,0,0.8);
   }
-  .fx{
-    position:absolute; inset:0;
-    pointer-events:none;
-    opacity:0;
-    transition: opacity .1s;
-  }
   @keyframes shake {
     0%{ transform: translate(0,0) }
     25%{ transform: translate(-3px,2px) }
@@ -324,7 +316,6 @@
   }
   .shake{ animation: shake .25s linear; }
 
-  /* Codex list */
   .list{
     display:flex;
     flex-direction:column;
@@ -369,7 +360,12 @@
     <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
       <button class="btn secondary" onclick="saveGame()">Save</button>
       <button class="btn secondary" onclick="loadGame()">Load</button>
+      <!-- For testing only. Later, delete this button and turn DEV_MODE false. -->
       <button class="btn danger" onclick="resetGame()">Reset</button>
+    </div>
+
+    <div class="muted" style="margin-top:10px; font-size:12px;">
+      DEV_MODE is <span style="font-weight:900;">ON</span> in code right now for testing.
     </div>
   </aside>
 
@@ -381,8 +377,14 @@
         <div class="tab" id="tab_pvp" onclick="setTab('pvp')">PvP</div>
         <div class="tab" id="tab_codex" onclick="setTab('codex')">Codex</div>
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <button class="btn secondary" onclick="finishBuildEarly()">Finish Build</button>
+
+        <button class="btn secondary" id="btnMute" onclick="toggleMute()">🔊</button>
+        <div class="muted" style="font-size:12px;">Volume</div>
+        <input id="volSlider" type="range" min="0" max="100" value="60"
+               style="width:140px;" oninput="setVolumeFromSlider()">
       </div>
     </div>
 
@@ -391,7 +393,7 @@
       <div class="panel" id="wheelPanel" style="flex:1;">
         <div id="wheelBox">
           <div id="wheelTitle">Spin for Race</div>
-          <div id="wheelHint">Tip: tomorrow you’ll send images and we’ll plug them into these themes.</div>
+          <div id="wheelHint">Sound: spin loop + ticks + slowdown pitch. (Add your sound files in /sounds later.)</div>
           <div id="pointer"></div>
           <canvas id="wheelCanvas" width="320" height="320"></canvas>
           <button class="btn" id="spinBtn" onclick="startSpin()">SPIN</button>
@@ -403,9 +405,9 @@
           <div class="muted" id="spinMeta" style="margin-top:6px;">Rarity: ---</div>
 
           <div style="margin-top:12px; border-top:1px solid rgba(255,255,255,0.12); padding-top:12px;">
-            <div class="big">Name after creation</div>
+            <div class="big">Name your character</div>
             <div class="muted" style="margin-top:6px;">
-              After the last wheel, you’ll name your character. If a unique last name is locked later, only first name changes.
+              After the last wheel, spinning locks and you name your character.
             </div>
 
             <div id="nameBox" style="display:none; margin-top:10px;">
@@ -434,7 +436,7 @@
     <section class="row" id="view_pve" style="display:none;">
       <div class="panel" style="flex:1;">
         <div class="big">PvE Event Wheel</div>
-        <div class="muted" style="margin-top:6px;">Spin an event, then fight the encounter. (We’ll add your full event list later.)</div>
+        <div class="muted" style="margin-top:6px;">Spin an event, then fight the encounter.</div>
 
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn" onclick="spinEvent()">Spin Event</button>
@@ -455,8 +457,8 @@
               <div class="fighter" id="f_player">
                 <div class="portrait" id="p_portrait">
                   <div class="label" id="p_label">Player</div>
-                  <div class="fx" id="p_fx"></div>
                   <div class="floatText" id="p_float"></div>
+                  <div style="opacity:.8; font-size:13px;" id="p_portraitText">---</div>
                 </div>
                 <div class="hpbar"><div class="hpfill" id="p_hp"></div></div>
               </div>
@@ -464,8 +466,8 @@
               <div class="fighter" id="f_enemy">
                 <div class="portrait" id="e_portrait">
                   <div class="label" id="e_label">Enemy</div>
-                  <div class="fx" id="e_fx"></div>
                   <div class="floatText" id="e_float"></div>
+                  <div style="opacity:.8; font-size:13px;" id="e_portraitText">---</div>
                 </div>
                 <div class="hpbar"><div class="hpfill" id="e_hp"></div></div>
               </div>
@@ -481,7 +483,7 @@
       <div class="panel" style="flex:1;">
         <div class="big">PvP Arena (Simulator)</div>
         <div class="muted" style="margin-top:6px;">
-          Uses soft scaling (no caps). Lucky builds are stronger, but scaling prevents infinite gaps.
+          Soft scaling (no caps). Lucky builds are stronger, but scaling prevents insane gaps.
         </div>
 
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
@@ -510,7 +512,36 @@
   </main>
 </div>
 
+<!-- ====== AUDIO ====== -->
+<audio id="aud_spin" src="sounds/wheel_spin.mp3" preload="auto" loop></audio>
+<audio id="aud_tick" src="sounds/tick.mp3" preload="auto"></audio>
+
+<audio id="aud_common" src="sounds/common.mp3" preload="auto"></audio>
+<audio id="aud_rare" src="sounds/rare.mp3" preload="auto"></audio>
+<audio id="aud_legendary" src="sounds/legendary.mp3" preload="auto"></audio>
+<audio id="aud_divine" src="sounds/divine.mp3" preload="auto"></audio>
+
+<audio id="aud_hit" src="sounds/hit.mp3" preload="auto"></audio>
+<audio id="aud_win" src="sounds/win.mp3" preload="auto"></audio>
+<audio id="aud_lose" src="sounds/lose.mp3" preload="auto"></audio>
+
+<audio id="aud_ambient" preload="auto" loop></audio>
+
 <script>
+/* =========================
+   SETTINGS
+========================= */
+
+// ✅ TESTING SWITCH:
+// true  = unlimited builds for testing
+// false = daily build lock ON (and later you remove Reset button)
+const DEV_MODE = true;
+
+const STORE_KEY = "wheel_rpg_save_v2";
+const SOUND_STORE_KEY = "wheel_rpg_sound_v1";
+const DAILY_BUILD_KEY = "wheel_rpg_last_build_day_v1";
+const TIMEZONE = "America/Chicago";
+
 /* =========================
    DATA (YOUR WHEELS)
 ========================= */
@@ -533,25 +564,22 @@ const WHEELS = {
     "Blades of chaos","Samehada","Green lantern ring","Uzumaki chains","Magic staff","Bat","Water gun","Hammer",
     "Brass knuckles","Piece of bread","Stick"
   ],
+  // these are simple lists — later you can replace with your exact wheels
   strength: [5,10,15,20,25,30,35,40,50,60,70,80,90,100],
   durability: [10,15,20,25,30,40,50,60,70,80,90,100],
   regen: [0,1,2,3,4,5,6,7,8,9,10]
 };
 
-// Simple rarity %s for hype (we’ll fine-tune later)
 function rarityPercentFor(category, value){
-  // You can replace with real weighted tables later.
-  // For now: just based on index position.
-  const arr = WHEELS[category];
-  const idx = arr.indexOf(value);
+  const arr = WHEELS[category].map(String);
+  const idx = arr.indexOf(String(value));
   if(idx < 0) return 10;
-  const p = 100 - Math.floor((idx/(arr.length-1))*90); // earlier slices look “less rare” visually
+  const p = 100 - Math.floor((idx/(arr.length-1))*90);
   return Math.max(1, Math.min(95, p));
 }
 
 /* =========================
-   FUSION SYSTEM (STARTER)
-   (We’ll expand with tons more)
+   FUSIONS (STARTER)
 ========================= */
 
 const FUSIONS = [
@@ -571,20 +599,18 @@ function findFusion(traits){
 }
 
 /* =========================
-   THEMES (HOOKS FOR YOUR IMAGES)
-   Put your images in:
-   images/backgrounds/<file>.png
+   THEMES (HOOKS)
+   Add your image files later in:
+   images/backgrounds/
 ========================= */
 
 const RACE_THEME_BG = {
-  "Vampire": "images/backgrounds/castle.png",
-  "Golem": "images/backgrounds/cave.png",
-  "Elf": "images/backgrounds/forest.png",
-  "Human": "images/backgrounds/city.png",
-  "God": "images/backgrounds/celestial.png",
-  "Dragon": "images/backgrounds/dragon_lair.png",
-  "Shinigami": "images/backgrounds/shadow_realm.png",
-  "Default": ""
+  "Vampire": "images/backgrounds/castle.svg",
+  "Golem": "images/backgrounds/cave.svg",
+  "Human": "images/backgrounds/city.svg",
+  "God": "images/backgrounds/celestial.svg",
+  "Goblin": "images/backgrounds/forest.svg",
+  "Default": "images/backgrounds/default_arena.svg"
 };
 
 function applyRaceTheme(race){
@@ -603,16 +629,15 @@ function applyRaceTheme(race){
    GAME STATE + SAVE
 ========================= */
 
-const STORE_KEY = "wheel_rpg_save_v1";
-
 let state = {
   tab: "build",
-  buildStep: 0, // 0 race, 1 power, 2 weapon, 3 str, 4 dur, 5 regen
+  buildStep: 0,      // 0 race, 1 power, 2 weapon, 3 str, 4 dur, 5 regen
   spinning: false,
+  buildLocked: false, // 🔒 locks when naming starts
 
   character: {
     name: "",
-    lockedLastName: "", // later if you use unique last names
+    lockedLastName: "",
     race: null,
     power: null,
     weapon: null,
@@ -622,17 +647,9 @@ let state = {
     fusion: null
   },
 
-  codex: {
-    fusions: [] // {name, tier, discoveredAt}
-  },
-
-  pve: {
-    currentEvent: null
-  },
-
-  pvp: {
-    opponent: null
-  }
+  codex: { fusions: [] },
+  pve: { currentEvent: null },
+  pvp: { opponent: null }
 };
 
 function saveGame(){
@@ -641,26 +658,153 @@ function saveGame(){
 }
 function loadGame(){
   const raw = localStorage.getItem(STORE_KEY);
-  if(!raw){ toast("No save found."); return; }
+  if(!raw){ refreshUI(); refreshCodex(); return; }
   try{
     state = JSON.parse(raw);
     refreshUI();
+    refreshCodex();
     toast("Loaded!");
   }catch{
     toast("Save corrupted.");
   }
 }
 function resetGame(){
+  // For testing only. Later you remove this button.
   localStorage.removeItem(STORE_KEY);
+
   state.buildStep = 0;
   state.spinning = false;
+  state.buildLocked = false;
+
   state.character = { name:"", lockedLastName:"", race:null, power:null, weapon:null, strength:null, durability:null, regen:null, fusion:null };
   state.codex = { fusions:[] };
   state.pve = { currentEvent:null };
   state.pvp = { opponent:null };
+
   setTab("build");
   refreshUI();
+  refreshCodex();
   toast("Reset complete.");
+}
+
+/* =========================
+   SOUND SETTINGS + MANAGER
+========================= */
+
+let soundState = { volume: 0.6, muted: false };
+let lastTickSliceIndex = null;
+
+function loadSoundSettings(){
+  const raw = localStorage.getItem(SOUND_STORE_KEY);
+  if(raw){
+    try{
+      const saved = JSON.parse(raw);
+      if(typeof saved.volume === "number") soundState.volume = saved.volume;
+      if(typeof saved.muted === "boolean") soundState.muted = saved.muted;
+    }catch{}
+  }
+  syncSoundUI();
+  applyVolumeAll();
+}
+function saveSoundSettings(){
+  localStorage.setItem(SOUND_STORE_KEY, JSON.stringify(soundState));
+}
+function effectiveVolume(){
+  return soundState.muted ? 0 : soundState.volume;
+}
+function applyVolumeAll(){
+  const ids = [
+    "aud_spin","aud_tick","aud_common","aud_rare","aud_legendary","aud_divine",
+    "aud_hit","aud_win","aud_lose","aud_ambient"
+  ];
+  const vol = effectiveVolume();
+  for(const id of ids){
+    const a = document.getElementById(id);
+    if(a) a.volume = vol;
+  }
+}
+function syncSoundUI(){
+  const slider = document.getElementById("volSlider");
+  const btn = document.getElementById("btnMute");
+  if(slider) slider.value = Math.round(soundState.volume * 100);
+  if(btn) btn.textContent = soundState.muted ? "🔇" : "🔊";
+}
+function setVolumeFromSlider(){
+  const slider = document.getElementById("volSlider");
+  if(!slider) return;
+  soundState.volume = Math.max(0, Math.min(1, Number(slider.value)/100));
+  applyVolumeAll();
+  saveSoundSettings();
+}
+function toggleMute(){
+  soundState.muted = !soundState.muted;
+  applyVolumeAll();
+  syncSoundUI();
+  saveSoundSettings();
+}
+function playOnce(id){
+  const a = document.getElementById(id);
+  if(!a) return;
+  a.currentTime = 0;
+  a.play().catch(()=>{});
+}
+function playLoop(id){
+  const a = document.getElementById(id);
+  if(!a) return;
+  a.currentTime = 0;
+  a.playbackRate = 1.0;
+  a.play().catch(()=>{});
+}
+function stopAudio(id){
+  const a = document.getElementById(id);
+  if(!a) return;
+  a.pause();
+  a.currentTime = 0;
+  a.playbackRate = 1.0;
+}
+function playTick(){
+  const base = document.getElementById("aud_tick");
+  if(!base) return;
+  const t = base.cloneNode(true);
+  t.volume = effectiveVolume();
+  t.play().catch(()=>{});
+}
+function setSpinPitchFromVelocity(v){
+  const a = document.getElementById("aud_spin");
+  if(!a) return;
+  const rate = Math.max(0.75, Math.min(1.25, 0.75 + (v * 0.9)));
+  a.playbackRate = rate;
+}
+function playRarityStinger(percent){
+  if(percent <= 2) return playOnce("aud_divine");
+  if(percent <= 6) return playOnce("aud_legendary");
+  if(percent <= 15) return playOnce("aud_rare");
+  return playOnce("aud_common");
+}
+
+/* =========================
+   DAILY BUILD LOCK HELPERS
+========================= */
+
+function getTodayKeyTZ(){
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date());
+}
+function msUntilNextLocalMidnight(){
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(24,0,0,0);
+  return Math.max(0, next - now);
+}
+function formatCountdown(ms){
+  const totalMin = Math.ceil(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return `${h}h ${m}m`;
 }
 
 /* =========================
@@ -683,8 +827,6 @@ function setTab(tab){
     tab==="build" ? "Mode: Build" :
     tab==="pve" ? "Mode: PvE" :
     tab==="pvp" ? "Mode: PvP" : "Mode: Codex";
-
-  refreshUI();
 }
 
 /* =========================
@@ -702,7 +844,6 @@ let currentWheelItems = [];
 function getCurrentStepKey(){
   return ["race","power","weapon","strength","durability","regen"][state.buildStep] || "race";
 }
-
 function wheelTitleFor(stepKey){
   return stepKey==="race" ? "Spin for Race" :
          stepKey==="power" ? "Spin for Power" :
@@ -711,25 +852,21 @@ function wheelTitleFor(stepKey){
          stepKey==="durability" ? "Spin for Durability" :
          stepKey==="regen" ? "Spin for Regen" : "Spin";
 }
-
 function setWheelItems(stepKey){
   currentWheelItems = WHEELS[stepKey].map(String);
   drawWheel();
 }
-
 function drawWheel(){
   const W = canvas.width, H = canvas.height;
   const cx = W/2, cy = H/2;
   const r = Math.min(W,H)/2 - 8;
 
   ctx.clearRect(0,0,W,H);
-
   const n = currentWheelItems.length;
   if(n === 0) return;
 
   const slice = (Math.PI*2)/n;
 
-  // outer ring
   ctx.beginPath();
   ctx.arc(cx, cy, r+2, 0, Math.PI*2);
   ctx.strokeStyle = "rgba(255,255,255,0.15)";
@@ -740,7 +877,6 @@ function drawWheel(){
     const a0 = wheelAngle + i*slice;
     const a1 = a0 + slice;
 
-    // alternating colors
     const even = i%2===0;
     ctx.beginPath();
     ctx.moveTo(cx,cy);
@@ -749,12 +885,10 @@ function drawWheel(){
     ctx.fillStyle = even ? "rgba(79,104,255,0.35)" : "rgba(54,211,153,0.25)";
     ctx.fill();
 
-    // slice border
     ctx.strokeStyle = "rgba(255,255,255,0.08)";
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // text
     const label = currentWheelItems[i];
     const mid = (a0+a1)/2;
     ctx.save();
@@ -767,7 +901,6 @@ function drawWheel(){
     ctx.restore();
   }
 
-  // center
   ctx.beginPath();
   ctx.arc(cx,cy,36,0,Math.PI*2);
   ctx.fillStyle = "rgba(0,0,0,0.35)";
@@ -783,6 +916,22 @@ function drawWheel(){
 }
 
 function startSpin(){
+  // Bug fix hard-lock
+  if(state.buildLocked){
+    toast("Character is locked. Reset to spin again.");
+    return;
+  }
+
+  // Daily lock (OFF in DEV_MODE)
+  if(!DEV_MODE){
+    const today = getTodayKeyTZ();
+    const lastBuild = localStorage.getItem(DAILY_BUILD_KEY);
+    if(lastBuild === today){
+      toast(`Daily build used. Come back in ${formatCountdown(msUntilNextLocalMidnight())}.`);
+      return;
+    }
+  }
+
   if(state.spinning) return;
 
   const stepKey = getCurrentStepKey();
@@ -791,29 +940,22 @@ function startSpin(){
   state.spinning = true;
   document.getElementById("spinBtn").disabled = true;
 
+  applyVolumeAll();
+  lastTickSliceIndex = null;
+  playLoop("aud_spin");
+
   const n = currentWheelItems.length;
   const slice = (Math.PI*2)/n;
 
-  // Choose result index (simple random now; we can make weighted later)
   const resultIndex = Math.floor(Math.random()*n);
-
-  // pointer is at top (angle = -90deg). We want the chosen slice to end under pointer.
-  // pointer angle in canvas space: -Math.PI/2
   const pointerAngle = -Math.PI/2;
-
-  // slice mid angle at final:
   const sliceMid = (resultIndex + 0.5) * slice;
-
-  // We want wheelAngle + sliceMid = pointerAngle  (mod 2pi)
-  // => wheelAngle = pointerAngle - sliceMid + k*2pi
   const baseStop = pointerAngle - sliceMid;
 
-  const spins = 6 + Math.floor(Math.random()*4); // 6-9 full spins for drama
+  const spins = 6 + Math.floor(Math.random()*4);
   targetStopAngle = baseStop + spins * Math.PI*2;
 
-  // start velocity
   spinVel = 0.45 + Math.random()*0.2;
-
   animateSpin(stepKey, resultIndex);
 }
 
@@ -821,13 +963,24 @@ function animateSpin(stepKey, resultIndex){
   const friction = 0.985;
 
   function frame(){
-    // move
     wheelAngle += spinVel;
 
-    // approach stop (smooth decel)
+    // Tick per slice + slowdown pitch
+    const n = currentWheelItems.length;
+    if(n > 0){
+      const slice = (Math.PI*2)/n;
+      const normalized = ((wheelAngle % (Math.PI*2)) + (Math.PI*2)) % (Math.PI*2);
+      const sliceIndex = Math.floor(normalized / slice);
+      if(lastTickSliceIndex === null) lastTickSliceIndex = sliceIndex;
+      if(sliceIndex !== lastTickSliceIndex){
+        lastTickSliceIndex = sliceIndex;
+        playTick();
+      }
+    }
+    setSpinPitchFromVelocity(spinVel);
+
     const remaining = targetStopAngle - wheelAngle;
     if(remaining < 0.8){
-      // ease toward stop
       wheelAngle += remaining * 0.12;
       spinVel *= 0.92;
     }else{
@@ -836,12 +989,13 @@ function animateSpin(stepKey, resultIndex){
 
     drawWheel();
 
-    // stop condition
     if(Math.abs(targetStopAngle - wheelAngle) < 0.01 && spinVel < 0.02){
       wheelAngle = targetStopAngle;
       drawWheel();
       state.spinning = false;
       document.getElementById("spinBtn").disabled = false;
+
+      stopAudio("aud_spin");
 
       const value = currentWheelItems[resultIndex];
       onSpinResult(stepKey, value);
@@ -855,7 +1009,6 @@ function animateSpin(stepKey, resultIndex){
 }
 
 function onSpinResult(stepKey, value){
-  // Save into character
   const c = state.character;
 
   if(stepKey==="race") c.race = value;
@@ -865,30 +1018,24 @@ function onSpinResult(stepKey, value){
   if(stepKey==="durability") c.durability = Number(value);
   if(stepKey==="regen") c.regen = Number(value);
 
-  // Apply theme immediately after race
   if(stepKey==="race") applyRaceTheme(value);
 
-  // Show result + meta
   document.getElementById("spinResult").textContent = `Result: ${value}`;
-  const rp = rarityPercentFor(stepKey, stepKey==="strength"||stepKey==="durability"||stepKey==="regen" ? Number(value) : value);
+  const rp = rarityPercentFor(stepKey, value);
   document.getElementById("spinMeta").textContent = `Rarity (placeholder): ${rp}%`;
+  playRarityStinger(rp);
 
-  // Next step
   state.buildStep++;
   if(state.buildStep > 5) state.buildStep = 6;
 
-  // Fusion check anytime we have race+power
   updateFusion();
-
-  // Update wheel title and UI
   refreshUI();
 
-  // If build complete -> show naming
   if(isBuildComplete()){
-    showNaming();
+    showNaming(); // locks build + disables spinning
   }
 
-  saveGame(); // autosave after each spin
+  saveGame();
 }
 
 /* =========================
@@ -901,11 +1048,21 @@ function isBuildComplete(){
 }
 
 function showNaming(){
+  // 🔒 lock build (bug fix)
+  state.buildLocked = true;
   document.getElementById("nameBox").style.display = "";
+  document.getElementById("spinBtn").disabled = true;
+
+  // Daily build stamp (OFF in DEV_MODE)
+  if(!DEV_MODE){
+    localStorage.setItem(DAILY_BUILD_KEY, getTodayKeyTZ());
+  }
+
   updateNamePreview();
+  saveGame();
 }
 
-const BANNED = ["porn","sex","nazi","rape"]; // add more later
+const BANNED = ["porn","sex","nazi","rape"];
 
 function updateNamePreview(){
   const first = document.getElementById("nameInput").value.trim();
@@ -947,7 +1104,7 @@ function skipName(){
 }
 
 function finishBuildEarly(){
-  // If you want to quickly test fights without completing everything
+  // quick test mode
   if(!state.character.race) state.character.race = "Human";
   if(!state.character.power) state.character.power = "No power";
   if(!state.character.weapon) state.character.weapon = "No weapon";
@@ -958,6 +1115,10 @@ function finishBuildEarly(){
   applyRaceTheme(state.character.race);
   updateFusion();
   refreshUI();
+
+  if(isBuildComplete() && !state.character.name){
+    showNaming();
+  }
   toast("Build filled for testing.");
   saveGame();
 }
@@ -1010,17 +1171,17 @@ function refreshCodex(){
 }
 
 /* =========================
-   PvE EVENTS + FIGHT
+   PvE EVENTS + VISUAL FIGHT
 ========================= */
 
 const PVE_EVENTS = [
-  { name:"Golem Ambush", enemyRace:"Golem", enemyPower:"Golem creation", enemyWeapon:"Hammer", str:18, dur:55, regen:2, bg:"images/backgrounds/cave.png",
+  { name:"Golem Ambush", enemyRace:"Golem", enemyPower:"Golem creation", enemyWeapon:"Hammer", str:18, dur:55, regen:2, bg:"images/backgrounds/cave.svg",
     desc:"A heavy enemy rushes from the rocks." },
-  { name:"Vampire Raid", enemyRace:"Vampire", enemyPower:"Regeneration", enemyWeapon:"Knife", str:16, dur:35, regen:5, bg:"images/backgrounds/castle.png",
+  { name:"Vampire Raid", enemyRace:"Vampire", enemyPower:"Regeneration", enemyWeapon:"Knife", str:16, dur:35, regen:5, bg:"images/backgrounds/castle.svg",
     desc:"Fast strikes and healing between attacks." },
-  { name:"Forest Hunters", enemyRace:"Goblin", enemyPower:"Invisibility", enemyWeapon:"Bow", str:14, dur:25, regen:1, bg:"images/backgrounds/forest.png",
+  { name:"Forest Hunters", enemyRace:"Goblin", enemyPower:"Invisibility", enemyWeapon:"Bow", str:14, dur:25, regen:1, bg:"images/backgrounds/forest.svg",
     desc:"Quick ranged attacks from the shadows." },
-  { name:"Divine Test", enemyRace:"God", enemyPower:"Time manipulation", enemyWeapon:"Magic staff", str:22, dur:40, regen:3, bg:"images/backgrounds/celestial.png",
+  { name:"Divine Test", enemyRace:"God", enemyPower:"Time manipulation", enemyWeapon:"Magic staff", str:22, dur:40, regen:3, bg:"images/backgrounds/celestial.svg",
     desc:"A dangerous opponent bends the flow of battle." }
 ];
 
@@ -1044,18 +1205,126 @@ function fightPvE(){
   }
   runBattle({
     mode:"pve",
-    player: buildFighterFromCharacter(state.character, true),
+    player: buildFighterFromCharacter(state.character),
     enemy: buildFighterFromEvent(state.pve.currentEvent),
-    arenaBg: pickArenaBg(state.character.race, state.pve.currentEvent.enemyRace, state.pve.currentEvent.bg)
+    arenaBg: state.pve.currentEvent.bg || (RACE_THEME_BG[state.character.race] || RACE_THEME_BG.Default)
   });
 }
 
+function runBattle({mode, player, enemy, arenaBg}){
+  const logEl = document.getElementById("battleLog");
+  const bgEl = document.getElementById("battleBg");
+
+  bgEl.style.backgroundImage = arenaBg ? `url('${arenaBg}')` : "";
+
+  document.getElementById("p_label").textContent = `${state.character.name || "Player"} • ${player.race}`;
+  document.getElementById("e_label").textContent = `Enemy • ${enemy.race}`;
+
+  document.getElementById("p_portraitText").textContent = `${player.race}\n${player.power}\n${player.weapon}`;
+  document.getElementById("e_portraitText").textContent = `${enemy.race}\n${enemy.power}\n${enemy.weapon}`;
+
+  let pHP = player.maxHP, eHP = enemy.maxHP;
+  const pMax = pHP, eMax = eHP;
+
+  setHP("p_hp", pHP, pMax);
+  setHP("e_hp", eHP, eMax);
+
+  logEl.textContent = `${mode.toUpperCase()} BATTLE\n${player.race} vs ${enemy.race}\n\n`;
+
+  let turn = 0;
+  const maxTurns = 35;
+
+  function step(){
+    turn++;
+    if(turn>maxTurns || pHP<=0 || eHP<=0){
+      const winner =
+        pHP<=0 && eHP<=0 ? "Draw" :
+        pHP<=0 ? "Enemy Wins" :
+        eHP<=0 ? "Player Wins" :
+        (pHP>eHP ? "Player Wins (time)" : "Enemy Wins (time)");
+      logEl.textContent += `\nResult: ${winner}\n`;
+
+      if(winner.includes("Player Wins")) playOnce("aud_win");
+      else if(winner.includes("Enemy Wins")) playOnce("aud_lose");
+
+      toast(winner);
+      return;
+    }
+
+    let pDmg = Math.max(player.strength - enemy.durability*0.10, 1);
+    let eDmg = Math.max(enemy.strength - player.durability*0.10, 1);
+
+    // minimum damage prevents infinite fights
+    pDmg = Math.max(pDmg, eMax*0.01);
+    eDmg = Math.max(eDmg, pMax*0.01);
+
+    eHP -= pDmg;
+    pHP -= eDmg;
+
+    // regen (up to 10% max hp per turn)
+    pHP += Math.min(player.regen, pMax*0.10);
+    eHP += Math.min(enemy.regen, eMax*0.10);
+
+    pHP = Math.min(pHP, pMax);
+    eHP = Math.min(eHP, eMax);
+
+    playOnce("aud_hit");
+
+    popFloat("e_float", `-${pDmg.toFixed(0)}`);
+    popFloat("p_float", `-${eDmg.toFixed(0)}`);
+    shake("e_portrait");
+    shake("p_portrait");
+
+    setHP("p_hp", pHP, pMax);
+    setHP("e_hp", eHP, eMax);
+
+    logEl.textContent += `T${turn}: P=${Math.max(0,pHP).toFixed(0)}  E=${Math.max(0,eHP).toFixed(0)}\n`;
+
+    // enrage after 20 turns
+    if(turn>20){
+      eHP -= pDmg*0.05*(turn-20);
+      pHP -= eDmg*0.05*(turn-20);
+    }
+
+    setTimeout(step, 450);
+  }
+
+  step();
+}
+
+function setHP(id, hp, max){
+  const pct = Math.max(0, Math.min(100, (hp/max)*100));
+  document.getElementById(id).style.width = pct + "%";
+}
+
+function popFloat(id, text){
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.style.color = "rgba(255,75,110,1)";
+  el.style.opacity = "1";
+  el.style.transform = "translateY(-24px)";
+  setTimeout(()=>{
+    el.style.opacity = "0";
+    el.style.transform = "translateY(-46px)";
+  }, 50);
+  setTimeout(()=>{
+    el.style.opacity = "0";
+    el.style.transform = "translateY(0px)";
+  }, 650);
+}
+
+function shake(portraitId){
+  const el = document.getElementById(portraitId);
+  el.classList.remove("shake");
+  void el.offsetWidth;
+  el.classList.add("shake");
+}
+
 /* =========================
-   PvP (SOFT SCALING, NO CAPS)
+   PvP (SOFT SCALING)
 ========================= */
 
 function generateOpponent(){
-  // quick opponent generator using same wheels
   const opp = {
     name: "Opponent",
     race: WHEELS.race[Math.floor(Math.random()*WHEELS.race.length)],
@@ -1077,6 +1346,14 @@ function generateOpponent(){
   toast("New opponent generated.");
 }
 
+function pvpScale(totalPower){
+  return Math.pow(totalPower, 0.78) * 7;
+}
+function totalPowerFromStats(f){
+  const bonus = f.bonusPower || 0;
+  return (f.strength*2) + (f.durability*1.6) + (f.regen*25) + bonus;
+}
+
 function simulatePvP(){
   if(!isBuildComplete()){
     toast("Finish your build first (or use Finish Build).");
@@ -1086,60 +1363,44 @@ function simulatePvP(){
     generateOpponent();
   }
 
-  const p = buildFighterFromCharacter(state.character, false);
+  const p = buildFighterFromCharacter(state.character);
   const e = buildFighterFromOpponent(state.pvp.opponent);
 
   const log = runBattleSimPvP(p, e);
   document.getElementById("pvpLog").textContent = log;
 }
 
-/* Soft scaling power (no caps) */
-function pvpScale(totalPower){
-  // strong advantage still exists, but compressed
-  return Math.pow(totalPower, 0.78) * 7;
-}
-
-function totalPowerFromStats(f){
-  // Simple starter power score:
-  // regen weighted because it’s strong
-  return (f.strength*2) + (f.durability*1.6) + (f.regen*25) + (f.bonusPower||0);
-}
-
 function runBattleSimPvP(player, enemy){
-  // Convert to scaled PvP power
   const pTotal = totalPowerFromStats(player);
   const eTotal = totalPowerFromStats(enemy);
 
   const pScaled = pvpScale(pTotal);
   const eScaled = pvpScale(eTotal);
 
-  // HP based on durability
   let pHP = 120 + player.durability*2.2;
   let eHP = 120 + enemy.durability*2.2;
   const pMax = pHP, eMax = eHP;
 
   let turn = 0;
   const maxTurns = 40;
+
   let log = `PvP (soft scaling)\nPlayerScaled=${pScaled.toFixed(1)} EnemyScaled=${eScaled.toFixed(1)}\n\n`;
 
   while(pHP>0 && eHP>0 && turn<maxTurns){
     turn++;
 
-    // damage: scaled power / 12 with some randomness
-    const pDmg = Math.max( (pScaled/12) * rand(0.9,1.1), 1 );
-    const eDmg = Math.max( (eScaled/12) * rand(0.9,1.1), 1 );
+    const pDmg = Math.max((pScaled/12) * rand(0.9,1.1), 1);
+    const eDmg = Math.max((eScaled/12) * rand(0.9,1.1), 1);
 
     eHP -= pDmg;
     pHP -= eDmg;
 
-    // regen each turn (percent-ish)
     pHP += Math.min(player.regen, pMax*0.10);
     eHP += Math.min(enemy.regen, eMax*0.10);
 
     pHP = Math.min(pHP, pMax);
     eHP = Math.min(eHP, eMax);
 
-    // anti-infinite: enrage after 25 turns (damage ramps)
     if(turn>25){
       eHP -= pDmg*0.05*(turn-25);
       pHP -= eDmg*0.05*(turn-25);
@@ -1154,136 +1415,21 @@ function runBattleSimPvP(player, enemy){
   if(turn>=maxTurns){
     winner = pHP>eHP ? "Player Wins (time)" : "Enemy Wins (time)";
   }
-
   log += `\nResult: ${winner}\n`;
   return log;
-}
-
-/* =========================
-   VISUAL BATTLE (PvE)
-========================= */
-
-function runBattle({mode, player, enemy, arenaBg}){
-  const logEl = document.getElementById("battleLog");
-  const bgEl = document.getElementById("battleBg");
-
-  bgEl.style.backgroundImage = arenaBg ? `url('${arenaBg}')` : "";
-
-  // Labels + portraits (simple text for now; we’ll swap to images later)
-  document.getElementById("p_label").textContent = `${state.character.name || "Player"} • ${player.race}`;
-  document.getElementById("e_label").textContent = `${enemy.name} • ${enemy.race}`;
-
-  // Show “portrait text”
-  document.getElementById("p_portrait").style.backgroundImage = "";
-  document.getElementById("e_portrait").style.backgroundImage = "";
-
-  // HP
-  let pHP = player.maxHP, eHP = enemy.maxHP;
-  const pMax = pHP, eMax = eHP;
-
-  setHP("p_hp", pHP, pMax);
-  setHP("e_hp", eHP, eMax);
-
-  logEl.textContent = `${mode.toUpperCase()} BATTLE\n${player.race} vs ${enemy.race}\n\n`;
-
-  // Turn loop (animated)
-  let turn = 0;
-  const maxTurns = 35;
-
-  function step(){
-    turn++;
-    if(turn>maxTurns || pHP<=0 || eHP<=0){
-      const winner =
-        pHP<=0 && eHP<=0 ? "Draw" :
-        pHP<=0 ? "Enemy Wins" :
-        eHP<=0 ? "Player Wins" :
-        (pHP>eHP ? "Player Wins (time)" : "Enemy Wins (time)");
-      logEl.textContent += `\nResult: ${winner}\n`;
-      toast(winner);
-      return;
-    }
-
-    // damage formula uses STR vs DUR, plus minimum damage
-    let pDmg = Math.max(player.strength - enemy.durability*0.10, 1);
-    let eDmg = Math.max(enemy.strength - player.durability*0.10, 1);
-
-    // minimum damage = 1% enemy maxHP (prevents stalemates)
-    pDmg = Math.max(pDmg, eMax*0.01);
-    eDmg = Math.max(eDmg, pMax*0.01);
-
-    eHP -= pDmg;
-    pHP -= eDmg;
-
-    // regen capped at 10% maxHP
-    pHP += Math.min(player.regen, pMax*0.10);
-    eHP += Math.min(enemy.regen, eMax*0.10);
-    pHP = Math.min(pHP, pMax);
-    eHP = Math.min(eHP, eMax);
-
-    // visuals
-    popFloat("e_float", `-${pDmg.toFixed(0)}`, true);
-    popFloat("p_float", `-${eDmg.toFixed(0)}`, false);
-    shake("e_portrait");
-    shake("p_portrait");
-
-    setHP("p_hp", pHP, pMax);
-    setHP("e_hp", eHP, eMax);
-
-    logEl.textContent += `T${turn}: P=${Math.max(0,pHP).toFixed(0)}  E=${Math.max(0,eHP).toFixed(0)}\n`;
-
-    // Enrage after 20 turns
-    if(turn>20){
-      eHP -= pDmg*0.05*(turn-20);
-      pHP -= eDmg*0.05*(turn-20);
-    }
-
-    setTimeout(step, 450);
-  }
-
-  step();
-}
-
-function setHP(id, hp, max){
-  const pct = Math.max(0, Math.min(100, (hp/max)*100));
-  document.getElementById(id).style.width = pct + "%";
-}
-
-function popFloat(id, text, isEnemy){
-  const el = document.getElementById(id);
-  el.textContent = text;
-  el.style.left = isEnemy ? "60%" : "40%";
-  el.style.color = isEnemy ? "rgba(255,75,110,1)" : "rgba(255,75,110,1)";
-  el.style.opacity = "1";
-  el.style.transform = "translateY(-24px)";
-  setTimeout(()=>{
-    el.style.opacity = "0";
-    el.style.transform = "translateY(-46px)";
-  }, 50);
-  setTimeout(()=>{
-    el.style.opacity = "0";
-    el.style.transform = "translateY(0px)";
-  }, 650);
-}
-
-function shake(portraitId){
-  const el = document.getElementById(portraitId);
-  el.classList.remove("shake");
-  void el.offsetWidth;
-  el.classList.add("shake");
 }
 
 /* =========================
    FIGHTER BUILDERS
 ========================= */
 
-function buildFighterFromCharacter(c, isPvE){
+function buildFighterFromCharacter(c){
   const fusion = findFusion([c.race, c.power]);
   const bonusPower =
     fusion?.tier === "Rare" ? 80 :
     fusion?.tier === "Legendary" ? 150 :
     fusion?.tier === "Divine" ? 260 : 0;
 
-  // PvE uses raw stats
   return {
     name: c.name || "Player",
     race: c.race,
@@ -1296,7 +1442,6 @@ function buildFighterFromCharacter(c, isPvE){
     maxHP: 140 + c.durability*2.4
   };
 }
-
 function buildFighterFromEvent(ev){
   const fusion = findFusion([ev.enemyRace, ev.enemyPower]);
   const bonusPower =
@@ -1316,7 +1461,6 @@ function buildFighterFromEvent(ev){
     maxHP: 140 + ev.dur*2.4
   };
 }
-
 function buildFighterFromOpponent(o){
   const fusion = findFusion([o.race, o.power]);
   const bonusPower =
@@ -1336,22 +1480,14 @@ function buildFighterFromOpponent(o){
   };
 }
 
-function pickArenaBg(playerRace, enemyRace, eventBg){
-  // Dominant background: player race or event background if provided
-  if(eventBg) return eventBg;
-  return RACE_THEME_BG[playerRace] || RACE_THEME_BG[enemyRace] || "";
-}
-
 /* =========================
    UI REFRESH
 ========================= */
 
 function refreshUI(){
-  // wheel title
   const stepKey = getCurrentStepKey();
   document.getElementById("wheelTitle").textContent = wheelTitleFor(stepKey);
 
-  // stats panel
   const c = state.character;
   document.getElementById("s_name").textContent = c.name || "---";
   document.getElementById("s_race").textContent = c.race || "---";
@@ -1361,48 +1497,19 @@ function refreshUI(){
   document.getElementById("s_dur").textContent = (c.durability ?? "---");
   document.getElementById("s_regen").textContent = (c.regen ?? "---");
 
-  // fusion
   document.getElementById("pill_fusion").textContent = `Fusion: ${c.fusion || "---"}`;
 
-  // codex
-  refreshCodex();
-
-  // pvp opponent line
-  if(state.pvp.opponent){
-    const o = state.pvp.opponent;
-    document.getElementById("oppLine").textContent =
-      `${o.race} | ${o.power} | ${o.weapon} | STR ${o.strength} DUR ${o.durability} REG ${o.regen}` + (o.fusion? ` | Fusion: ${o.fusion}`:"");
-  }else{
-    document.getElementById("oppLine").textContent = "---";
-  }
-
-  // battle arena default bg to player race
-  const battleBg = document.getElementById("battleBg");
-  const bg = RACE_THEME_BG[c.race] || "";
-  battleBg.style.backgroundImage = bg ? `url('${bg}')` : "";
-
-  // show name box only if build complete and name missing
-  if(isBuildComplete() && !c.name){
-    document.getElementById("nameBox").style.display = "";
-  }
+  // If build is locked, disable spin button
+  document.getElementById("spinBtn").disabled = !!state.buildLocked;
 
   // redraw wheel
   setWheelItems(stepKey);
 }
 
 function toast(msg){
-  // minimal toast using console + quick flash
   console.log(msg);
-  document.getElementById("spinMeta").textContent = msg;
-  setTimeout(()=>{
-    // restore meta if we can
-    const stepKey = getCurrentStepKey();
-    const last = document.getElementById("spinResult").textContent.replace("Result: ","");
-    if(last && last !== "---"){
-      const rp = rarityPercentFor(stepKey, (stepKey==="strength"||stepKey==="durability"||stepKey==="regen") ? Number(last) : last);
-      document.getElementById("spinMeta").textContent = `Rarity (placeholder): ${rp}%`;
-    }
-  }, 900);
+  const meta = document.getElementById("spinMeta");
+  if(meta) meta.textContent = msg;
 }
 
 /* =========================
@@ -1428,10 +1535,14 @@ function escapeHtml(s){
 ========================= */
 
 (function init(){
-  loadGame(); // auto-load if exists
+  loadSoundSettings();
+  loadGame();
+
   if(!state.pvp.opponent) generateOpponent();
+
   applyRaceTheme(state.character.race || "Human");
   updateFusion();
+  refreshCodex();
   refreshUI();
 })();
 </script>
