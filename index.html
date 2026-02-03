@@ -433,328 +433,1377 @@
         </div>
       </div>
     </section>
-<!-- =========================
-PART 4 / 6 — CORE ENGINE (STATE + WHEEL + TABS)
-PASTE BETWEEN PART 3 AND PART 5
-========================= -->
+<!-- ✅ PART 4 / 6 — STATS + PvE + PvP tabs (HTML) + core JS (wheel, tabs, state, rendering) -->
+<!-- Paste this RIGHT AFTER your Part 3 closing </section> -->
+
+<!-- STATS TAB -->
+<section id="tab-stats" class="grid hidden">
+  <div class="card">
+    <h2>Raw Build</h2>
+    <div id="statsList" class="statList"></div>
+  </div>
+
+  <div class="card">
+    <h2>Final Stats</h2>
+    <div class="muted" style="margin-bottom:8px">
+      Final stats are additive (race + powers + weapons + armor + mastery + transformation + permanent bonuses).
+    </div>
+    <div id="finalStatsList" class="statList"></div>
+  </div>
+</section>
+
+<!-- PVE TAB -->
+<section id="tab-pve" class="grid hidden">
+  <div class="card">
+    <h2>PvE Event</h2>
+    <div class="muted" style="margin-bottom:10px">
+      Fight an event enemy for coins/XP. (Flee only if speed gap is close enough.)
+    </div>
+    <button id="pveStartBtn" class="btn primary">Start PvE</button>
+
+    <div class="card" style="margin-top:12px; padding:12px; background:rgba(15,22,35,.45); border-color:rgba(255,255,255,.08)">
+      <h2>Combat Log</h2>
+      <div id="pveLog" class="muted"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Battle</h2>
+
+    <div class="portraitWrap">
+      <div style="min-width:260px">
+        <div class="badgeRow">
+          <div class="badge"><span class="icon">🧑</span><span id="pve_p_roleTag">You</span></div>
+        </div>
+        <div id="pve_p_charFrame" class="frame idle-sway">
+          <img id="pve_p_layer_base" class="layer" alt="">
+          <img id="pve_p_layer_body" class="layer" alt="">
+          <img id="pve_p_layer_back" class="layer" alt="">
+          <img id="pve_p_layer_legs" class="layer" alt="">
+          <img id="pve_p_layer_arms" class="layer" alt="">
+          <img id="pve_p_layer_head" class="layer" alt="">
+          <img id="pve_p_layer_armor" class="layer" alt="">
+          <img id="pve_p_layer_weapon" class="layer" alt="">
+          <img id="pve_p_layer_fx" class="layer fx" alt="">
+        </div>
+        <div class="slotProgressWrap" style="margin-top:10px">
+          <div id="pve_p_hp" class="slotProgressBar" style="width:100%"></div>
+        </div>
+        <div class="muted" style="margin-top:6px">HP</div>
+      </div>
+
+      <div style="min-width:260px">
+        <div class="badgeRow">
+          <div class="badge"><span class="icon">👹</span><span id="pve_e_roleTag">Enemy</span></div>
+        </div>
+        <div id="pve_e_charFrame" class="frame idle-sway">
+          <img id="pve_e_layer_base" class="layer" alt="">
+          <img id="pve_e_layer_body" class="layer" alt="">
+          <img id="pve_e_layer_back" class="layer" alt="">
+          <img id="pve_e_layer_legs" class="layer" alt="">
+          <img id="pve_e_layer_arms" class="layer" alt="">
+          <img id="pve_e_layer_head" class="layer" alt="">
+          <img id="pve_e_layer_armor" class="layer" alt="">
+          <img id="pve_e_layer_weapon" class="layer" alt="">
+          <img id="pve_e_layer_fx" class="layer fx" alt="">
+        </div>
+        <div class="slotProgressWrap" style="margin-top:10px">
+          <div id="pve_e_hp" class="slotProgressBar" style="width:100%"></div>
+        </div>
+        <div class="muted" style="margin-top:6px">HP</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PVP TAB -->
+<section id="tab-pvp" class="grid hidden">
+  <div class="card">
+    <h2>PvP Match</h2>
+    <div class="muted" style="margin-bottom:10px">
+      Fight a generated opponent. Chance to steal traits (additive). Soul Stone works if you have Infinity Gauntlet.
+    </div>
+    <button id="pvpStartBtn" class="btn primary">Start PvP</button>
+
+    <div class="card" style="margin-top:12px; padding:12px; background:rgba(15,22,35,.45); border-color:rgba(255,255,255,.08)">
+      <h2>Combat Log</h2>
+      <div id="pvpLog" class="muted"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Battle</h2>
+
+    <div class="portraitWrap">
+      <div style="min-width:260px">
+        <div class="badgeRow">
+          <div class="badge"><span class="icon">🧑</span><span id="p_roleTag">You</span></div>
+        </div>
+        <div id="p_charFrame" class="frame idle-sway">
+          <img id="p_layer_base" class="layer" alt="">
+          <img id="p_layer_body" class="layer" alt="">
+          <img id="p_layer_back" class="layer" alt="">
+          <img id="p_layer_legs" class="layer" alt="">
+          <img id="p_layer_arms" class="layer" alt="">
+          <img id="p_layer_head" class="layer" alt="">
+          <img id="p_layer_armor" class="layer" alt="">
+          <img id="p_layer_weapon" class="layer" alt="">
+          <img id="p_layer_fx" class="layer fx" alt="">
+        </div>
+        <div class="slotProgressWrap" style="margin-top:10px">
+          <div id="p_hp" class="slotProgressBar" style="width:100%"></div>
+        </div>
+        <div class="muted" style="margin-top:6px">HP</div>
+      </div>
+
+      <div style="min-width:260px">
+        <div class="badgeRow">
+          <div class="badge"><span class="icon">👹</span><span id="e_roleTag">Opponent</span></div>
+        </div>
+        <div id="e_charFrame" class="frame idle-sway">
+          <img id="e_layer_base" class="layer" alt="">
+          <img id="e_layer_body" class="layer" alt="">
+          <img id="e_layer_back" class="layer" alt="">
+          <img id="e_layer_legs" class="layer" alt="">
+          <img id="e_layer_arms" class="layer" alt="">
+          <img id="e_layer_head" class="layer" alt="">
+          <img id="e_layer_armor" class="layer" alt="">
+          <img id="e_layer_weapon" class="layer" alt="">
+          <img id="e_layer_fx" class="layer fx" alt="">
+        </div>
+        <div class="slotProgressWrap" style="margin-top:10px">
+          <div id="e_hp" class="slotProgressBar" style="width:100%"></div>
+        </div>
+        <div class="muted" style="margin-top:6px">HP</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Toast + Modals + Steal FX (required by scripts) -->
+<div id="toast"></div>
+
+<div id="stealAnim" class="hidden">
+  <div id="stealChip"></div>
+</div>
+<div id="stealPopup" class="hidden"></div>
+
+<div id="lootModal" class="modal hidden">
+  <div class="modalCard">
+    <div class="modalTop">
+      <div>
+        <div id="lootTitle" class="modalTitle">Victory</div>
+        <div id="lootSub" class="modalSub"></div>
+      </div>
+      <button class="btn ghost" id="lootCloseBtn">✖</button>
+    </div>
+
+    <h2 style="margin-top:12px">Rewards</h2>
+    <div id="lootRewards"></div>
+
+    <h2 style="margin-top:12px">Trait Events</h2>
+    <div id="lootTrait"></div>
+
+    <h2 style="margin-top:12px">Progress</h2>
+    <div id="lootProgress"></div>
+
+    <div class="modalBtns">
+      <button class="btn good" id="lootOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
+<div id="choiceModal" class="modal hidden">
+  <div class="modalCard">
+    <div class="modalTop">
+      <div>
+        <div id="choiceTitle" class="modalTitle">Choose</div>
+        <div id="choiceSub" class="modalSub"></div>
+      </div>
+      <button class="btn ghost" id="choiceCloseBtn">✖</button>
+    </div>
+    <div id="choiceBtns" class="modalBtns"></div>
+  </div>
+</div>
+
 <script>
 /* =========================================================
-   HELPERS
+   CORE HELPERS
 ========================================================= */
-const $ = (id) => document.getElementById(id);
-const escapeHtml = (s)=> String(s ?? "").replace(/[&<>"']/g, m => ({
-  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-}[m]));
+const $ = (id)=>document.getElementById(id);
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+}
+let _toastTimer=null;
+function toast(msg){
+  const t = $("toast");
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove("show"), 1400);
+}
 
 /* =========================================================
-   FULL OPTION LISTS (RESTORED)
+   GAME CONSTANTS (FIXED RACE LIST)
 ========================================================= */
 const RACE_OPTIONS = [
-  "Human","Saiyan","Demon","Angel","God","Dragon","Vampire","Werewolf",
-  "Giant","Golem","Alien","Cyborg","Hybrid","Shinigami","Soul Eater",
-  "Hivemind","Zombie","Skeleton","Orc","Goblin","Gnome","Demi Human"
+  "Gnome","Goblin","Zombie","Skeleton","Human","Orc","Cyborg","Giant","Demi human","Golem",
+  "Dragon","Vampire","Hivemind","Shinigami","Soul eater","Demon","Alien","God","Hybrid"
 ];
 
 const POWER_OPTIONS = [
-  "No Power","Fire","Ice Manipulation","Lightning","Gravity Manipulation",
-  "Time Manipulation","Teleportation","Telekinesis","Regeneration",
-  "Adaptation","Immortal","Weapon Creation","Heavenly Restriction","Rinnegan"
+  "No Power","Adaptation","Regeneration","Gravity Manipulation","Time Manipulation","Telekinesis",
+  "Teleportation","Fire","Ice Manipulation","Lightning","Weapon Creation","Heavenly Restriction",
+  "Immortal","Rinnegan"
 ];
-
 const WEAPON_OPTIONS = [
-  "No Weapon","Sword","Scythe","Axe","Hammer","Spear","Brass Knuckles",
-  "Blades of Chaos","Samehada","Uzumaki Chains","Infinity Gauntlet","Green Lantern Ring"
+  "No Weapon","Sword","Scythe","Axe","Hammer","Spear","Brass Knuckles","Blades of Chaos","Samehada",
+  "Uzumaki Chains","Infinity Gauntlet","Green Lantern Ring"
 ];
-
 const ARMOR_OPTIONS = [
-  "No Armor","Berserk Armor","Iron Man Suit","Jauger","Symbiote",
-  "Ashborn's Armor","Rock Lee Weights","Goku's Gi"
+  "No Armor","Berserk Armor","Iron Man Suit","Jauger","Symbiote","Ashborn's Armor","Rock Lee Weights","Goku's Gi"
 ];
+const CLAN_OPTIONS = ["No Clan","Uchiha","Gojo","D Clan","Kamado"];
+const TRAINER_OPTIONS = ["No Trainer","Master Roshi","Jiraiya","Hisoka","Korro","Yuujirou"];
+const POWER_MASTERY_OPTIONS = ["None","Dormant","Awakening","Controlled","Mastered","Planetary","Cosmic","Universal","Omnipotent"];
 
-const TRAINER_OPTIONS = [
-  "No Trainer","Master Roshi","Jiraiya","Hisoka","Korro","Yuujirou"
-];
+const TRANSFORM_OPTIONS = ["None","Kaioken","Eight Gates","Super Saiyan","Titan Transformation","Tailed Beast"];
+const KAIOKEN_OPTIONS = ["X2","X3","X4","X5","X10","X20","X50","X100"];
+const GATES_OPTIONS = ["First Gate","Second Gate","Third Gate","Fourth Gate","Fifth Gate","Sixth Gate","Seventh Gate","Eighth Gate"];
+const SAIYAN_FORM_OPTIONS = ["SSJ1","SSJ2","SSJ3","SSG","SSB","UI"];
+const TITAN_TYPE_OPTIONS = ["Pure Titan","Armored Titan","Attack Titan","Beast Titan","Founding Titan"];
+const TAILED_BEAST_OPTIONS = ["1 Tail","2 Tails","3 Tails","4 Tails","5 Tails","6 Tails","7 Tails","8 Tails","9 Tails"];
 
-const CLAN_OPTIONS = [
-  "No Clan","Uchiha","Gojo","D Clan","Kamado"
-];
-
-const POWER_MASTERY_OPTIONS = [
-  "None","Dormant","Awakening","Controlled","Mastered","Planetary","Cosmic","Universal","Omnipotent"
-];
-
-const TRANSFORM_OPTIONS = [
-  "None","Kaioken","Eight Gates","Super Saiyan","Titan Transformation","Tailed Beast"
-];
-
-const KAIOKEN_OPTIONS = ["X2","X5","X10","X20"];
-const GATES_OPTIONS = ["First","Second","Third","Fourth","Fifth","Sixth","Seventh","Eighth"];
-const SAIYAN_FORM_OPTIONS = ["SSJ","SSJ2","SSJ3","SSJ God","SSJ Blue"];
-const TITAN_TYPE_OPTIONS = ["Pure","Armored","Colossal","Beast"];
-const TAILED_BEAST_OPTIONS = ["One Tail","Two Tails","Three Tails","Four Tails","Five Tails","Six Tails","Seven Tails","Eight Tails","Nine Tails"];
+/* Words that show to user (numbers under the hood) */
+const STRENGTH_WORDS = ["Weak","Average","Strong","City","Mountain","Country","Planet","Star","Galaxy","Universal","???"];
+const SPEED_WORDS    = ["Slow","Average","Fast","Mach","Lightning","Light","FTL","Galaxy","Universal","???"];
+const DUR_WORDS      = ["Fragile","Average","Tough","Steel","City","Mountain","Country","Planet","Star","Universal","???"];
+const FIGHT_WORDS    = ["Clumsy","Average","Trained","Elite","Master","Legendary","Mythic","Universal","???"];
+const IQ_WORDS       = ["Low","Average","Smart","Genius","Supergenius","Cosmic","Universal","???"];
 
 /* =========================================================
-   STAT WORDS
+   STATE + SAVE
 ========================================================= */
-const STRENGTH_WORDS = ["Peak Human","Superhuman","City","Mountain","Country","Planetary","Star","Galaxy","Universal","???"];
-const SPEED_WORDS    = ["Human","Supersonic","Hypersonic","Relativistic","FTL","Massively FTL","Infinite","???"];
-const DUR_WORDS      = ["Fragile","Bulletproof","Tank","City","Mountain","Planetary","Star","Universal","???"];
-const FIGHT_WORDS    = ["Untrained","Street","Martial Artist","Master","Grandmaster","Legendary","???"];
-const IQ_WORDS       = ["Low","Average","High","Genius","Super Genius","Cosmic Mind","???"];
-
-function statWordToNumber(type, word){
-  const map = {
-    strength: STRENGTH_WORDS,
-    speed: SPEED_WORDS,
-    durability: DUR_WORDS,
-    fight: FIGHT_WORDS,
-    iq: IQ_WORDS
-  };
-  const arr = map[type] || [];
-  const i = arr.indexOf(word);
-  return i < 0 ? 0 : i + 1;
-}
-function labelForStat(type, num){
-  const map = {
-    strength: STRENGTH_WORDS,
-    speed: SPEED_WORDS,
-    durability: DUR_WORDS,
-    fight: FIGHT_WORDS,
-    iq: IQ_WORDS
-  };
-  const arr = map[type] || [];
-  return arr[Math.min(arr.length-1, Math.max(0, num-1))] || "???";
-}
-
-/* =========================================================
-   STATE
-========================================================= */
-let state = {
-  phaseIndex: 0,
-  phases: ["Race","Power","Weapon","Armor","Trainer","Clan","Transformation"],
-  character: {
+const STORAGE_KEY = "wheel_forge_state_v1";
+const defaultState = ()=>({
+  character:{
     finalized:false,
+    name:"",
     race:null,
     powers:[],
     weapons:[],
     armors:[],
-    trainer:null,
-    clan:null,
-    transformation:null,
+    clan:"No Clan",
+    trainer:"No Trainer",
+    powerMastery:"None",
+    transformation:"None",
     transformDetail:null,
-    strengthW:null,
-    speedW:null,
-    durabilityW:null,
-    fightW:null,
-    iqW:null,
+
+    strengthW:"Average",
+    speedW:"Average",
+    durabilityW:"Average",
+    fightW:"Average",
+    iqW:"Average",
     luckW:"5"
   },
   progress:{
+    pvpWins:0,
+    soulsCaptured:0,
+    soulBonus:{ strength:0, speed:0, durability:0, fight:0, iq:0 },
     adaptationStacks:0,
-    soulBonus:{}
+    lastStolenAt:0
   },
-  currency:{ coins:0, xp:0 }
-};
+  currency:{ coins:0, xp:0 },
+  settings:{ sound:true }
+});
+
+let state = defaultState();
+
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    state = { ...defaultState(), ...parsed };
+    // deep merges for safety
+    state.character = { ...defaultState().character, ...(parsed.character||{}) };
+    state.progress  = { ...defaultState().progress,  ...(parsed.progress||{}) };
+    state.currency  = { ...defaultState().currency,  ...(parsed.currency||{}) };
+    state.settings  = { ...defaultState().settings,  ...(parsed.settings||{}) };
+  }catch(e){}
+}
+loadState();
 
 /* =========================================================
-   TABS
+   TABS (FIXES: stats/pve/pvp buttons not working)
 ========================================================= */
-document.querySelectorAll(".tab").forEach(tab=>{
-  tab.addEventListener("click", ()=>{
-    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-    tab.classList.add("active");
-
-    ["build","stats","pve","pvp"].forEach(k=>{
-      const sec = $("tab-"+k);
-      if(sec) sec.classList.add("hidden");
-    });
-
-    const target = $("tab-"+tab.dataset.tab);
-    if(target) target.classList.remove("hidden");
+function showTab(key){
+  ["build","stats","pve","pvp"].forEach(k=>{
+    $("tab-"+k)?.classList.toggle("hidden", k!==key);
+    document.querySelector(`.tab[data-tab="${k}"]`)?.classList.toggle("active", k===key);
   });
+  state.ui ||= {};
+  state.ui.activeTab = key;
+  saveState();
+}
+document.querySelectorAll(".tab[data-tab]").forEach(btn=>{
+  btn.addEventListener("click", ()=>showTab(btn.dataset.tab));
 });
 
 /* =========================================================
-   WHEEL CORE
+   SIMPLE PORTRAIT HOOKS (safe no-image fallback)
+   If you later add images, set src in these functions.
+========================================================= */
+function applyRaceBase(char, prefix){
+  // no-op by default; prevents crashes if your older code referenced these
+  const base = $(prefix+"layer_base");
+  if(base) base.src = "";
+}
+function applyRigFraming(char, frameId){
+  const f = $(frameId);
+  if(!f) return;
+  f.classList.toggle("cursed", false);
+}
+function applyDemiTraits(char, prefix){ /* no-op */ }
+function applyIdleFx(char, prefix){ /* no-op */ }
+
+/* =========================================================
+   WHEEL (WORKING + AUTHORITATIVE)
 ========================================================= */
 const wheel = $("wheel");
-const ctx = wheel.getContext("2d");
-let spinning = false;
-
-function currentOptions(){
-  switch(state.phases[state.phaseIndex]){
-    case "Race": return RACE_OPTIONS;
-    case "Power": return POWER_OPTIONS;
-    case "Weapon": return WEAPON_OPTIONS;
-    case "Armor": return ARMOR_OPTIONS;
-    case "Trainer": return TRAINER_OPTIONS;
-    case "Clan": return CLAN_OPTIONS;
-    case "Transformation": return TRANSFORM_OPTIONS;
-    default: return [];
-  }
-}
+const ctx = wheel?.getContext("2d");
+let wheelAngle = 0;
+let wheelSpinning = false;
 
 function drawWheel(){
-  const opts = currentOptions();
-  if(!opts.length) return;
+  if(!ctx || !wheel) return;
+  const w = wheel.width, h = wheel.height;
+  ctx.clearRect(0,0,w,h);
 
-  const r = wheel.width/2;
-  ctx.clearRect(0,0,wheel.width,wheel.height);
+  const cx=w/2, cy=h/2;
+  const r=Math.min(cx,cy)-8;
+  const n=RACE_OPTIONS.length;
 
-  opts.forEach((opt,i)=>{
-    const a0 = (i/opts.length)*Math.PI*2;
-    const a1 = ((i+1)/opts.length)*Math.PI*2;
+  // background ring
+  ctx.beginPath();
+  ctx.arc(cx,cy,r+4,0,Math.PI*2);
+  ctx.strokeStyle="rgba(255,255,255,.15)";
+  ctx.lineWidth=10;
+  ctx.stroke();
+
+  for(let i=0;i<n;i++){
+    const a0 = wheelAngle + (i * (Math.PI*2/n));
+    const a1 = wheelAngle + ((i+1) * (Math.PI*2/n));
 
     ctx.beginPath();
-    ctx.moveTo(r,r);
-    ctx.arc(r,r,r,a0,a1);
-    ctx.fillStyle = i%2 ? "#182238" : "#101726";
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,a0,a1);
+    ctx.closePath();
+    ctx.fillStyle = i%2===0 ? "rgba(122,168,255,.14)" : "rgba(255,255,255,.06)";
     ctx.fill();
 
+    // label
+    const mid=(a0+a1)/2;
     ctx.save();
-    ctx.translate(r,r);
-    ctx.rotate((a0+a1)/2);
+    ctx.translate(cx,cy);
+    ctx.rotate(mid);
     ctx.textAlign="right";
-    ctx.fillStyle="#fff";
-    ctx.font="14px system-ui";
-    ctx.fillText(opt, r-12, 4);
+    ctx.fillStyle="rgba(232,238,252,.92)";
+    ctx.font="900 14px system-ui";
+    ctx.fillText(RACE_OPTIONS[i], r-14, 6);
     ctx.restore();
-  });
+  }
+
+  // pointer
+  ctx.beginPath();
+  ctx.moveTo(cx, 10);
+  ctx.lineTo(cx-12, 34);
+  ctx.lineTo(cx+12, 34);
+  ctx.closePath();
+  ctx.fillStyle="rgba(255,204,102,.95)";
+  ctx.fill();
 }
 
-function applyResult(val){
-  const phase = state.phases[state.phaseIndex];
-  const c = state.character;
+function pickFromWheel(){
+  const n = RACE_OPTIONS.length;
+  const slice = (Math.PI*2)/n;
+  const pointerAngle = (Math.PI*2) - (wheelAngle % (Math.PI*2));
+  const idx = Math.floor((pointerAngle / slice)) % n;
+  return RACE_OPTIONS[idx];
+}
 
-  if(phase==="Race") c.race = val;
-  if(phase==="Power" && val!=="No Power") c.powers.push(val);
-  if(phase==="Weapon" && val!=="No Weapon") c.weapons.push(val);
-  if(phase==="Armor" && val!=="No Armor") c.armors.push(val);
-  if(phase==="Trainer" && val!=="No Trainer") c.trainer = val;
-  if(phase==="Clan" && val!=="No Clan") c.clan = val;
-  if(phase==="Transformation" && val!=="None") c.transformation = val;
+async function spinWheel(){
+  if(wheelSpinning) return;
+  wheelSpinning=true;
 
-  $("buildLog").innerHTML = `<div>${phase}: <b>${escapeHtml(val)}</b></div>` + $("buildLog").innerHTML;
+  // spin params
+  let v = 0.35 + Math.random()*0.35;
+  const friction = 0.985 - Math.random()*0.006;
+  const minTicks = 60 + Math.floor(Math.random()*40);
+  let ticks=0;
 
-  state.phaseIndex = Math.min(state.phaseIndex+1, state.phases.length-1);
+  function step(){
+    ticks++;
+    wheelAngle += v;
+    v *= friction;
+    drawWheel();
+
+    if(ticks > minTicks && v < 0.01){
+      wheelSpinning=false;
+      const result = pickFromWheel();
+      state.character.race = result;
+      logBuild(`Race → ${result}`);
+      $("wheelTitle").textContent = "Race";
+      $("wheelHint").textContent = `Result: ${result}`;
+      $("buildHint").textContent = `Race chosen: ${result}. Now finalize or new build.`;
+      refreshUI();
+      saveState();
+      return;
+    }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function logBuild(msg){
+  const el = $("buildLog");
+  if(!el) return;
+  const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  el.innerHTML = `<div><span class="muted">[${time}]</span> ${escapeHtml(msg)}</div>` + el.innerHTML;
+}
+
+/* =========================================================
+   BUILD GENERATION (simple but stable)
+========================================================= */
+function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function newBuild(){
+  state.character.finalized = false;
+  state.character.name = state.character.name || "";
+  state.character.race = null;
+  state.character.powers = [];
+  state.character.weapons = [];
+  state.character.armors = [];
+  state.character.clan = randomFrom(CLAN_OPTIONS);
+  state.character.trainer = randomFrom(TRAINER_OPTIONS);
+  state.character.powerMastery = randomFrom(POWER_MASTERY_OPTIONS);
+  state.character.transformation = randomFrom(TRANSFORM_OPTIONS);
+
+  state.character.strengthW = randomFrom(STRENGTH_WORDS.slice(0,10));
+  state.character.speedW = randomFrom(SPEED_WORDS.slice(0,9));
+  state.character.durabilityW = randomFrom(DUR_WORDS.slice(0,10));
+  state.character.fightW = randomFrom(FIGHT_WORDS.slice(0,7));
+  state.character.iqW = randomFrom(IQ_WORDS.slice(0,7));
+  state.character.luckW = String(1+Math.floor(Math.random()*10));
+
+  // gear/power rolls
+  if(Math.random()<0.85) state.character.powers.push(randomFrom(POWER_OPTIONS));
+  if(Math.random()<0.85) state.character.weapons.push(randomFrom(WEAPON_OPTIONS));
+  if(Math.random()<0.75) state.character.armors.push(randomFrom(ARMOR_OPTIONS));
+
+  // cleanup
+  state.character.powers = state.character.powers.filter(x=>x && x!=="No Power");
+  state.character.weapons = state.character.weapons.filter(x=>x && x!=="No Weapon");
+  state.character.armors = state.character.armors.filter(x=>x && x!=="No Armor");
+
+  // transform detail
+  state.character.transformDetail = null;
+  if(state.character.transformation==="Kaioken") state.character.transformDetail={kind:"kaioken", value:randomFrom(KAIOKEN_OPTIONS)};
+  if(state.character.transformation==="Eight Gates") state.character.transformDetail={kind:"gates", value:randomFrom(GATES_OPTIONS)};
+  if(state.character.transformation==="Super Saiyan") state.character.transformDetail={kind:"ssj", value:randomFrom(SAIYAN_FORM_OPTIONS)};
+  if(state.character.transformation==="Titan Transformation") state.character.transformDetail={kind:"titan", value:randomFrom(TITAN_TYPE_OPTIONS)};
+  if(state.character.transformation==="Tailed Beast") state.character.transformDetail={kind:"tailed", value:randomFrom(TAILED_BEAST_OPTIONS)};
+
+  $("buildLog").innerHTML = "";
+  logBuild("New build created.");
+  $("wheelHint").textContent = "Spin the wheel";
+  $("buildHint").textContent = "Spin for Race.";
+  saveState();
   refreshUI();
 }
 
-$("spinBtn").addEventListener("click", ()=>{
-  if(spinning) return;
-  const opts = currentOptions();
-  if(!opts.length) return;
+function finalizeBuild(){
+  if(!state.character.race){
+    toast("Spin to pick a race first.");
+    return;
+  }
+  state.character.finalized = true;
+  $("namedTag").textContent = state.character.name ? `Final: ${state.character.name}` : "Finalized";
+  toast("Build finalized.");
+  saveState();
+  refreshUI();
+}
 
-  spinning = true;
-  const pick = opts[Math.floor(Math.random()*opts.length)];
-  setTimeout(()=>{
-    spinning = false;
-    applyResult(pick);
-  }, 500);
+/* =========================================================
+   UI RENDER
+========================================================= */
+function buildStatLines(){
+  const c = state.character;
+  const lines = [];
+  lines.push(["Race", c.race || "—"]);
+  lines.push(["Power(s)", (c.powers||[]).length ? c.powers.join(", ") : "—"]);
+  lines.push(["Weapon(s)", (c.weapons||[]).length ? c.weapons.join(", ") : "—"]);
+  lines.push(["Armor(s)", (c.armors||[]).length ? c.armors.join(", ") : "—"]);
+  lines.push(["Clan", c.clan || "—"]);
+  lines.push(["Trainer", c.trainer || "—"]);
+  lines.push(["Power Mastery", c.powerMastery || "—"]);
+  lines.push(["Transformation", c.transformation==="None" ? "None" : `${c.transformation} (${c.transformDetail?.value||"?"})`]);
+
+  lines.push(["Strength", c.strengthW]);
+  lines.push(["Speed", c.speedW]);
+  lines.push(["Durability", c.durabilityW]);
+  lines.push(["Fight", c.fightW]);
+  lines.push(["IQ", c.iqW]);
+  lines.push(["Luck", c.luckW]);
+  return lines;
+}
+
+function renderBuildStats(){
+  const host = $("buildStats");
+  if(!host) return;
+  host.innerHTML = "";
+  buildStatLines().forEach(([k,v])=>{
+    const div = document.createElement("div");
+    div.className="statLine";
+    div.innerHTML = `<div class="statKey">${escapeHtml(k)}</div><div class="statVal">${escapeHtml(v)}</div>`;
+    host.appendChild(div);
+  });
+
+  const badges = $("buildBadges");
+  if(badges){
+    badges.innerHTML = "";
+    const c = state.character;
+    if(c.finalized){
+      const b=document.createElement("div");
+      b.className="badge";
+      b.innerHTML=`<span class="icon">✅</span><span>Finalized</span>`;
+      badges.appendChild(b);
+    }else{
+      const b=document.createElement("div");
+      b.className="badge";
+      b.innerHTML=`<span class="icon">🧪</span><span>Not Final</span>`;
+      badges.appendChild(b);
+    }
+  }
+}
+
+function refreshUI(){
+  // phase tag
+  $("phaseTag").textContent = state.character.finalized ? "Phase: Final" : "Phase: Build";
+
+  // portraits (safe)
+  applyRaceBase(state.character, "");
+  applyRigFraming(state.character, "charFrame");
+  applyDemiTraits(state.character, "");
+  applyIdleFx(state.character, "");
+
+  renderBuildStats();
+
+  // keep active tab
+  const tab = (state.ui && state.ui.activeTab) ? state.ui.activeTab : "build";
+  showTab(tab);
+
+  // wheel title hint
+  $("wheelTitle").textContent = "Race";
+  if(!state.character.race) $("wheelHint").textContent = "Spin the wheel";
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+$("spinBtn")?.addEventListener("click", spinWheel);
+$("newBuildBtn")?.addEventListener("click", newBuild);
+$("finalizeBtn")?.addEventListener("click", finalizeBuild);
+
+$("resetBtn")?.addEventListener("click", ()=>{
+  if(!confirm("Reset everything?")) return;
+  state = defaultState();
+  saveState();
+  location.reload();
 });
 
-/* =========================================================
-   UI REFRESH (BASE)
-========================================================= */
-function refreshUI(){
-  $("wheelTitle").textContent = state.phases[state.phaseIndex];
-  $("wheelHint").textContent = "Spin the wheel";
-  $("phaseTag").textContent = "Phase: " + state.phases[state.phaseIndex];
-  drawWheel();
+$("lootCloseBtn")?.addEventListener("click", ()=>$("lootModal")?.classList.add("hidden"));
+$("lootOkBtn")?.addEventListener("click", ()=>$("lootModal")?.classList.add("hidden"));
+
+$("choiceCloseBtn")?.addEventListener("click", ()=>{
+  $("choiceModal")?.classList.add("hidden");
+  window.__choiceResolve?.(null);
+  window.__choiceResolve=null;
+});
+
+/* choice modal used by soul stone */
+function openChoiceModal({title, sub, options}){
+  $("choiceTitle").textContent = title || "Choose";
+  $("choiceSub").textContent = sub || "";
+  const host = $("choiceBtns");
+  host.innerHTML = "";
+
+  return new Promise(resolve=>{
+    window.__choiceResolve = resolve;
+    (options||[]).forEach(opt=>{
+      const b=document.createElement("button");
+      b.className="btn";
+      b.textContent = opt.label;
+      b.addEventListener("click", ()=>{
+        $("choiceModal").classList.add("hidden");
+        resolve(opt.value);
+        window.__choiceResolve=null;
+      });
+      host.appendChild(b);
+    });
+    $("choiceModal").classList.remove("hidden");
+  });
 }
 
-/* =========================================================
-   INIT
-========================================================= */
+/* init */
+drawWheel();
+if(!state.character.race && !state.character.finalized){
+  // ensure a build exists (without forcing race)
+  if(!state.character.strengthW) newBuild();
+}
 refreshUI();
 </script>
+<!-- ✅ PART 5 / 6 — ADDITIVE STAT MATH + flee chance + cursed + stats render -->
 <script>
 /* =========================================================
-   PART 5 — ADDITIVE STAT SYSTEM
+   STAT WORD -> NUMBER + NUMBER -> LABEL
 ========================================================= */
-
-const STAT_WORDS = {
-  strength:["Weak","Human","Enhanced","Superhuman","City","Mountain","Planetary","Universal","???"],
-  speed:["Slow","Human","Supersonic","Lightning","Light","FTL","Infinite","???"],
-  durability:["Fragile","Human","Steel","City","Mountain","Planetary","Universal","???"],
-  fight:["Untrained","Street","Elite","Master","Legendary","???"],
-  iq:["Dull","Average","Genius","Supergenius","Omniscient","???"]
+const STAT_NUMBER_TABLE = {
+  strength: { "Weak":5,"Average":10,"Strong":15,"City":25,"Mountain":40,"Country":60,"Planet":90,"Star":130,"Galaxy":180,"Universal":260,"???":400 },
+  speed:    { "Slow":5,"Average":10,"Fast":15,"Mach":25,"Lightning":40,"Light":70,"FTL":110,"Galaxy":170,"Universal":260,"???":400 },
+  durability:{ "Fragile":5,"Average":10,"Tough":15,"Steel":22,"City":35,"Mountain":55,"Country":80,"Planet":115,"Star":160,"Universal":240,"???":400 },
+  fight:    { "Clumsy":5,"Average":10,"Trained":16,"Elite":26,"Master":40,"Legendary":60,"Mythic":90,"Universal":140,"???":250 },
+  iq:       { "Low":5,"Average":10,"Smart":16,"Genius":28,"Supergenius":45,"Cosmic":80,"Universal":120,"???":220 }
 };
 
-function statWordToNumber(k,w){
-  const i = (STAT_WORDS[k]||[]).indexOf(w);
-  return i<0?0:i*10;
-}
-function labelForStat(k,v){
-  const t=Math.floor(v/10);
-  return (STAT_WORDS[k]||[])[Math.min(t,(STAT_WORDS[k]||[]).length-1)]||"???";
+function statWordToNumber(kind, word){
+  const t = STAT_NUMBER_TABLE[kind] || {};
+  return t[word] ?? 10;
 }
 
-function computeFinalStats(c){
-  const base={
-    strength:statWordToNumber("strength",c.strengthW),
-    speed:statWordToNumber("speed",c.speedW),
-    durability:statWordToNumber("durability",c.durabilityW),
-    fight:statWordToNumber("fight",c.fightW),
-    iq:statWordToNumber("iq",c.iqW)
-  };
-  Object.keys(state.progress.soulBonus).forEach(k=>{
-    base[k]+=state.progress.soulBonus[k];
-  });
-  base.luck=parseInt(c.luckW)||5;
-  base.labels={
-    strength:labelForStat("strength",base.strength),
-    speed:labelForStat("speed",base.speed),
-    durability:labelForStat("durability",base.durability),
-    fight:labelForStat("fight",base.fight),
-    iq:labelForStat("iq",base.iq)
-  };
-  return base;
+function labelForStat(kind, n){
+  const maxKnown = { strength:260, speed:260, durability:240, fight:140, iq:120 };
+  if(n > (maxKnown[kind] || 9999)) return "???";
+
+  const entries = Object.entries(STAT_NUMBER_TABLE[kind] || {}).filter(([k])=>k!=="???");
+  entries.sort((a,b)=>a[1]-b[1]);
+
+  let best = entries[0]?.[0] || "Average";
+  for(const [w,val] of entries){
+    if(n >= val) best = w;
+  }
+  return best;
 }
+
+/* =========================================================
+   FLEE CHANCE (only if speed gap close enough)
+========================================================= */
+function fleeChanceFromSpeedGap(pSpeed, eSpeed){
+  const gap = Math.abs(pSpeed - eSpeed);
+  if(gap >= 80) return 0;               // too far apart => cannot flee at all
+  const chance = 0.70 * Math.exp(-gap/28);
+  return Math.max(0.05, Math.min(0.70, chance));
+}
+
+/* =========================================================
+   CURSED FLAG (simple, expandable later)
+========================================================= */
+function computeIsCursed(char){
+  const hasGauntlet = (char.weapons||[]).includes("Infinity Gauntlet");
+  const cosmicMastery = ["Cosmic","Universal","Omnipotent"].includes(char.powerMastery);
+  return hasGauntlet && cosmicMastery;
+}
+
+/* =========================================================
+   ADDITIVE STAT MATH
+========================================================= */
+const MASTERY_RANK = { "None":0, "Dormant":1, "Awakening":2, "Controlled":3, "Mastered":4, "Planetary":5, "Cosmic":6, "Universal":7, "Omnipotent":8 };
+
+function masteryAtLeast(char, key){
+  const cur = MASTERY_RANK[char.powerMastery || "None"] || 0;
+  return cur >= (MASTERY_RANK[key] || 0);
+}
+
+function parseLuck(char){
+  const n = parseInt(char.luckW || "0", 10);
+  return Number.isFinite(n) ? Math.max(1, Math.min(10, n)) : 1;
+}
+
+function statBaseFromWords(char){
+  return {
+    strength: statWordToNumber("strength", char.strengthW),
+    speed: statWordToNumber("speed", char.speedW),
+    durability: statWordToNumber("durability", char.durabilityW),
+    fight: statWordToNumber("fight", char.fightW),
+    iq: statWordToNumber("iq", char.iqW),
+  };
+}
+
+function addMods(mods, add){
+  for(const k of Object.keys(add)){
+    mods[k] = (mods[k] || 0) + add[k];
+  }
+}
+
+/* Race passives (starter set) */
+function raceMods(race){
+  switch(race){
+    case "Cyborg": return { iq:2, durability:1, speed:1 };
+    case "Giant": return { strength:3, durability:2, speed:-1 };
+    case "Golem": return { durability:3, strength:1, speed:-1 };
+    case "Dragon": return { strength:3, durability:2, fight:1 };
+    case "Vampire": return { speed:2, fight:1 };
+    case "Shinigami": return { fight:2, iq:1 };
+    case "God": return { iq:2, strength:2, durability:2 };
+    case "Hybrid": return { strength:1, speed:1, durability:1, fight:1, iq:1 };
+    default: return {};
+  }
+}
+
+function powerMods(power){
+  switch(power){
+    case "Adaptation": return { durability:2, fight:1 };
+    case "Regeneration": return { durability:3 };
+    case "Gravity Manipulation": return { strength:2, fight:1 };
+    case "Time Manipulation": return { speed:3, iq:1 };
+    case "Telekinesis": return { iq:2, fight:1 };
+    case "Teleportation": return { speed:2 };
+    case "Fire": return { strength:1 };
+    case "Ice Manipulation": return { durability:1 };
+    case "Lightning": return { speed:2 };
+    case "Weapon Creation": return { fight:2 };
+    case "Heavenly Restriction": return { strength:3, speed:2, durability:2, fight:2, iq:-1 };
+    case "Immortal": return { durability:4 };
+    case "Rinnegan": return { iq:2, fight:2 };
+    default: return {};
+  }
+}
+
+function weaponMods(weapon){
+  switch(weapon){
+    case "Sword": return { fight:2 };
+    case "Scythe": return { fight:2, strength:1 };
+    case "Axe": return { strength:2 };
+    case "Hammer": return { strength:2, durability:1 };
+    case "Spear": return { fight:1, speed:1 };
+    case "Brass Knuckles": return { fight:1, strength:1 };
+    case "Blades of Chaos": return { fight:2, speed:1 };
+    case "Samehada": return { durability:1, fight:2 };
+    case "Uzumaki Chains": return { durability:2, fight:1 };
+    case "Infinity Gauntlet": return { strength:3, durability:3, iq:2, fight:2 };
+    case "Green Lantern Ring": return { iq:3, durability:2 };
+    default: return {};
+  }
+}
+
+function armorMods(armor){
+  switch(armor){
+    case "Berserk Armor": return { strength:2, durability:2, fight:1 };
+    case "Iron Man Suit": return { speed:2, durability:2, iq:1 };
+    case "Jauger": return { durability:2 };
+    case "Symbiote": return { strength:1, speed:1, durability:1, fight:1 };
+    case "Ashborn's Armor": return { durability:3, fight:1 };
+    case "Rock Lee Weights": return { speed:-2, strength:2, durability:1 };
+    case "Goku's Gi": return { fight:1 };
+    default: return {};
+  }
+}
+
+function trainerMods(trainer){
+  switch(trainer){
+    case "Master Roshi": return { fight:2, iq:1 };
+    case "Jiraiya": return { fight:2, iq:1 };
+    case "Hisoka": return { fight:2, iq:1 };
+    case "Korro": return { durability:1, fight:1 };
+    case "Yuujirou": return { strength:3, fight:2 };
+    default: return {};
+  }
+}
+
+function clanMods(clan){
+  switch(clan){
+    case "Uchiha": return { fight:2, iq:1 };
+    case "Gojo": return { iq:2, speed:1 };
+    case "D Clan": return { durability:1, fight:1 };
+    case "Kamado": return { fight:2 };
+    default: return {};
+  }
+}
+
+function transformMods(char){
+  const t = char.transformation;
+  const d = char.transformDetail?.value || "None";
+  if(!t || t === "None" || d === "None") return { add:{}, mult:{} };
+
+  if(t === "Kaioken"){
+    const m = parseInt(String(d).replace("X",""),10);
+    const mul = Number.isFinite(m) ? Math.min(100, Math.max(2, m)) : 2;
+    return { add:{}, mult:{ strength:1+mul*0.03, speed:1+mul*0.03, durability:1+mul*0.01, fight:1+mul*0.02 } };
+  }
+  if(t === "Eight Gates"){
+    const is8 = String(d).toLowerCase().includes("eighth");
+    const gateIndex = Math.max(0, GATES_OPTIONS.indexOf(d));
+    const boost = is8 ? 10 : 1 + gateIndex*0.8;
+    return { add:{ strength:boost, speed:boost, fight:Math.floor(boost*0.7) }, mult:{} };
+  }
+  if(t === "Super Saiyan"){
+    const idx = Math.max(0, SAIYAN_FORM_OPTIONS.indexOf(d));
+    return { add:{ strength:2+idx*2, speed:1+idx, durability:1+idx, fight:1+idx }, mult:{} };
+  }
+  if(t === "Titan Transformation"){
+    const idx = Math.max(0, TITAN_TYPE_OPTIONS.indexOf(d));
+    return { add:{ strength:2+idx, durability:3+idx, fight:1+Math.floor(idx/2) }, mult:{} };
+  }
+  if(t === "Tailed Beast"){
+    const idx = Math.max(0, TAILED_BEAST_OPTIONS.indexOf(d));
+    return { add:{ strength:idx, durability:idx, speed:Math.floor(idx/2), fight:Math.floor(idx/2) }, mult:{} };
+  }
+  return { add:{}, mult:{} };
+}
+
+function computeFinalStats(char){
+  const base = statBaseFromWords(char);
+  const mods = { strength:0, speed:0, durability:0, fight:0, iq:0 };
+
+  addMods(mods, raceMods(char.race));
+  (char.powers || []).forEach(p => addMods(mods, powerMods(p)));
+  (char.weapons || []).forEach(w => addMods(mods, weaponMods(w)));
+  (char.armors || []).forEach(a => addMods(mods, armorMods(a)));
+
+  addMods(mods, trainerMods(char.trainer));
+  addMods(mods, clanMods(char.clan));
+
+  if(masteryAtLeast(char,"Mastered")) addMods(mods, { fight:1, durability:1 });
+  if(masteryAtLeast(char,"Cosmic")) addMods(mods, { strength:2, speed:2, iq:1 });
+  if(masteryAtLeast(char,"Universal")) addMods(mods, { strength:3, speed:3, durability:3, fight:2, iq:2 });
+
+  if((char.powers || []).includes("Adaptation")){
+    addMods(mods, { durability: state.progress.adaptationStacks || 0 });
+  }
+
+  addMods(mods, state.progress.soulBonus || {});
+  const tm = transformMods(char);
+
+  let out = {
+    strength: base.strength + mods.strength + (tm.add.strength||0),
+    speed: base.speed + mods.speed + (tm.add.speed||0),
+    durability: base.durability + mods.durability + (tm.add.durability||0),
+    fight: base.fight + mods.fight + (tm.add.fight||0),
+    iq: base.iq + mods.iq + (tm.add.iq||0),
+    luck: parseLuck(char)
+  };
+
+  for(const k of ["strength","speed","durability","fight","iq"]){
+    out[k] = Math.round(out[k] * (tm.mult[k] || 1));
+  }
+
+  out.labels = {
+    strength: labelForStat("strength", out.strength),
+    speed: labelForStat("speed", out.speed),
+    durability: labelForStat("durability", out.durability),
+    fight: labelForStat("fight", out.fight),
+    iq: labelForStat("iq", out.iq),
+  };
+
+  out.isCursed = computeIsCursed(char);
+  return out;
+}
+
+/* Stats tab render */
+function renderStatsTab(){
+  const host = $("statsList");
+  const host2 = $("finalStatsList");
+  if(!host || !host2) return;
+
+  host.innerHTML = "";
+  host2.innerHTML = "";
+
+  const lines = buildStatLines();
+  for(const [k,v] of lines){
+    const div = document.createElement("div");
+    div.className = "statLine";
+    div.innerHTML = `<div class="statKey">${escapeHtml(k)}</div><div class="statVal">${escapeHtml(v)}</div>`;
+    host.appendChild(div);
+  }
+
+  const fin = computeFinalStats(state.character);
+  [
+    ["strength","Strength"],
+    ["speed","Speed"],
+    ["durability","Durability"],
+    ["fight","Fight"],
+    ["iq","IQ"],
+    ["luck","Luck"],
+  ].forEach(([key,label])=>{
+    const div = document.createElement("div");
+    div.className = "statLine";
+    if(key === "luck"){
+      div.innerHTML = `<div class="statKey">${label}</div><div class="statVal">${fin.luck}</div>`;
+    } else {
+      div.innerHTML = `<div class="statKey">${label}</div><div class="statVal">${fin.labels[key]} <span class="muted">(${fin[key]})</span></div>`;
+    }
+    host2.appendChild(div);
+  });
+}
+
+/* hook into refreshUI */
+const __refreshUI_v2 = refreshUI;
+refreshUI = function(){
+  __refreshUI_v2();
+  renderStatsTab();
+};
 </script>
+<!-- ✅ PART 6 / 6 — PvE/PvP battles + flee + steal + soul stone + loot (LAST) -->
 <script>
 /* =========================================================
-   PART 6 — PvE / PvP
+   BATTLE SETTINGS
 ========================================================= */
+const FLEE_HP_THRESHOLD = 0.30;
+const TRAIT_STEAL_CHANCE = 0.12;
 
-const FLEE_HP_THRESHOLD = 0.3;
-
-function fleeChanceFromSpeedGap(p,e){
-  const d=Math.abs(p-e);
-  if(d>40) return 0;
-  return Math.max(0.05,1-d/40);
-}
-function roll(c){return Math.random()<c;}
-
-function computeHP(s){ return 60 + s.durability*8 + s.fight*2; }
-function computeDamage(a,d){
-  return Math.max(5,Math.round((a.strength*2+a.fight*3)-(d.durability*1.5)));
+function roll(chance){ return Math.random() < chance; }
+function setHP(barId, pct){
+  const el = $(barId);
+  if(!el) return;
+  el.style.width = `${Math.max(0, Math.min(1, pct)) * 100}%`;
 }
 
-async function startPVP(){
-  if(!state.character.finalized){toast("Finalize first");return;}
-  const p=computeFinalStats(state.character);
-  const e={...p,strength:p.strength-10};
-  let php=computeHP(p),ehp=computeHP(e);
-  while(php>0&&ehp>0){
-    if(php/computeHP(p)<FLEE_HP_THRESHOLD && roll(fleeChanceFromSpeedGap(p.speed,e.speed))){
-      toast("You fled!");
-      return;
-    }
-    ehp-=computeDamage(p,e);
-    if(ehp<=0) break;
-    php-=computeDamage(e,p);
-    await new Promise(r=>setTimeout(r,80));
+/* Logs */
+function logPVP(msg){
+  const el = $("pvpLog");
+  if(!el) return;
+  const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  el.innerHTML = `<div><span class="muted">[${time}]</span> ${escapeHtml(msg)}</div>` + el.innerHTML;
+}
+function logPVE(msg){
+  const el = $("pveLog");
+  if(!el) return;
+  const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  el.innerHTML = `<div><span class="muted">[${time}]</span> ${escapeHtml(msg)}</div>` + el.innerHTML;
+}
+
+/* Enemy generator */
+function genEnemyBase(){
+  const enemy = {
+    name:"Enemy",
+    race: randomFrom(RACE_OPTIONS),
+    powers: [],
+    weapons: [],
+    armors: [],
+    clan: randomFrom(CLAN_OPTIONS),
+    trainer: randomFrom(TRAINER_OPTIONS),
+    powerMastery: randomFrom(POWER_MASTERY_OPTIONS),
+    transformation: randomFrom(TRANSFORM_OPTIONS),
+    transformDetail:null,
+
+    strengthW: randomFrom(STRENGTH_WORDS.slice(0,10)),
+    speedW: randomFrom(SPEED_WORDS.slice(0,9)),
+    durabilityW: randomFrom(DUR_WORDS.slice(0,10)),
+    fightW: randomFrom(FIGHT_WORDS.slice(0,7)),
+    iqW: randomFrom(IQ_WORDS.slice(0,7)),
+    luckW: String(1+Math.floor(Math.random()*10))
+  };
+
+  if(Math.random() < 0.75) enemy.powers.push(randomFrom(POWER_OPTIONS));
+  if(Math.random() < 0.75) enemy.weapons.push(randomFrom(WEAPON_OPTIONS));
+  if(Math.random() < 0.65) enemy.armors.push(randomFrom(ARMOR_OPTIONS));
+
+  enemy.powers = enemy.powers.filter(x=>x && x!=="No Power");
+  enemy.weapons = enemy.weapons.filter(x=>x && x!=="No Weapon");
+  enemy.armors = enemy.armors.filter(x=>x && x!=="No Armor");
+
+  if(enemy.transformation==="Kaioken") enemy.transformDetail={kind:"kaioken", value:randomFrom(KAIOKEN_OPTIONS)};
+  if(enemy.transformation==="Eight Gates") enemy.transformDetail={kind:"gates", value:randomFrom(GATES_OPTIONS)};
+  if(enemy.transformation==="Super Saiyan") enemy.transformDetail={kind:"ssj", value:randomFrom(SAIYAN_FORM_OPTIONS)};
+  if(enemy.transformation==="Titan Transformation") enemy.transformDetail={kind:"titan", value:randomFrom(TITAN_TYPE_OPTIONS)};
+  if(enemy.transformation==="Tailed Beast") enemy.transformDetail={kind:"tailed", value:randomFrom(TAILED_BEAST_OPTIONS)};
+
+  return enemy;
+}
+
+/* Flee logic */
+function tryFlee(playerStats, enemyStats, logger){
+  const chance = fleeChanceFromSpeedGap(playerStats.speed, enemyStats.speed);
+  if(chance <= 0){
+    logger(`Flee failed: speed gap too large.`);
+    return { fled:false };
   }
-  toast(php>0?"PvP Victory!":"Defeat");
+  if(roll(chance)){
+    logger(`Flee succeeded! (chance ${(chance*100).toFixed(0)}%)`);
+    return { fled:true };
+  }
+  logger(`Flee failed. (chance ${(chance*100).toFixed(0)}%)`);
+  return { fled:false };
 }
 
+/* Damage model */
+function computeHP(stats){
+  return 60 + stats.durability*8 + stats.fight*2;
+}
+function computeDamage(att, def){
+  const atk = att.strength*2 + att.fight*3 + att.speed;
+  const mitig = def.durability*2 + def.fight;
+  const base = Math.max(8, atk - mitig*0.65);
+  const varMul = 0.85 + (att.luck-1) * 0.03 + Math.random()*0.18;
+  return Math.round(base * varMul);
+}
+
+/* Soul stone */
+function hasSoulStone(char){ return (char.weapons||[]).includes("Infinity Gauntlet"); }
+async function soulStonePickBonus(){
+  const picked = await openChoiceModal({
+    title:"Soul Stone",
+    sub:"Choose a permanent +1 bonus stat.",
+    options:[
+      { label:"+1 Strength", value:"strength" },
+      { label:"+1 Speed", value:"speed" },
+      { label:"+1 Durability", value:"durability" },
+      { label:"+1 Fight", value:"fight" },
+      { label:"+1 IQ", value:"iq" },
+    ]
+  });
+  if(!picked) return;
+  state.progress.soulsCaptured = (state.progress.soulsCaptured||0) + 1;
+  state.progress.soulBonus[picked] = (state.progress.soulBonus[picked]||0) + 1;
+  saveState();
+  toast(`Soul captured: +1 ${picked.toUpperCase()}`);
+}
+
+/* Adaptation */
+function applyAdaptationWin(char){
+  if(!(char.powers||[]).includes("Adaptation")) return;
+  state.progress.adaptationStacks = (state.progress.adaptationStacks||0) + 1;
+  saveState();
+}
+
+/* Steal animation */
+function showStealPopup(text){
+  const p = $("stealPopup");
+  if(!p) return;
+  p.textContent = text;
+  p.classList.remove("hidden");
+  setTimeout(()=>p.classList.add("hidden"), 1100);
+}
+function playStealAnim(text){
+  const wrap = $("stealAnim");
+  const chip = $("stealChip");
+  if(!wrap || !chip) return;
+
+  wrap.classList.remove("hidden");
+  chip.textContent = text;
+  chip.style.left = "50%";
+  chip.style.top = "18%";
+
+  chip.classList.remove("flyNow");
+  void chip.offsetWidth;
+  chip.classList.add("flyNow");
+
+  chip.style.setProperty("--dx", "82%");
+  chip.style.setProperty("--dy", "16%");
+
+  setTimeout(()=>wrap.classList.add("hidden"), 750);
+}
+
+/* Trait stealing (additive) */
+function enemyTraitsPool(enemy){
+  const pool = [];
+  (enemy.powers||[]).forEach(x=>x && pool.push({kind:"power", value:x}));
+  (enemy.weapons||[]).forEach(x=>x && pool.push({kind:"weapon", value:x}));
+  (enemy.armors||[]).forEach(x=>x && pool.push({kind:"armor", value:x}));
+  if(enemy.clan && enemy.clan!=="No Clan") pool.push({kind:"clan", value:enemy.clan});
+  if(enemy.trainer && enemy.trainer!=="No Trainer") pool.push({kind:"trainer", value:enemy.trainer});
+  if(enemy.transformation && enemy.transformation!=="None") pool.push({kind:"transform", value:enemy.transformation});
+  return pool;
+}
+
+function addTraitToPlayer(tr){
+  const c = state.character;
+  if(tr.kind === "power"){
+    c.powers ||= [];
+    if(!c.powers.includes(tr.value)) c.powers.push(tr.value);
+  }
+  if(tr.kind === "weapon"){
+    c.weapons ||= [];
+    if(!c.weapons.includes(tr.value)) c.weapons.push(tr.value);
+  }
+  if(tr.kind === "armor"){
+    c.armors ||= [];
+    if(!c.armors.includes(tr.value)) c.armors.push(tr.value);
+  }
+  if(["clan","trainer","transform"].includes(tr.kind)){
+    c.fusions ||= [];
+    const tag = `${tr.kind.toUpperCase()}:${tr.value}`;
+    if(!c.fusions.includes(tag)) c.fusions.push(tag);
+  }
+}
+
+async function maybeStealTrait(enemy, logger){
+  const now = Date.now();
+  if(now - (state.progress.lastStolenAt||0) < 5000) return;
+
+  const pool = enemyTraitsPool(enemy);
+  if(pool.length === 0) return;
+  if(!roll(TRAIT_STEAL_CHANCE)) return;
+
+  const pick = randomFrom(pool);
+  addTraitToPlayer(pick);
+
+  state.progress.lastStolenAt = now;
+  saveState();
+
+  showStealPopup(`Stole ${pick.kind}: ${pick.value}`);
+  playStealAnim(`+ ${pick.value}`);
+  logger(`Stole ${pick.kind}: ${pick.value} (additive).`);
+  refreshUI();
+}
+
+/* Loot modal */
+function openLootModal({title, sub, rewards, traitEvents, progress}){
+  const modal = $("lootModal");
+  if(!modal) return;
+
+  $("lootTitle").textContent = title || "Victory";
+  $("lootSub").textContent = sub || "";
+
+  const makeRow = (x) => {
+    const row = document.createElement("div");
+    row.className = "lootRow";
+    row.innerHTML = `
+      <div class="lootLeft">
+        <div class="lootLabel">${escapeHtml(x.label||"")}</div>
+        <div class="lootNote">${escapeHtml(x.note||"")}</div>
+      </div>
+      <div class="lootValue">${escapeHtml(x.value||"")}</div>
+    `;
+    return row;
+  };
+
+  const rHost = $("lootRewards");
+  const tHost = $("lootTrait");
+  const pHost = $("lootProgress");
+  rHost.innerHTML = ""; tHost.innerHTML = ""; pHost.innerHTML = "";
+
+  (rewards||[]).forEach(x=>rHost.appendChild(makeRow(x)));
+  (traitEvents||[]).forEach(x=>tHost.appendChild(makeRow(x)));
+  (progress||[]).forEach(x=>pHost.appendChild(makeRow(x)));
+
+  modal.classList.remove("hidden");
+}
+
+/* PvP */
+async function startPVP(){
+  if(!state.character.finalized){
+    toast("Finalize your build first.");
+    return;
+  }
+  $("pvpLog").innerHTML = "";
+
+  const player = state.character;
+  const enemy = genEnemyBase();
+
+  applyRaceBase(player, "p_"); applyRigFraming(player, "p_charFrame");
+  applyRaceBase(enemy, "e_"); applyRigFraming(enemy, "e_charFrame");
+
+  $("p_roleTag").textContent = player.name ? player.name : "You";
+  $("e_roleTag").textContent = "Opponent";
+
+  const pStats = computeFinalStats(player);
+  const eStats = computeFinalStats(enemy);
+
+  let pHP = computeHP(pStats), eHP = computeHP(eStats);
+  const pMax = pHP, eMax = eHP;
+
+  setHP("p_hp", 1); setHP("e_hp", 1);
+
+  logPVP(`Match started vs ${enemy.race}.`);
+  if(pStats.isCursed) logPVP(`The arena laughs… cursed build detected.`);
+  if(eStats.isCursed) logPVP(`Opponent is cursed too.`);
+
+  let turn = 0;
+  while(pHP > 0 && eHP > 0 && turn < 60){
+    turn++;
+
+    if(pHP / pMax <= FLEE_HP_THRESHOLD){
+      const flee = tryFlee(pStats, eStats, logPVP);
+      if(flee.fled){
+        logPVP("You fled the match.");
+        return;
+      }
+    }
+
+    const playerFirst = (pStats.speed + Math.random()*3) >= (eStats.speed + Math.random()*3);
+
+    const hit = (att, def, target) => {
+      const dmg = computeDamage(att, def);
+      if(target === "enemy"){
+        eHP -= dmg;
+        logPVP(`You hit for ${dmg}.`);
+        setHP("e_hp", eHP/eMax);
+      }else{
+        pHP -= dmg;
+        logPVP(`Enemy hit for ${dmg}.`);
+        setHP("p_hp", pHP/pMax);
+      }
+    };
+
+    if(playerFirst){
+      hit(pStats, eStats, "enemy");
+      if(eHP > 0) hit(eStats, pStats, "player");
+    }else{
+      hit(eStats, pStats, "player");
+      if(pHP > 0) hit(pStats, eStats, "enemy");
+    }
+
+    await maybeStealTrait(enemy, logPVP);
+    await new Promise(r=>setTimeout(r, 90));
+  }
+
+  if(pHP <= 0){
+    logPVP("Defeat.");
+    return;
+  }
+
+  logPVP("Victory!");
+  state.progress.pvpWins = (state.progress.pvpWins||0) + 1;
+  state.currency.coins = (state.currency.coins||0) + 20;
+  state.currency.xp = (state.currency.xp||0) + 10;
+
+  applyAdaptationWin(player);
+  saveState();
+
+  if(hasSoulStone(player)){
+    await soulStonePickBonus();
+  }
+
+  openLootModal({
+    title:"PvP Victory",
+    sub:`You defeated a ${enemy.race}.`,
+    rewards:[
+      {label:"Coins", note:"+20", value:`${state.currency.coins}`},
+      {label:"XP", note:"+10", value:`${state.currency.xp}`},
+    ],
+    traitEvents:[
+      {label:"Adaptation", note:(player.powers||[]).includes("Adaptation") ? "+1 stack" : "—", value:`${state.progress.adaptationStacks||0}`},
+      {label:"Souls", note:hasSoulStone(player) ? "+1 if chosen" : "—", value:`${state.progress.soulsCaptured||0}`},
+    ],
+    progress:[
+      {label:"PvP Wins", note:"+1", value:`${state.progress.pvpWins}`},
+    ]
+  });
+
+  refreshUI();
+}
+
+/* PvE */
 async function startPVE(){
-  if(!state.character.finalized){toast("Finalize first");return;}
-  toast("PvE victory!");
+  if(!state.character.finalized){
+    toast("Finalize your build first.");
+    return;
+  }
+  $("pveLog").innerHTML = "";
+
+  const player = state.character;
+  const enemy = genEnemyBase();
+  enemy.name = "Event Enemy";
+  enemy.powerMastery = randomFrom(["Controlled","Mastered","Cosmic","Universal"]);
+  if(Math.random() < 0.9) enemy.powers.push(randomFrom(POWER_OPTIONS));
+  enemy.powers = enemy.powers.filter(x=>x && x!=="No Power");
+
+  applyRaceBase(player, "pve_p_"); applyRigFraming(player, "pve_p_charFrame");
+  applyRaceBase(enemy, "pve_e_"); applyRigFraming(enemy, "pve_e_charFrame");
+
+  $("pve_p_roleTag").textContent = player.name ? player.name : "You";
+  $("pve_e_roleTag").textContent = enemy.name;
+
+  const pStats = computeFinalStats(player);
+  const eStats = computeFinalStats(enemy);
+
+  let pHP = computeHP(pStats);
+  let eHP = computeHP(eStats) + 40;
+  const pMax = pHP, eMax = eHP;
+
+  setHP("pve_p_hp", 1); setHP("pve_e_hp", 1);
+
+  logPVE(`PvE started vs ${enemy.race}.`);
+  if(pStats.isCursed) logPVE(`The enemy taunts your cursed aura…`);
+
+  let turn = 0;
+  while(pHP > 0 && eHP > 0 && turn < 70){
+    turn++;
+
+    if(pHP / pMax <= FLEE_HP_THRESHOLD){
+      const flee = tryFlee(pStats, eStats, logPVE);
+      if(flee.fled){
+        logPVE("You escaped the event.");
+        return;
+      }
+    }
+
+    const playerFirst = (pStats.speed + Math.random()*3) >= (eStats.speed + Math.random()*3);
+
+    const hit = (att, def, target) => {
+      const dmg = computeDamage(att, def);
+      if(target === "enemy"){
+        eHP -= dmg;
+        logPVE(`You dealt ${dmg}.`);
+        setHP("pve_e_hp", eHP/eMax);
+      }else{
+        pHP -= dmg;
+        logPVE(`Enemy dealt ${dmg}.`);
+        setHP("pve_p_hp", pHP/pMax);
+      }
+    };
+
+    if(playerFirst){
+      hit(pStats, eStats, "enemy");
+      if(eHP > 0) hit(eStats, pStats, "player");
+    }else{
+      hit(eStats, pStats, "player");
+      if(pHP > 0) hit(pStats, eStats, "enemy");
+    }
+
+    await new Promise(r=>setTimeout(r, 90));
+  }
+
+  if(pHP <= 0){
+    logPVE("Defeat.");
+    return;
+  }
+
+  logPVE("Victory!");
+  state.currency.coins = (state.currency.coins||0) + 12;
+  state.currency.xp = (state.currency.xp||0) + 8;
+
+  applyAdaptationWin(player);
+  if(hasSoulStone(player) && Math.random() < 0.35){
+    await soulStonePickBonus();
+  }
+
+  saveState();
+
+  openLootModal({
+    title:"PvE Victory",
+    sub:`You won the event.`,
+    rewards:[
+      {label:"Coins", note:"+12", value:`${state.currency.coins}`},
+      {label:"XP", note:"+8", value:`${state.currency.xp}`},
+    ],
+    traitEvents:[
+      {label:"Adaptation", note:(player.powers||[]).includes("Adaptation") ? "+1 stack" : "—", value:`${state.progress.adaptationStacks||0}`},
+      {label:"Souls", note:hasSoulStone(player) ? "possible" : "—", value:`${state.progress.soulsCaptured||0}`},
+    ],
+    progress:[]
+  });
+
+  refreshUI();
 }
 
-/* ---------- buttons ---------- */
+/* Hook buttons */
 $("pvpStartBtn")?.addEventListener("click", startPVP);
 $("pveStartBtn")?.addEventListener("click", startPVE);
 </script>
+
+</body>
+</html>
