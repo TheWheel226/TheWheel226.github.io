@@ -1,3 +1,9 @@
+<!-- =========================
+BLOCK 1 of 3 (PASTE FIRST)
+This block is: DOCTYPE + <head> + FULL HTML UI (NO JS yet)
+After pasting Block 1, paste Block 2 directly under it, then Block 3.
+========================= -->
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -15,6 +21,7 @@
       --good:rgba(180,255,220,.95);
       --bad:rgba(255,140,160,.95);
       --warn:rgba(255,210,120,.95);
+      --cursed:rgba(255,60,90,.95);
     }
     *{box-sizing:border-box}
     body{
@@ -176,6 +183,11 @@
       border:1px solid rgba(255,255,255,.12);
       background:rgba(0,0,0,.18);
     }
+    .tag.cursed{
+      border-color: rgba(255,60,90,.35);
+      background: rgba(255,60,90,.14);
+      color: rgba(255,210,220,.98);
+    }
 
     /* portrait */
     .charFrame{
@@ -190,6 +202,7 @@
       background:
         radial-gradient(700px 500px at 50% 0%, rgba(255,255,255,.08), transparent 55%),
         rgba(0,0,0,.25);
+      transition: box-shadow .2s ease, border-color .2s ease;
     }
     .charLayer{
       position:absolute; inset:0;
@@ -203,6 +216,21 @@
       filter: drop-shadow(0 0 14px rgba(255,255,255,.10));
     }
     .charFx.on{opacity:1}
+
+    /* fusion fx (visual-only layer) */
+    .fusionFx{
+      opacity:0;
+      transition:opacity .2s ease;
+      filter: drop-shadow(0 0 18px rgba(255,140,220,.16));
+      mix-blend-mode: screen;
+    }
+    .fusionFx.on{opacity:1}
+
+    /* cursed glow */
+    .charFrame.cursed{
+      border-color: rgba(255,60,90,.42);
+      box-shadow: 0 0 26px rgba(255,60,90,.18);
+    }
 
     @keyframes idleSway{
       0%{transform:translateY(0px) scale(1)}
@@ -221,6 +249,37 @@
     .charFrame.bigRig .charLayer{
       transform: scale(0.90);
       transform-origin: 50% 55%;
+    }
+
+    /* badges */
+    .badges{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+      font-size:12px;
+      font-weight:900;
+      color: rgba(255,255,255,.90);
+    }
+    .badge .icon{
+      width:18px;height:18px;
+      border-radius:999px;
+      display:grid;place-items:center;
+      background:rgba(0,0,0,0.22);
+      border:1px solid rgba(255,255,255,0.10);
+    }
+    .badge.cursed{
+      border-color: rgba(255,60,90,.35);
+      background: rgba(255,60,90,.12);
     }
 
     /* wheel */
@@ -556,6 +615,8 @@
 
           <div class="buildStats" id="buildStats"></div>
 
+          <div class="badges" id="buildBadges"></div>
+
           <div class="hr"></div>
 
           <div class="row">
@@ -610,6 +671,7 @@
                   <img id="layer_armor" class="charLayer" alt="armor"/>
                   <img id="layer_weapon" class="charLayer" alt="weapon"/>
                   <img id="layer_fx" class="charLayer charFx" alt="fx"/>
+                  <img id="layer_fusion" class="charLayer fusionFx" alt="fusion"/>
                 </div>
               </div>
 
@@ -632,6 +694,9 @@
           <div class="big">Your Character</div>
           <span class="tag" id="namedTag">Not finalized</span>
         </div>
+
+        <div class="badges" id="statsBadges"></div>
+
         <div class="sp"></div>
         <div class="row" style="gap:14px; flex-wrap:wrap;">
           <div style="flex:0 0 260px;">
@@ -645,6 +710,7 @@
               <img id="s_layer_armor" class="charLayer" alt="armor"/>
               <img id="s_layer_weapon" class="charLayer" alt="weapon"/>
               <img id="s_layer_fx" class="charLayer charFx" alt="fx"/>
+              <img id="s_layer_fusion" class="charLayer fusionFx" alt="fusion"/>
             </div>
           </div>
 
@@ -659,7 +725,7 @@
 
             <div class="panel" style="padding:12px;">
               <div class="big">Final Stats</div>
-              <div class="muted" style="font-size:12px;margin-top:4px;">Includes race modifiers.</div>
+              <div class="muted" style="font-size:12px;margin-top:4px;">Words shown, numbers used in code. Beyond tier = ???</div>
               <div class="sp"></div>
               <div class="buildStats" id="finalStatsList"></div>
             </div>
@@ -690,7 +756,10 @@
               <img id="pve_p_arms" class="charLayer"/>
               <img id="pve_p_back" class="charLayer"/>
               <img id="pve_p_head" class="charLayer"/>
+              <img id="pve_p_armor" class="charLayer"/>
+              <img id="pve_p_weapon" class="charLayer"/>
               <img id="pve_p_fx" class="charLayer charFx"/>
+              <img id="pve_p_fusion" class="charLayer fusionFx"/>
             </div>
             <div class="roleTag" id="pve_p_roleTag"></div>
             <div class="sp"></div>
@@ -707,7 +776,10 @@
               <img id="pve_e_arms" class="charLayer"/>
               <img id="pve_e_back" class="charLayer"/>
               <img id="pve_e_head" class="charLayer"/>
+              <img id="pve_e_armor" class="charLayer"/>
+              <img id="pve_e_weapon" class="charLayer"/>
               <img id="pve_e_fx" class="charLayer charFx"/>
+              <img id="pve_e_fusion" class="charLayer fusionFx"/>
             </div>
             <div class="roleTag" id="pve_e_roleTag"></div>
             <div class="sp"></div>
@@ -741,7 +813,10 @@
               <img id="p_arms" class="charLayer"/>
               <img id="p_back" class="charLayer"/>
               <img id="p_head" class="charLayer"/>
+              <img id="p_armor" class="charLayer"/>
+              <img id="p_weapon" class="charLayer"/>
               <img id="p_fx" class="charLayer charFx"/>
+              <img id="p_fusion" class="charLayer fusionFx"/>
             </div>
             <div class="roleTag" id="p_roleTag"></div>
             <div class="sp"></div>
@@ -758,7 +833,10 @@
               <img id="e_arms" class="charLayer"/>
               <img id="e_back" class="charLayer"/>
               <img id="e_head" class="charLayer"/>
+              <img id="e_armor" class="charLayer"/>
+              <img id="e_weapon" class="charLayer"/>
               <img id="e_fx" class="charLayer charFx"/>
+              <img id="e_fusion" class="charLayer fusionFx"/>
             </div>
             <div class="roleTag" id="e_roleTag"></div>
             <div class="sp"></div>
@@ -776,7 +854,7 @@
     <div class="modalCard">
       <div class="row">
         <div class="big">Name your character</div>
-        <button class="btn secondary small" onclick="closeNameModal()">Close</button>
+        <button class="btn secondary small" id="nameCloseBtn" type="button">Close</button>
       </div>
       <div class="sp"></div>
       <div class="muted" style="font-size:12px;">
@@ -789,8 +867,8 @@
       </div>
       <div class="sp"></div>
       <div class="row">
-        <button class="btn primary" onclick="saveName()">Save Name</button>
-        <button class="btn danger" onclick="closeNameModal()">Cancel</button>
+        <button class="btn primary" id="nameSaveBtn" type="button">Save Name</button>
+        <button class="btn danger" id="nameCancelBtn" type="button">Cancel</button>
       </div>
     </div>
   </div>
@@ -800,7 +878,7 @@
     <div class="lootCard">
       <div class="lootTop">
         <div id="lootTitle" class="lootTitle">Victory</div>
-        <button class="btn secondary" onclick="closeLoot()">Close</button>
+        <button class="btn secondary" id="lootCloseBtn" type="button">Close</button>
       </div>
       <div id="lootSub" class="lootSub"></div>
 
@@ -810,7 +888,7 @@
       </div>
 
       <div class="lootSection">
-        <div class="lootHeader">Trait Event</div>
+        <div class="lootHeader">Trait / Effect Event</div>
         <div id="lootTrait" class="lootList"></div>
       </div>
 
@@ -818,6 +896,20 @@
         <div class="lootHeader">Progress</div>
         <div id="lootProgress" class="lootList"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- choice modal (for Soul Stone stat choice, Kaiju #9 choose, etc.) -->
+  <div id="choiceModal" class="modal hidden">
+    <div class="modalCard">
+      <div class="row">
+        <div class="big" id="choiceTitle">Choose</div>
+        <button class="btn secondary small" id="choiceCloseBtn" type="button">Close</button>
+      </div>
+      <div class="sp"></div>
+      <div class="muted" style="font-size:12px;" id="choiceSub">Pick one option.</div>
+      <div class="sp"></div>
+      <div id="choiceButtons" class="col"></div>
     </div>
   </div>
 
@@ -832,12 +924,28 @@
   <!-- toast -->
   <div id="toast" class="toast"></div>
 
-<script>
+  <!-- BLOCK 2 will start here with <script> ... -->
+  <script>
+/* =========================
+BLOCK 2 of 3 (PASTE SECOND)
+This block adds:
+- New state model (additive weapons/powers/armor/effects)
+- Stat system: words shown, numbers used, ??? beyond tiers
+- Kayden cursed system (red glow + tag + PvP/PvE behavior hooks)
+- Wheels framework expanded (Armor / Trainer / Clan / Power Mastery / Transformations / Subtypes)
+- Choice modal system (Soul Stone stat pick, Kaiju #9 choice, etc.)
+- Flee chance function based on speed closeness
+BLOCK 3 will add:
+- Portrait pipeline updates for armor/weapon/fusion/fx
+- Battle sim with flee, instant-win rules, steals/merges, soul trap, post-fight progression
+- Full UI bindings, refreshUI, init, and closing </body></html>
+========================= */
+
 /* =========================================================
    CONFIG (TESTING vs DAILY LOCK)
 ========================================================= */
 const TEST_MODE = true; // set to false when you want 1 full build per day
-const STORAGE_KEY = "wheel_forge_save_v1";
+const STORAGE_KEY = "wheel_forge_save_v2";
 
 /* =========================================================
    RACE LIST (LOCKED)
@@ -853,200 +961,23 @@ const RACE_RIG = {
   "Human":"humanoid","Orc":"humanoid","Vampire":"humanoid","Demon":"humanoid",
   "Alien":"humanoid","God":"humanoid","Hybrid":"humanoid","Shinigami":"humanoid",
   "Soul Eater":"special_humanoid","Demi-human":"humanoid",
-
   "Cyborg":"cyborg_modular","Hivemind":"hivemind_special","Dragon":"dragon_animal",
   "Golem":"golem_big","Giant":"giant_big"
 };
 
 const RACE_BASE_IMAGE = {
-  // Put your real files here in your repo:
-  // assets/bases/golem/base.png
-  // assets/bases/giant/base.png
   "Golem":"assets/bases/golem/base.png",
-  "Giant":"assets/bases/giant/base.png"
+  "Giant":"assets/bases/giant/base.png",
+  "Dragon":"assets/bases/dragon/base.png"
 };
 
-// Simple background mapping (add images later if you want)
-// Example filenames: assets/backgrounds/vampire.jpg, assets/backgrounds/golem.jpg, etc.
+/* Background mapping */
 function setRaceBackground(race){
-  const bg = document.getElementById("bgImage");
+  const bg = $("bgImage");
   if(!bg) return;
   const key = (race || "").toLowerCase().replaceAll(" ","_");
   const url = `assets/backgrounds/${key}.jpg`;
-  // If the file doesn't exist, browser shows none (safe).
   bg.style.backgroundImage = `url("${url}")`;
-}
-
-/* =========================================================
-   WHEELS (you can replace these arrays later)
-========================================================= */
-const POWER_OPTIONS = [
-  "No Power","Adaptation","Gravity Manipulation","Time Manipulation","Regeneration",
-  "Weapon Creation","Lightning","Ice Manipulation","Telekinesis","Teleportation",
-  "Fire","Heavenly Restriction","Curse Mark","Flight","Immortal"
-];
-
-const WEAPON_OPTIONS = [
-  "No Weapon","Sword","Scythe","Pistol","Bow","Axe","Hammer","Stick",
-  "Brass Knuckles","Spear","Water Gun","Magic Staff","Guitar","Nunchucks"
-];
-
-// Demi-human wheel (if race === Demi-human)
-const DEMI_TYPES = ["Dragonoid","Elves","Werebeast","Troll","Hobgoblin","Lizardmen","Fishman","Dwarf"];
-const WEREBEAST_TYPES = ["Wolf","Rabbit","Killer Whale","Giraffe","Elephant","Bear","Turtle","Alligator","Minotaur"];
-
-// Stats wheels (simple placeholders)
-const STRENGTH_OPTIONS = ["1","2","3","4","5","6","7","8","9","10"];
-const DURABILITY_OPTIONS = ["1","2","3","4","5","6","7","8","9","10"];
-const LUCK_OPTIONS = ["1","2","3","4","5","6","7","8","9","10"];
-
-/* =========================================================
-   WEREBEAST SLOTS + FX (locked)
-========================================================= */
-const WEREBEAST_SLOTS = {
-  Rabbit: ["head","legs"],
-  Wolf: ["head","arms","legs"],
-  Minotaur: ["head","body"],
-  Elephant: ["head","body"],
-  Turtle: ["back","body"],
-  Alligator: ["head","arms","legs"],
-  "Killer Whale": ["head","back","body"],
-  Giraffe: ["head","body"],
-  Bear: ["head","body","arms","legs"] // optional if you use it
-};
-
-const BEAST_ROLE = {
-  Rabbit: "Speed",
-  Wolf: "Hunter",
-  Minotaur: "Wall",
-  Elephant: "Juggernaut",
-  Turtle: "Fortress",
-  Alligator: "Ambush",
-  "Killer Whale": "Apex",
-  Giraffe: "Uncanny Tower",
-  Bear: "Bruiser"
-};
-
-// FX images are optional; if they don't exist, nothing breaks.
-const BEAST_FX = {
-  Rabbit: "assets/overlays/fx/speed.png",
-  Wolf: "assets/overlays/fx/predator.png",
-  Minotaur: "assets/overlays/fx/stonepulse.png",
-  Elephant: "assets/overlays/fx/quake.png",
-  Turtle: "assets/overlays/fx/guard.png",
-  Alligator: "assets/overlays/fx/swampmist.png",
-  "Killer Whale": "assets/overlays/fx/deepsea.png",
-  Giraffe: "assets/overlays/fx/uncanny.png",
-  Bear: "assets/overlays/fx/rage.png"
-};
-
-/* =========================================================
-   DEMI-HUMANS (non-werebeast) integration
-========================================================= */
-const DEMI_SLOTS = {
-  "Elves": ["head"],
-  "Dragonoid": ["head"],
-  "Troll": ["body"],
-  "Hobgoblin": ["head"],
-  "Lizardmen": ["head","legs"],
-  "Fishman": ["head","arms"],
-  "Dwarf": ["body"]
-};
-
-/* =========================================================
-   BIG RIG OVERLAYS (Golem + Giant)
-========================================================= */
-const BIG_RIG_SLOTS = ["head","body","arms","legs","back"];
-const BIG_RIG_OVERLAY_PATH = {
-  "Golem": "assets/overlays/golem",
-  "Giant": "assets/overlays/giant"
-};
-
-/* =========================================================
-   TRAIT SLOT PROGRESSION
-========================================================= */
-const TRAIT_SLOTS = ["head","arms","back","legs","body"];
-const SLOT_UNLOCK_WINS = { head:0, arms:3, back:6, legs:10, body:15 };
-const SLOT_LABEL = { head:"Head", arms:"Arms", back:"Back", legs:"Legs", body:"Body" };
-
-/* =========================================================
-   PvP trait stealing
-========================================================= */
-const TRAIT_STEAL_CHANCE = 0.35;
-
-/* =========================================================
-   State
-========================================================= */
-const defaultState = () => ({
-  settings:{
-    volume: 0.65,
-    muted: false,
-  },
-  daily:{
-    // daily build lock (UTC date string)
-    lastBuildDay: "",
-    finalizedToday: false,
-  },
-  progress:{
-    pvpWins: 0,
-    unlockedSlots: { head:true, arms:false, back:false, legs:false, body:false },
-    traitLockCharges: 0,
-    revengeReady: false,
-    lastStolenAt: 0
-  },
-  currency:{ coins: 0, xp: 0 },
-  lastMatch:{ traitEvent: null },
-  build:{
-    phaseIndex: 0,     // which wheel step we are on
-    phaseKey: "race",  // current phase id
-    spinning: false
-  },
-  character:{
-    finalized:false,
-    name:"",
-    race:null,
-    demi:null,
-    werebeastType:null,
-    power:null,
-    weapon:null,
-    strength:null,
-    durability:null,
-    luck:null,
-    // stackable traits:
-    demiTraits: [] // [{kind,type}]
-  }
-});
-
-let state = loadState();
-
-/* =========================================================
-   Build phases (sequential wheels)
-========================================================= */
-function phasesForCharacter(){
-  // Base phases always:
-  const phases = [
-    { key:"race", label:"Race", options: RACE_OPTIONS, assign:(v)=>state.character.race=v },
-  ];
-
-  // If race is Demi-human, we do demi wheel after race
-  if(state.character.race === "Demi-human"){
-    phases.push({ key:"demi", label:"Demi Type", options: DEMI_TYPES, assign:(v)=>onDemiSpinResult(v) });
-    // Werebeast is conditional after demi:
-    if(state.character.demi === "Werebeast"){
-      phases.push({ key:"werebeast", label:"Werebeast Type", options: WEREBEAST_TYPES, assign:(v)=>onWerebeastSpinResult(v) });
-    }
-  }
-
-  // Core wheels
-  phases.push(
-    { key:"power", label:"Power", options: POWER_OPTIONS, assign:(v)=>state.character.power=v },
-    { key:"weapon", label:"Weapon", options: WEAPON_OPTIONS, assign:(v)=>state.character.weapon=v },
-    { key:"strength", label:"Strength", options: STRENGTH_OPTIONS, assign:(v)=>state.character.strength=v },
-    { key:"durability", label:"Durability", options: DURABILITY_OPTIONS, assign:(v)=>state.character.durability=v },
-    { key:"luck", label:"Luck", options: LUCK_OPTIONS, assign:(v)=>state.character.luck=v },
-  );
-
-  return phases;
 }
 
 /* =========================================================
@@ -1068,6 +999,53 @@ function logBuild(msg){
   if(!el) return;
   const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   el.innerHTML = `<div><span class="muted">[${time}]</span> ${escapeHtml(msg)}</div>` + el.innerHTML;
+}
+
+/* =========================================================
+   Choice Modal (Soul Stone stat pick, Kaiju #9, etc.)
+========================================================= */
+let choiceResolve = null;
+
+function openChoiceModal({title="Choose", sub="Pick one.", options=[]}){
+  const modal = $("choiceModal");
+  const host = $("choiceButtons");
+  if(!modal || !host) return Promise.resolve(null);
+
+  $("choiceTitle").textContent = title;
+  $("choiceSub").textContent = sub;
+  host.innerHTML = "";
+
+  modal.classList.remove("hidden");
+
+  return new Promise((resolve)=>{
+    choiceResolve = resolve;
+
+    options.forEach(opt=>{
+      const b = document.createElement("button");
+      b.className = "btn primary";
+      b.style.width = "100%";
+      b.textContent = opt.label;
+      b.addEventListener("click", ()=>{
+        closeChoiceModal();
+        resolve(opt.value);
+      });
+      host.appendChild(b);
+    });
+  });
+}
+function closeChoiceModal(){
+  const modal = $("choiceModal");
+  if(modal) modal.classList.add("hidden");
+  choiceResolve = null;
+}
+function bindChoiceModalButtons(){
+  const closeBtn = $("choiceCloseBtn");
+  if(closeBtn){
+    closeBtn.addEventListener("click", ()=>{
+      closeChoiceModal();
+      if(choiceResolve) choiceResolve(null);
+    });
+  }
 }
 
 /* =========================================================
@@ -1099,7 +1077,734 @@ function updateDailyLock(){
 }
 
 /* =========================================================
-   Wheel drawing + physics
+   SOUND (no files needed) - unchanged
+========================================================= */
+let audioCtx = null;
+function ensureAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+function playClick(freq=1100, dur=0.025, vol=0.15){
+  if(state.settings.muted) return;
+  ensureAudio();
+  const t0 = audioCtx.currentTime;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = "square";
+  o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol * state.settings.volume, t0+0.004);
+  g.gain.linearRampToValueAtTime(0, t0+dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t0);
+  o.stop(t0+dur+0.01);
+}
+function playSpinWhoosh(){ playClick(420, 0.05, 0.12); }
+function playUnlockSound(){
+  playClick(880, 0.06, 0.16);
+  setTimeout(()=>playClick(1320, 0.05, 0.14), 60);
+}
+function playStealSound(){
+  playClick(220, 0.06, 0.18);
+  setTimeout(()=>playClick(140, 0.08, 0.14), 40);
+}
+function playBlockSound(){
+  playClick(520, 0.05, 0.14);
+  setTimeout(()=>playClick(520, 0.05, 0.10), 70);
+}
+
+/* =========================================================
+   STAT SYSTEM (Numbers in code, Words in UI, ??? beyond tiers)
+========================================================= */
+/*
+We store numbers:
+  strengthN, speedN, durabilityN, fightN, iqN, luckN
+UI shows labels based on tier thresholds.
+Beyond the max threshold => "???"
+*/
+
+// Tiers can be tuned anytime (numbers are the true power scale)
+const STAT_TIERS = {
+  strength: [
+    { max: 2,  label: "Kayden" },          // worst always
+    { max: 4,  label: "Weak" },
+    { max: 7,  label: "Average" },
+    { max: 10, label: "Peak Human" },
+    { max: 14, label: "Superhuman" },
+    { max: 20, label: "City" },
+    { max: 28, label: "Country" },
+    { max: 40, label: "Planetary" },
+    { max: 60, label: "Cosmic" },
+    { max: 85, label: "Universal" },
+    { max: 110,label: "Omnipotent" },
+  ],
+  speed: [
+    { max: 2,  label: "Kayden" },
+    { max: 4,  label: "Slow" },
+    { max: 7,  label: "Athlete" },
+    { max: 10, label: "Fast" },
+    { max: 14, label: "Supersonic" },
+    { max: 20, label: "Hypersonic" },
+    { max: 30, label: "Light Speed" },
+    { max: 45, label: "FTL" },
+    { max: 65, label: "Instant" },
+    { max: 90, label: "Beyond Time" },
+    { max: 110,label: "Omnipotent" },
+  ],
+  durability: [
+    { max: 2,  label: "Kayden" },
+    { max: 4,  label: "Fragile" },
+    { max: 7,  label: "Sturdy" },
+    { max: 10, label: "Peak Human" },
+    { max: 14, label: "Armored" },
+    { max: 20, label: "Tank" },
+    { max: 28, label: "Fortress" },
+    { max: 40, label: "Planetary" },
+    { max: 60, label: "Cosmic" },
+    { max: 85, label: "Universal" },
+    { max: 110,label: "Omnipotent" },
+  ],
+  fight: [
+    { max: 2,  label: "Kayden" },
+    { max: 4,  label: "Clumsy" },
+    { max: 7,  label: "Brawler" },
+    { max: 10, label: "Fighter" },
+    { max: 14, label: "Expert" },
+    { max: 20, label: "Master" },
+    { max: 28, label: "Warlord" },
+    { max: 40, label: "Legend" },
+    { max: 60, label: "Mythic" },
+    { max: 85, label: "Universal" },
+    { max: 110,label: "Omnipotent" },
+  ],
+  iq: [
+    { max: 2,  label: "Kayden" },
+    { max: 4,  label: "Dull" },
+    { max: 7,  label: "Normal" },
+    { max: 10, label: "Smart" },
+    { max: 14, label: "Genius" },
+    { max: 20, label: "Supergenius" },
+    { max: 30, label: "Alien Brain" },
+    { max: 45, label: "Cosmic Mind" },
+    { max: 65, label: "Omniscient" },
+    { max: 110,label: "Omnipotent" },
+  ],
+};
+
+// label function
+function labelForStat(statKey, value){
+  const tiers = STAT_TIERS[statKey] || [];
+  for(const t of tiers){
+    if(value <= t.max) return t.label;
+  }
+  return "???";
+}
+
+// “Kayden” detection for cursed mechanics: only for these stats
+const KAYDEN_STATS = ["strength","speed","durability","fight","iq"];
+function isKaydenLabel(statKey, label){
+  return KAYDEN_STATS.includes(statKey) && String(label).trim().toLowerCase() === "kayden";
+}
+
+/* =========================================================
+   WHEELS (Expanded)
+   NOTE: You said each stat wheel has different choices, with Kayden always worst.
+   If your images have exact lists, drop them into these arrays later.
+========================================================= */
+
+// Power wheel (includes items from your notes; can expand anytime)
+const POWER_OPTIONS = [
+  "No Power",
+  "Adaptation",
+  "Gravity Manipulation",
+  "Time Manipulation",
+  "Regeneration",
+  "Weapon Creation",
+  "Lightning",
+  "Ice Manipulation",
+  "Telekinesis",
+  "Teleportation",
+  "Fire",
+  "Heavenly Restriction",
+  "Curse Mark",
+  "Flight",
+  "Immortal",
+  "Rinnegan"
+];
+
+// Power mastery wheel (needed for strong fusions gating)
+const POWER_MASTERY_OPTIONS = [
+  "None",
+  "Dormant",
+  "Awakening",
+  "Controlled",
+  "Mastered",
+  "Planetary",
+  "Cosmic",
+  "Universal",
+  "Omnipotent"
+];
+
+// Weapons wheel (includes Infinity Gauntlet as weapon)
+const WEAPON_OPTIONS = [
+  "No Weapon",
+  "Sword","Scythe","Pistol","Bow","Axe","Hammer","Stick",
+  "Brass Knuckles","Spear","Water Gun","Magic Staff","Guitar","Nunchucks",
+  "Infinity Gauntlet",
+  "Green Lantern Ring",
+  "Demon Slayer Sword",
+  "Escanor's Axe",
+  "Blades of Chaos",
+  "Samehada",
+  "Uzumaki Chains"
+];
+
+// Armor wheel (from your notes)
+const ARMOR_OPTIONS = [
+  "No Armor",
+  "Berserk Armor",
+  "Iron Man Suit",
+  "Jauger",
+  "Turtle Helmet",
+  "Symbiote",
+  "Marine Fit",
+  "Ashborn's Armor",
+  "Rock Lee Weights",
+  "Goku's Gi"
+];
+
+// Trainer wheel (from your notes)
+const TRAINER_OPTIONS = [
+  "No Trainer",
+  "Master Roshi",
+  "Jiraiya",
+  "Hisoka",
+  "Korro",
+  "Yuujirou"
+];
+
+// Clan wheel (from your notes)
+const CLAN_OPTIONS = [
+  "No Clan",
+  "Uchiha",
+  "Gojo",
+  "D Clan",
+  "Kamado"
+];
+
+// Transformations (these are powers, not races)
+const TRANSFORM_OPTIONS = [
+  "None",
+  "Kaioken",
+  "Eight Gates",
+  "Super Saiyan",
+  "Titan Transformation",
+  "Tailed Beast"
+];
+
+// Kaioken levels
+const KAIOKEN_OPTIONS = ["None","X2","X3","X4","X5","X10","X25","X50","X100"];
+
+// Eight gates levels
+const GATES_OPTIONS = ["None","First Gate","Second Gate","Third Gate","Fourth Gate","Fifth Gate","Sixth Gate","Seventh Gate","Eighth Gate"];
+
+// Super Saiyan forms
+const SAIYAN_FORM_OPTIONS = ["None","Super Saiyan","Super Saiyan 4","Super Saiyan God","Super Saiyan Blue","Ultra Instinct","MUI"];
+
+// Titan types
+const TITAN_TYPE_OPTIONS = ["None","Cart","Jaw","Female","Attack","Armored","Beast","Warhammer","Colossal","Founding"];
+
+// Tailed beast count (1-10)
+const TAILED_BEAST_OPTIONS = ["None","1 Tail","2 Tails","3 Tails","4 Tails","5 Tails","6 Tails","7 Tails","8 Tails","9 Tails","10 Tails"];
+
+// Alien subtype wheel (from your notes; can expand)
+const ALIEN_SUBTYPE_OPTIONS = [
+  "None",
+  "Saiyan",
+  "Otsutsuki",
+  "Viltrumite",
+  "Zenomorph",
+  "Yautja",
+  "Illegal",
+  "Kryptonian",
+  "Transformer",
+  "Stitch",
+  "Groot",
+  "The Krang",
+  "Kaiju",
+  "Killer Clown"
+];
+
+// For subtypes with their own type wheels (examples)
+const YAUTJA_TYPE_OPTIONS = ["Young","Elite","Super"];
+const ZENOMORPH_TYPE_OPTIONS = ["Normal","Queen"];
+const TRANSFORMER_TYPE_OPTIONS = ["Normal","Prime"];
+
+// Vampire age wheel
+const VAMPIRE_AGE_OPTIONS = [
+  "1 year","5 years","10 years","20 years","50 years","100 years","250 years","500 years",
+  "1000 years","10,000 years","100,000 years","1,000,000 years"
+];
+
+// Shinigami rank wheel
+const SHINIGAMI_RANK_OPTIONS = ["F","D","C","B","A","S","King of Death"];
+
+// Demon rank wheel
+const DEMON_RANK_OPTIONS = ["Jelly","Knight","Earl","Marquis","Prince","Duke","King"];
+
+// Golem element wheel
+const GOLEM_TYPE_OPTIONS = ["Cotton Candy","Grass","Ice","Rock","Iron","Diamond","Lava"];
+
+// Giant type wheel
+const GIANT_TYPE_OPTIONS = ["Hill","Stone","Frost","Fire","Cloud","Storm","Titan"];
+
+// Dragon type wheel
+const DRAGON_TYPE_OPTIONS = ["Baby","Water","Earth","Fire","Lightning","Magic","Celestial"];
+
+// Orc type wheel
+const ORC_TYPE_OPTIONS = ["Mordor","Isengard","Moria","Morannon","Uruk-Hai"];
+
+// Zombie type wheel
+const ZOMBIE_TYPE_OPTIONS = ["Crawler","Generic","Armored","Runner","Mutated","Eternal"];
+
+// God type wheel (typo fixed: Halfling)
+const GOD_TYPE_OPTIONS = ["Halfling","Demigod","Lesser Deity","Deity","Greater Deity","Roman","Norse","Greek"];
+
+// Roman/Norse/Greek deity wheel (kept small; you can expand)
+const ROMAN_DEITY_OPTIONS = ["Jupiter","Neptune","Venus","Mars","Mercury","Vulcan","Ceres"];
+const NORSE_DEITY_OPTIONS = ["Odin","Thor","Loki","Heimdall","Frigg","Freyr","Hel","Njord"];
+const GREEK_DEITY_OPTIONS = ["Zeus","Poseidon","Hermes","Apollo","Prometheus","Hades","Ares"];
+
+/* --- STAT WHEELS (WORDS) ---
+Kayden must be worst for these five, but options differ per wheel.
+Replace these lists with your exact wheel words anytime.
+*/
+const STRENGTH_WORDS = ["Kayden","Weak","Average","Strong","Superhuman","Planetary","Cosmic","Universal"];
+const SPEED_WORDS    = ["Kayden","Slow","Quick","Fast","Supersonic","Light Speed","FTL","Instant"];
+const DUR_WORDS      = ["Kayden","Fragile","Sturdy","Tough","Tank","Fortress","Planetary","Universal"];
+const FIGHT_WORDS    = ["Kayden","Clumsy","Brawler","Fighter","Expert","Master","Legend","Universal"];
+const IQ_WORDS       = ["Kayden","Dull","Normal","Smart","Genius","Supergenius","Cosmic Mind","Omniscient"];
+
+// Luck can stay numeric-ish for now (you can also make it words later)
+const LUCK_OPTIONS = ["1","2","3","4","5","6","7","8","9","10"];
+
+/* Convert a stat word into a number (the real power) */
+function statWordToNumber(statKey, word){
+  const w = String(word || "").trim();
+  // Force Kayden to always be lowest numeric
+  if(isKaydenLabel(statKey, w)) return 1;
+
+  // Map based on index in its wheel list (so your custom words still scale)
+  const map = {
+    strength: STRENGTH_WORDS,
+    speed: SPEED_WORDS,
+    durability: DUR_WORDS,
+    fight: FIGHT_WORDS,
+    iq: IQ_WORDS
+  };
+  const arr = map[statKey] || [];
+  const idx = Math.max(0, arr.indexOf(w));
+  // Simple ramp: 1..(idx+1)*?  (tune anytime)
+  // Higher tiers give bigger jumps so late-game upgrades feel huge.
+  const base = 2;
+  const step = 3;
+  const val = base + idx*step + Math.floor((idx*idx)/3);
+  return Math.max(1, val);
+}
+
+/* =========================================================
+   DEMI / WEREBEAST system (kept from your original)
+========================================================= */
+const DEMI_TYPES = ["Dragonoid","Elves","Werebeast","Troll","Hobgoblin","Lizardmen","Fishman","Dwarf"];
+const WEREBEAST_TYPES = ["Wolf","Rabbit","Killer Whale","Giraffe","Elephant","Bear","Turtle","Alligator","Minotaur"];
+
+const WEREBEAST_SLOTS = {
+  Rabbit: ["head","legs"],
+  Wolf: ["head","arms","legs"],
+  Minotaur: ["head","body"],
+  Elephant: ["head","body"],
+  Turtle: ["back","body"],
+  Alligator: ["head","arms","legs"],
+  "Killer Whale": ["head","back","body"],
+  Giraffe: ["head","body"],
+  Bear: ["head","body","arms","legs"]
+};
+
+const BEAST_ROLE = {
+  Rabbit: "Speed",
+  Wolf: "Hunter",
+  Minotaur: "Wall",
+  Elephant: "Juggernaut",
+  Turtle: "Fortress",
+  Alligator: "Ambush",
+  "Killer Whale": "Apex",
+  Giraffe: "Uncanny Tower",
+  Bear: "Bruiser"
+};
+
+const BEAST_FX = {
+  Rabbit: "assets/overlays/fx/speed.png",
+  Wolf: "assets/overlays/fx/predator.png",
+  Minotaur: "assets/overlays/fx/stonepulse.png",
+  Elephant: "assets/overlays/fx/quake.png",
+  Turtle: "assets/overlays/fx/guard.png",
+  Alligator: "assets/overlays/fx/swampmist.png",
+  "Killer Whale": "assets/overlays/fx/deepsea.png",
+  Giraffe: "assets/overlays/fx/uncanny.png",
+  Bear: "assets/overlays/fx/rage.png"
+};
+
+const DEMI_SLOTS = {
+  "Elves": ["head"],
+  "Dragonoid": ["head"],
+  "Troll": ["body"],
+  "Hobgoblin": ["head"],
+  "Lizardmen": ["head","legs"],
+  "Fishman": ["head","arms"],
+  "Dwarf": ["body"]
+};
+
+/* =========================================================
+   BIG RIG OVERLAYS (Golem + Giant)
+========================================================= */
+const BIG_RIG_SLOTS = ["head","body","arms","legs","back"];
+const BIG_RIG_OVERLAY_PATH = {
+  "Golem": "assets/overlays/golem",
+  "Giant": "assets/overlays/giant"
+};
+
+/* =========================================================
+   TRAIT SLOT PROGRESSION (kept)
+========================================================= */
+const TRAIT_SLOTS = ["head","arms","back","legs","body"];
+const SLOT_UNLOCK_WINS = { head:0, arms:3, back:6, legs:10, body:15 };
+const SLOT_LABEL = { head:"Head", arms:"Arms", back:"Back", legs:"Legs", body:"Body" };
+
+/* =========================================================
+   PvP steal chance (expanded later in Block 3)
+========================================================= */
+const TRAIT_STEAL_CHANCE = 0.35;
+
+/* =========================================================
+   FLEE SYSTEM (speed closeness)
+========================================================= */
+// Tunables
+const FLEE_HP_THRESHOLD = 0.30; // flee attempt when under 30% HP
+const FLEE_MAX_GAP = 10;        // if speed gap > this, flee is impossible
+const FLEE_BASE = 0.30;         // flee chance when gap is 0 (30%)
+
+/*
+Chance falls as gap increases.
+gap=0 => 0.30
+gap=5 => around 0.15
+gap=10 => near 0.02
+gap>10 => 0
+*/
+function fleeChanceFromSpeedGap(spdA, spdB){
+  const gap = Math.abs((spdA||0) - (spdB||0));
+  if(gap > FLEE_MAX_GAP) return 0;
+  const t = gap / FLEE_MAX_GAP;             // 0..1
+  const eased = (1 - t) * (1 - t);          // quadratic falloff
+  const ch = FLEE_BASE * eased + 0.02 * (1 - eased);
+  return Math.max(0, Math.min(0.40, ch));
+}
+
+/* =========================================================
+   ADDITIVE CHARACTER MODEL + PROGRESSION
+========================================================= */
+const defaultState = () => ({
+  settings:{
+    volume: 0.65,
+    muted: false,
+  },
+  daily:{
+    lastBuildDay: "",
+    finalizedToday: false,
+  },
+  progress:{
+    pvpWins: 0,
+    unlockedSlots: { head:true, arms:false, back:false, legs:false, body:false },
+    traitLockCharges: 0,
+    revengeReady: false,
+    lastStolenAt: 0,
+
+    // cross-match progression systems
+    soulsCaptured: 0,         // Soul Stone
+    soulBonus: { strength:0, speed:0, durability:0, fight:0, iq:0 }, // chosen bonuses
+    adaptationStacks: 0,      // Adaptation
+  },
+  currency:{ coins: 0, xp: 0 },
+  lastMatch:{ traitEvent: null },
+
+  build:{
+    phaseIndex: 0,
+    phaseKey: "race",
+    spinning: false
+  },
+
+  character:{
+    finalized:false,
+    name:"",
+    race:null,
+    demi:null,
+    werebeastType:null,
+
+    // NEW: additive lists (always-on)
+    powers: [],        // e.g. ["Fire","Rinnegan"]
+    weapons: [],       // e.g. ["Sword","Infinity Gauntlet"]
+    armors: [],        // e.g. ["Iron Man Suit"]
+    effects: [],       // computed tags: immunities/weaknesses/etc
+    fusions: [],       // e.g. ["Blood Lord"]
+
+    // NEW: extra wheels
+    powerMastery: "None",
+    clan: "No Clan",
+    trainer: "No Trainer",
+    transformation: "None",
+    transformDetail: null, // { kind:"kaioken", value:"X10" } etc.
+    alienSubtype: "None",
+    alienSubtypeDetail: null,
+    vampireAge: null,
+    shinigamiRank: null,
+    demonRank: null,
+    golemType: null,
+    giantType: null,
+    dragonType: null,
+    orcType: null,
+    zombieType: null,
+    godType: null,
+    deity: null, // for Roman/Norse/Greek choices
+
+    // Stats: words from wheels + numeric behind the scenes
+    strengthW: null, speedW: null, durabilityW: null, fightW: null, iqW: null,
+    luckW: null,
+
+    // stackable traits (your slot-locked overlay traits)
+    demiTraits: [] // [{kind,type}]
+  }
+});
+
+let state = loadState();
+
+/* =========================================================
+   SAVE / LOAD
+========================================================= */
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return defaultState();
+  try{
+    const s = JSON.parse(raw);
+    const d = defaultState();
+    return deepMerge(d, s);
+  }catch(e){
+    return defaultState();
+  }
+}
+function deepMerge(base, extra){
+  if(typeof base !== "object" || base === null) return extra;
+  const out = Array.isArray(base) ? [...base] : {...base};
+  if(typeof extra !== "object" || extra === null) return out;
+  for(const k of Object.keys(extra)){
+    if(k in out) out[k] = deepMerge(out[k], extra[k]);
+    else out[k] = extra[k];
+  }
+  return out;
+}
+
+/* =========================================================
+   KAYDEN (Cursed) SYSTEM
+========================================================= */
+function computeIsCursed(char){
+  // cursed if ANY of the 5 key stat wheels rolled Kayden
+  const checks = [
+    char.strengthW && isKaydenLabel("strength", char.strengthW),
+    char.speedW && isKaydenLabel("speed", char.speedW),
+    char.durabilityW && isKaydenLabel("durability", char.durabilityW),
+    char.fightW && isKaydenLabel("fight", char.fightW),
+    char.iqW && isKaydenLabel("iq", char.iqW),
+  ];
+  return checks.some(Boolean);
+}
+
+/* =========================================================
+   BUILD PHASES (Sequential wheels)
+========================================================= */
+function phasesForCharacter(){
+  const c = state.character;
+  const phases = [
+    { key:"race", label:"Race", options: RACE_OPTIONS, assign:(v)=>{ c.race=v; } },
+  ];
+
+  // race-specific pipelines
+  if(c.race === "Demi-human"){
+    phases.push({ key:"demi", label:"Demi Type", options: DEMI_TYPES, assign:(v)=>onDemiSpinResult(v) });
+    if(c.demi === "Werebeast"){
+      phases.push({ key:"werebeast", label:"Werebeast Type", options: WEREBEAST_TYPES, assign:(v)=>onWerebeastSpinResult(v) });
+    }
+  }
+
+  if(c.race === "Alien"){
+    phases.push({ key:"alienSubtype", label:"Alien Subtype", options: ALIEN_SUBTYPE_OPTIONS, assign:(v)=>onAlienSubtype(v) });
+    // conditional subtype detail wheels
+    if(c.alienSubtype === "Yautja") phases.push({ key:"yautjaType", label:"Yautja Type", options: YAUTJA_TYPE_OPTIONS, assign:(v)=>{ c.alienSubtypeDetail={kind:"yautja", value:v}; }});
+    if(c.alienSubtype === "Zenomorph") phases.push({ key:"xenoType", label:"Zenomorph Type", options: ZENOMORPH_TYPE_OPTIONS, assign:(v)=>{ c.alienSubtypeDetail={kind:"zenomorph", value:v}; }});
+    if(c.alienSubtype === "Transformer") phases.push({ key:"tfType", label:"Transformer Type", options: TRANSFORMER_TYPE_OPTIONS, assign:(v)=>{ c.alienSubtypeDetail={kind:"transformer", value:v}; }});
+  }
+
+  if(c.race === "Vampire"){
+    phases.push({ key:"vampireAge", label:"Vampire Age", options: VAMPIRE_AGE_OPTIONS, assign:(v)=>{ c.vampireAge=v; }});
+  }
+
+  if(c.race === "Shinigami"){
+    phases.push({ key:"shinigamiRank", label:"Shinigami Rank", options: SHINIGAMI_RANK_OPTIONS, assign:(v)=>{ c.shinigamiRank=v; }});
+  }
+
+  if(c.race === "Demon"){
+    phases.push({ key:"demonRank", label:"Demon Rank", options: DEMON_RANK_OPTIONS, assign:(v)=>{ c.demonRank=v; }});
+  }
+
+  if(c.race === "Golem"){
+    phases.push({ key:"golemType", label:"Golem Type", options: GOLEM_TYPE_OPTIONS, assign:(v)=>{ c.golemType=v; }});
+  }
+
+  if(c.race === "Giant"){
+    phases.push({ key:"giantType", label:"Giant Type", options: GIANT_TYPE_OPTIONS, assign:(v)=>{ c.giantType=v; }});
+  }
+
+  if(c.race === "Dragon"){
+    phases.push({ key:"dragonType", label:"Dragon Type", options: DRAGON_TYPE_OPTIONS, assign:(v)=>{ c.dragonType=v; }});
+  }
+
+  if(c.race === "Orc"){
+    phases.push({ key:"orcType", label:"Orc Type", options: ORC_TYPE_OPTIONS, assign:(v)=>{ c.orcType=v; }});
+  }
+
+  if(c.race === "Zombie"){
+    phases.push({ key:"zombieType", label:"Zombie Type", options: ZOMBIE_TYPE_OPTIONS, assign:(v)=>{ c.zombieType=v; }});
+  }
+
+  if(c.race === "God"){
+    phases.push({ key:"godType", label:"God Type", options: GOD_TYPE_OPTIONS, assign:(v)=>onGodType(v) });
+    if(c.godType === "Roman") phases.push({ key:"romanDeity", label:"Roman Deity", options: ROMAN_DEITY_OPTIONS, assign:(v)=>{ c.deity=v; }});
+    if(c.godType === "Norse") phases.push({ key:"norseDeity", label:"Norse Deity", options: NORSE_DEITY_OPTIONS, assign:(v)=>{ c.deity=v; }});
+    if(c.godType === "Greek") phases.push({ key:"greekDeity", label:"Greek Deity", options: GREEK_DEITY_OPTIONS, assign:(v)=>{ c.deity=v; }});
+  }
+
+  // universal add-on wheels
+  phases.push(
+    { key:"power", label:"Power", options: POWER_OPTIONS, assign:(v)=>addToListUnique(c.powers, v, "Power") },
+    { key:"powerMastery", label:"Power Mastery", options: POWER_MASTERY_OPTIONS, assign:(v)=>{ c.powerMastery=v; } },
+    { key:"weapon", label:"Weapon", options: WEAPON_OPTIONS, assign:(v)=>addToListUnique(c.weapons, v, "Weapon") },
+    { key:"armor", label:"Armor", options: ARMOR_OPTIONS, assign:(v)=>addToListUnique(c.armors, v, "Armor") },
+    { key:"trainer", label:"Trainer", options: TRAINER_OPTIONS, assign:(v)=>{ c.trainer=v; } },
+    { key:"clan", label:"Clan", options: CLAN_OPTIONS, assign:(v)=>{ c.clan=v; } },
+
+    // transformations
+    { key:"transform", label:"Transformation", options: TRANSFORM_OPTIONS, assign:(v)=>onTransform(v) },
+    // conditional transformation detail wheels
+    ...(c.transformation === "Kaioken" ? [{ key:"kaioken", label:"Kaioken Level", options: KAIOKEN_OPTIONS, assign:(v)=>{ c.transformDetail={kind:"kaioken", value:v}; }}] : []),
+    ...(c.transformation === "Eight Gates" ? [{ key:"gates", label:"Eight Gates", options: GATES_OPTIONS, assign:(v)=>{ c.transformDetail={kind:"gates", value:v}; }}] : []),
+    ...(c.transformation === "Super Saiyan" ? [{ key:"ssj", label:"Super Saiyan Form", options: SAIYAN_FORM_OPTIONS, assign:(v)=>{ c.transformDetail={kind:"ssj", value:v}; }}] : []),
+    ...(c.transformation === "Titan Transformation" ? [{ key:"titan", label:"Titan Type", options: TITAN_TYPE_OPTIONS, assign:(v)=>{ c.transformDetail={kind:"titan", value:v}; }}] : []),
+    ...(c.transformation === "Tailed Beast" ? [{ key:"tailed", label:"Tailed Beast", options: TAILED_BEAST_OPTIONS, assign:(v)=>{ c.transformDetail={kind:"tailed", value:v}; }}] : []),
+
+    // stats (words -> numbers)
+    { key:"strength", label:"Strength", options: STRENGTH_WORDS, assign:(v)=>{ c.strengthW=v; } },
+    { key:"speed", label:"Speed", options: SPEED_WORDS, assign:(v)=>{ c.speedW=v; } },
+    { key:"durability", label:"Durability", options: DUR_WORDS, assign:(v)=>{ c.durabilityW=v; } },
+    { key:"fight", label:"Fight", options: FIGHT_WORDS, assign:(v)=>{ c.fightW=v; } },
+    { key:"iq", label:"IQ", options: IQ_WORDS, assign:(v)=>{ c.iqW=v; } },
+    { key:"luck", label:"Luck", options: LUCK_OPTIONS, assign:(v)=>{ c.luckW=v; } },
+  );
+
+  return phases;
+}
+
+function addToListUnique(arr, value, label){
+  if(!arr) arr = [];
+  if(String(value) === "No Power" || String(value) === "No Weapon" || String(value) === "No Armor") {
+    logBuild(`${label}: ${value}`);
+    return;
+  }
+  if(!arr.includes(value)) arr.push(value);
+  logBuild(`${label}: ${value}`);
+}
+
+/* =========================================================
+   Demi-human logic (kept)
+========================================================= */
+function slotsForTrait(trait){
+  if(!trait) return [];
+  if(trait.kind === "werebeast") return WEREBEAST_SLOTS[trait.type] || [];
+  if(trait.kind === "demi") return DEMI_SLOTS[trait.type] || [];
+  return [];
+}
+function isSlotUnlocked(slot){
+  return !!state.progress?.unlockedSlots?.[slot];
+}
+function canApplyTrait(trait){
+  const slots = slotsForTrait(trait);
+  for(const s of slots){
+    if(!isSlotUnlocked(s)) return { ok:false, blockedSlot:s };
+  }
+  return { ok:true, blockedSlot:null };
+}
+function addDemiTrait(trait){
+  state.character.demiTraits ||= [];
+  const check = canApplyTrait(trait);
+  if(!check.ok){
+    toast(`Trait needs ${SLOT_LABEL[check.blockedSlot]} slot unlocked.`);
+    return false;
+  }
+  state.character.demiTraits.push(trait);
+  saveState();
+  refreshUI();
+  return true;
+}
+function onDemiSpinResult(result){
+  state.character.demi = result;
+  state.character.werebeastType = null;
+  const alreadyHasDemi = (state.character.demiTraits || []).some(t => t.kind === "demi");
+  if(!alreadyHasDemi && result !== "Werebeast"){
+    addDemiTrait({ kind:"demi", type: result });
+  }
+  logBuild(`Demi type: ${result}`);
+  refreshUI();
+}
+function onWerebeastSpinResult(result){
+  state.character.werebeastType = result;
+  addDemiTrait({ kind:"werebeast", type: result });
+  logBuild(`Werebeast type: ${result}`);
+  refreshUI();
+}
+
+/* =========================================================
+   Alien / God / Transformation handlers
+========================================================= */
+function onAlienSubtype(v){
+  state.character.alienSubtype = v;
+  state.character.alienSubtypeDetail = null;
+  logBuild(`Alien subtype: ${v}`);
+  refreshUI();
+}
+function onGodType(v){
+  state.character.godType = v;
+  state.character.deity = null;
+  logBuild(`God type: ${v}`);
+  refreshUI();
+}
+function onTransform(v){
+  state.character.transformation = v;
+  state.character.transformDetail = null;
+  logBuild(`Transformation: ${v}`);
+  refreshUI();
+}
+
+/* =========================================================
+   WHEEL DRAWING + SPIN PHYSICS (from your original)
 ========================================================= */
 const wheelCanvas = $("wheel");
 const ctx = wheelCanvas.getContext("2d");
@@ -1122,7 +1827,6 @@ function drawWheel(){
 
   ctx.clearRect(0,0,W,H);
 
-  // disk
   const n = Math.max(1, wheelOptions.length);
   const ang = (Math.PI*2)/n;
 
@@ -1141,7 +1845,6 @@ function drawWheel(){
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // label
     ctx.save();
     ctx.translate(cx,cy);
     ctx.rotate(a0 + ang/2);
@@ -1153,7 +1856,6 @@ function drawWheel(){
     ctx.restore();
   }
 
-  // center button
   ctx.beginPath();
   ctx.arc(cx,cy,58,0,Math.PI*2);
   ctx.fillStyle = "rgba(0,0,0,.55)";
@@ -1169,60 +1871,14 @@ function drawWheel(){
 }
 
 function currentSliceIndex(){
-  // pointer is at top ( -90deg ), so compute which slice is there.
   const n = Math.max(1, wheelOptions.length);
   const ang = (Math.PI*2)/n;
-  // Normalize rotation so 0 means slice 0 starts at 0 rad.
-  // Pointer angle = -PI/2
   let a = (-Math.PI/2 - wheelRotation);
   a = (a % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
   const idx = Math.floor(a / ang) % n;
   return idx;
 }
 
-/* =========================================================
-   Sound (no files needed)
-========================================================= */
-let audioCtx = null;
-function ensureAudio(){
-  if(audioCtx) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-}
-function playClick(freq=1100, dur=0.025, vol=0.15){
-  if(state.settings.muted) return;
-  ensureAudio();
-  const t0 = audioCtx.currentTime;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = "square";
-  o.frequency.setValueAtTime(freq, t0);
-  g.gain.setValueAtTime(0, t0);
-  g.gain.linearRampToValueAtTime(vol * state.settings.volume, t0+0.004);
-  g.gain.linearRampToValueAtTime(0, t0+dur);
-  o.connect(g).connect(audioCtx.destination);
-  o.start(t0);
-  o.stop(t0+dur+0.01);
-}
-function playSpinWhoosh(){
-  // short whoosh beep
-  playClick(420, 0.05, 0.12);
-}
-function playUnlockSound(){
-  playClick(880, 0.06, 0.16);
-  setTimeout(()=>playClick(1320, 0.05, 0.14), 60);
-}
-function playStealSound(){
-  playClick(220, 0.06, 0.18);
-  setTimeout(()=>playClick(140, 0.08, 0.14), 40);
-}
-function playBlockSound(){
-  playClick(520, 0.05, 0.14);
-  setTimeout(()=>playClick(520, 0.05, 0.10), 70);
-}
-
-/* =========================================================
-   Spinning logic (smooth stop + tick sounds)
-========================================================= */
 function startSpin(fast=false){
   if(state.build.spinning) return;
 
@@ -1241,19 +1897,13 @@ function startSpin(fast=false){
   const baseVel = fast ? 0.45 : 0.32;
   spinVel = baseVel + Math.random()*0.18;
 
-  // Decide a stop target rotations ahead:
   const n = Math.max(1, wheelOptions.length);
   const ang = (Math.PI*2)/n;
   const stopIdx = Math.floor(Math.random()*n);
 
-  // Compute rotation so that stopIdx lands under pointer:
-  // We want currentSliceIndex() == stopIdx at end, with spinVel -> 0.
-  // We'll pick a target rotation offset relative to current wheelRotation:
   const fullTurns = 8 + Math.floor(Math.random()*4);
-  const targetAngleForIdx = (-Math.PI/2) - (stopIdx*ang + ang/2); // center under pointer
-  // wheelRotation should equal -targetAngleForIdx (but add turns)
+  const targetAngleForIdx = (-Math.PI/2) - (stopIdx*ang + ang/2);
   const desiredRotation = -targetAngleForIdx + fullTurns*(Math.PI*2);
-  // set target stop absolute (increasing)
   const cur = wheelRotation;
   targetStopRot = cur + ((desiredRotation - (cur % (Math.PI*2)) + (Math.PI*2)) % (Math.PI*2)) + fullTurns*(Math.PI*2);
 
@@ -1262,28 +1912,20 @@ function startSpin(fast=false){
 }
 
 function stepWheel(){
-  // smooth decel to targetStopRot:
   if(state.build.spinning){
     const remaining = Math.max(0, targetStopRot - wheelRotation);
-
-    // speed proportional to remaining (smooth), but never speed up at end
     const desiredVel = Math.min(0.55, Math.max(0.02, remaining * 0.0042));
-    // ease spinVel down toward desiredVel
     spinVel = spinVel*0.86 + desiredVel*0.14;
-
     wheelRotation += spinVel;
 
-    // tick per slice
     const idx = currentSliceIndex();
     if(idx !== lastTickIndex){
       lastTickIndex = idx;
-      // pitch changes with speed
       const pitch = 800 + Math.min(700, spinVel*2600);
       playClick(pitch, 0.016, 0.10);
     }
 
     if(remaining < 0.012 && spinVel < 0.03){
-      // stop
       wheelRotation = targetStopRot;
       state.build.spinning = false;
       saveState();
@@ -1293,20 +1935,570 @@ function stepWheel(){
       onSpinResult(String(result));
     }
   }
-
   drawWheel();
   requestAnimationFrame(stepWheel);
 }
 
 /* =========================================================
-   Trait systems (stacking + slots)
+   BUILD FLOW
 ========================================================= */
-function isSlotUnlocked(slot){
-  return !!state.progress?.unlockedSlots?.[slot];
+function currentPhase(){
+  const phases = phasesForCharacter();
+  const idx = Math.min(state.build.phaseIndex, phases.length-1);
+  return phases[idx];
 }
-function requiredWinsForSlot(slot){
-  return SLOT_UNLOCK_WINS[slot] ?? 999;
+function setWheel(label, options){
+  wheelOptions = [...options];
+  wheelRotation = wheelRotation % (Math.PI*2);
+  drawWheel();
 }
+function setPhaseIndex(i){
+  state.build.phaseIndex = i;
+  const ph = currentPhase();
+  state.build.phaseKey = ph.key;
+  saveState();
+  setWheel(ph.label, ph.options);
+  $("phaseTag").textContent = `Phase: ${ph.label}`;
+  $("wheelTitle").textContent = ph.label;
+  $("wheelHint").textContent = "Spin the wheel";
+  $("buildHint").textContent = `Spin for ${ph.label}.`;
+}
+function proceedToNextPhase(){
+  const phases = phasesForCharacter();
+  const next = state.build.phaseIndex + 1;
+  if(next >= phases.length){
+    $("buildHint").textContent = "All spins complete. Finalize & name your character.";
+    $("wheelHint").textContent = "Complete";
+    return;
+  }
+  setPhaseIndex(next);
+}
+
+function onSpinResult(result){
+  const ph = currentPhase();
+  if(!ph) return;
+
+  if(ph.key === "demi") onDemiSpinResult(result);
+  else if(ph.key === "werebeast") onWerebeastSpinResult(result);
+  else{
+    ph.assign(result);
+    logBuild(`${ph.label}: ${result}`);
+  }
+
+  if(ph.key === "race"){
+    setRaceBackground(result);
+    // reset add-ons when switching away from special races
+    if(result !== "Demi-human"){
+      state.character.demi = null;
+      state.character.werebeastType = null;
+      state.character.demiTraits = [];
+    }
+    if(result !== "Alien"){
+      state.character.alienSubtype = "None";
+      state.character.alienSubtypeDetail = null;
+    }
+    if(result !== "God"){
+      state.character.godType = null;
+      state.character.deity = null;
+    }
+  }
+
+  saveState();
+  refreshUI();
+  proceedToNextPhase();
+}
+
+/* =========================================================
+   BUILD STATS LIST + BADGES
+========================================================= */
+function buildStatLines(){
+  const c = state.character;
+
+  // stat labels shown, numbers computed later in Block 3
+  const lines = [
+    ["Race", c.race || "—"],
+    ["Subtype", c.race==="Alien" ? (c.alienSubtype || "—") : (c.race==="God" ? (c.godType||"—") : "—")],
+    ["Detail", c.deity || (c.alienSubtypeDetail?.value) || (c.transformDetail?.value) || "—"],
+    ["Demi", c.demi || "—"],
+    ["Werebeast", c.werebeastType || "—"],
+    ["Power(s)", (c.powers && c.powers.length) ? c.powers.join(", ") : "—"],
+    ["Power Mastery", c.powerMastery || "—"],
+    ["Weapon(s)", (c.weapons && c.weapons.length) ? c.weapons.join(", ") : "—"],
+    ["Armor(s)", (c.armors && c.armors.length) ? c.armors.join(", ") : "—"],
+    ["Trainer", c.trainer || "—"],
+    ["Clan", c.clan || "—"],
+    ["Transformation", c.transformation || "—"],
+    ["Strength", c.strengthW || "—"],
+    ["Speed", c.speedW || "—"],
+    ["Durability", c.durabilityW || "—"],
+    ["Fight", c.fightW || "—"],
+    ["IQ", c.iqW || "—"],
+    ["Luck", c.luckW || "—"],
+  ];
+  return lines;
+}
+
+function renderBuildStats(){
+  const host = $("buildStats");
+  if(!host) return;
+  host.innerHTML = "";
+  for(const [k,v] of buildStatLines()){
+    const div = document.createElement("div");
+    div.className = "statLine";
+    div.innerHTML = `<div class="statKey">${escapeHtml(k)}</div><div class="statVal">${escapeHtml(v)}</div>`;
+    host.appendChild(div);
+  }
+}
+
+function renderBadges(){
+  const c = state.character;
+  const cursed = computeIsCursed(c);
+
+  // build badges
+  const host = $("buildBadges");
+  if(host){
+    host.innerHTML = "";
+    if(cursed){
+      const b = document.createElement("div");
+      b.className = "badge cursed";
+      b.innerHTML = `<span class="icon">🩸</span><span>Cursed (Kayden)</span>`;
+      host.appendChild(b);
+    }
+    if((c.powers||[]).includes("Adaptation")){
+      const b = document.createElement("div");
+      b.className = "badge";
+      b.innerHTML = `<span class="icon">🧬</span><span>Adaptation</span>`;
+      host.appendChild(b);
+    }
+    if((c.weapons||[]).includes("Infinity Gauntlet")){
+      const b = document.createElement("div");
+      b.className = "badge";
+      b.innerHTML = `<span class="icon">💎</span><span>Infinity Gauntlet</span>`;
+      host.appendChild(b);
+    }
+  }
+
+  // stats badges
+  const host2 = $("statsBadges");
+  if(host2){
+    host2.innerHTML = "";
+    if(cursed){
+      const b = document.createElement("div");
+      b.className = "badge cursed";
+      b.innerHTML = `<span class="icon">🩸</span><span>Cursed (Kayden)</span>`;
+      host2.appendChild(b);
+    }
+  }
+
+  // tag in UI
+  const phaseTag = $("phaseTag");
+  if(phaseTag){
+    phaseTag.classList.toggle("cursed", cursed);
+  }
+}
+
+/* =========================================================
+   NAME MODAL (bind buttons, fix “stuck modal” issues)
+========================================================= */
+const BANNED_WORDS = []; // keep clean (no slurs)
+
+function isNameAllowed(name){
+  if(!name) return false;
+  const trimmed = name.trim();
+  if(trimmed.length < 2) return false;
+  if(trimmed.length > 18) return false;
+  if(!/^[a-z0-9 ]+$/i.test(trimmed)) return false;
+  const low = trimmed.toLowerCase();
+  for(const w of BANNED_WORDS){
+    if(w && low.includes(w.toLowerCase())) return false;
+  }
+  return true;
+}
+
+function openNameModal(){
+  $("nameInput").value = state.character.name || "";
+  $("nameModal").classList.remove("hidden");
+  setTimeout(()=>$("nameInput").focus(), 30);
+}
+function closeNameModal(){
+  $("nameModal").classList.add("hidden");
+}
+function saveName(){
+  const name = $("nameInput").value.trim();
+  if(!isNameAllowed(name)){
+    toast("Name not allowed.");
+    return;
+  }
+  state.character.name = name;
+  state.character.finalized = true;
+
+  if(dailyLockEnabled()){
+    state.daily.lastBuildDay = todayKeyUTC();
+    state.daily.finalizedToday = true;
+  }
+
+  saveState();
+  closeNameModal();
+  refreshUI();
+  toast("Saved!");
+}
+
+function bindNameModalButtons(){
+  $("nameCloseBtn")?.addEventListener("click", closeNameModal);
+  $("nameCancelBtn")?.addEventListener("click", closeNameModal);
+  $("nameSaveBtn")?.addEventListener("click", saveName);
+
+  // click outside card closes (prevents stuck overlay)
+  $("nameModal")?.addEventListener("click", (e)=>{
+    if(e.target && e.target.id === "nameModal") closeNameModal();
+  });
+  $("choiceModal")?.addEventListener("click", (e)=>{
+    if(e.target && e.target.id === "choiceModal"){
+      closeChoiceModal();
+      if(choiceResolve) choiceResolve(null);
+    }
+  });
+}
+
+/* =========================================================
+   FINALIZE + NEW BUILD
+========================================================= */
+function canFinalize(){
+  const c = state.character;
+  if(!c.race) return false;
+
+  // must have core wheels
+  if(!c.powerMastery) return false;
+  if(!c.strengthW || !c.speedW || !c.durabilityW || !c.fightW || !c.iqW) return false;
+  if(!c.luckW) return false;
+
+  // conditional requirements
+  if(c.race === "Demi-human"){
+    if(!c.demi) return false;
+    if(c.demi === "Werebeast" && !c.werebeastType) return false;
+  }
+  if(c.race === "Alien" && !c.alienSubtype) return false;
+  if(c.race === "God" && !c.godType) return false;
+
+  // must be at end
+  const phases = phasesForCharacter();
+  return state.build.phaseIndex >= phases.length-1;
+}
+
+function finalizeBuild(){
+  if(dailyLockEnabled() && state.daily.finalizedToday){
+    toast("Daily build already used.");
+    return;
+  }
+  if(!canFinalize()){
+    toast("Finish all spins first.");
+    return;
+  }
+  openNameModal();
+}
+
+function newBuild(){
+  if(dailyLockEnabled() && state.daily.finalizedToday){
+    toast("Locked until tomorrow.");
+    return;
+  }
+  const keepProg = state.progress;
+  const keepSet = state.settings;
+  const keepDaily = state.daily;
+  const keepCurrency = state.currency;
+
+  state = defaultState();
+  state.progress = keepProg;
+  state.settings = keepSet;
+  state.daily = keepDaily;
+  state.currency = keepCurrency;
+
+  state.build.phaseIndex = 0;
+  state.character.finalized = false;
+  state.character.name = "";
+  state.lastMatch.traitEvent = null;
+
+  saveState();
+  setRaceBackground("");
+  setPhaseIndex(0);
+  $("buildLog").innerHTML = "";
+  logBuild("New build started.");
+  refreshUI();
+}
+
+/* =========================================================
+   SKIP (testing)
+========================================================= */
+function skipPhase(){
+  if(state.build.spinning) return;
+  if(state.character.finalized){
+    toast("Finalized. New build to continue.");
+    return;
+  }
+  const ph = currentPhase();
+  if(!ph) return;
+  const r = ph.options[Math.floor(Math.random()*ph.options.length)];
+  onSpinResult(r);
+}
+
+/* =========================================================
+   VOLUME / RESET
+========================================================= */
+function toggleVolume(){
+  state.settings.muted = !state.settings.muted;
+  saveState();
+  $("volBtn").textContent = state.settings.muted ? "🔇" : "🔊";
+  toast(state.settings.muted ? "Muted" : "Sound on");
+}
+function hardReset(){
+  localStorage.removeItem(STORAGE_KEY);
+  state = defaultState();
+  saveState();
+  location.reload();
+}
+
+/* =========================================================
+   LOOT MODAL (close binding; content fill in Block 3)
+========================================================= */
+function closeLoot(){ $("lootModal").classList.add("hidden"); }
+function bindLootButtons(){
+  $("lootCloseBtn")?.addEventListener("click", closeLoot);
+  $("lootModal")?.addEventListener("click", (e)=>{
+    if(e.target && e.target.id === "lootModal") closeLoot();
+  });
+}
+
+/* =========================================================
+   TAB SWITCHING (kept)
+========================================================= */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    showTab(t.dataset.tab);
+  });
+});
+function showTab(key){
+  ["build","stats","pve","pvp"].forEach(k=>{
+    const sec = document.getElementById(`tab-${k}`);
+    if(sec) sec.classList.toggle("hidden", k !== key);
+  });
+  refreshUI();
+}
+
+/* =========================================================
+   REFRESH UI (partial: portraits + battles in Block 3)
+========================================================= */
+function refreshUI(){
+  updateDailyLock();
+
+  $("volBtn").textContent = state.settings.muted ? "🔇" : "🔊";
+
+  renderBuildStats();
+  renderBadges();
+
+  const ph = currentPhase();
+  $("phaseTag").textContent = `Phase: ${ph.label}`;
+  $("wheelTitle").textContent = ph.label;
+
+  $("finalizeBtn").style.opacity = canFinalize() ? "1" : ".65";
+
+  const locked = (dailyLockEnabled() && state.daily.finalizedToday) || state.character.finalized || state.build.spinning;
+  $("spinBtn").style.opacity = locked ? ".55" : "1";
+  $("spinBtn").style.pointerEvents = locked ? "none" : "auto";
+
+  setRaceBackground(state.character.race || "");
+
+  // cursed visual glow
+  const cursed = computeIsCursed(state.character);
+  $("charFrame")?.classList.toggle("cursed", cursed);
+  $("statsCharFrame")?.classList.toggle("cursed", cursed);
+
+  // skip/test buttons only in test mode
+  $("skipBtn").style.display = TEST_MODE ? "inline-flex" : "none";
+  $("testFastBtn").style.display = TEST_MODE ? "inline-flex" : "none";
+  $("newBuildBtn").style.display = (dailyLockEnabled() && state.daily.finalizedToday) ? "none" : "inline-flex";
+
+  $("namedTag").textContent = state.character.finalized ? "Finalized" : "Not finalized";
+
+  // NOTE: Portrait rendering, trait slots rendering, stat panels, PvP/PvE buttons are finished in Block 3.
+}
+
+/* =========================================================
+   BIND UI EVENTS (some more in Block 3)
+========================================================= */
+$("spinBtn").addEventListener("click", ()=>startSpin(false));
+$("testFastBtn").addEventListener("click", ()=>startSpin(true));
+$("skipBtn").addEventListener("click", skipPhase);
+$("finalizeBtn").addEventListener("click", finalizeBuild);
+$("newBuildBtn").addEventListener("click", newBuild);
+$("volBtn").addEventListener("click", toggleVolume);
+$("resetBtn").addEventListener("click", hardReset);
+
+bindNameModalButtons();
+bindChoiceModalButtons();
+bindLootButtons();
+
+/* =========================================================
+   INIT (partial; full init completes in Block 3)
+========================================================= */
+function init(){
+  updateDailyLock();
+
+  const tk = todayKeyUTC();
+  if(state.daily.lastBuildDay !== tk){
+    state.daily.lastBuildDay = tk;
+    state.daily.finalizedToday = false;
+    saveState();
+  }
+
+  const phases = phasesForCharacter();
+  state.build.phaseIndex = Math.min(state.build.phaseIndex || 0, phases.length-1);
+  setPhaseIndex(state.build.phaseIndex);
+
+  setRaceBackground(state.character.race || "");
+
+  if(!$("buildLog").innerHTML){
+    logBuild("Loaded.");
+  }
+
+  refreshUI();
+  drawWheel();
+  requestAnimationFrame(stepWheel);
+}
+
+init();
+
+/* =========================
+BLOCK 3 will continue below:
+- Trait slots render + unlock juice
+- Portrait pipeline for armor/weapon/fusion overlays
+- Full stat math (numeric additive)
+- PvP/PvE battle sim: flee + instant win + steal + merge + souls + adaptation + kayden bonuses + mocking
+- Loot screen fills + progression snapshots
+- renderPortraitTo updates
+- and closes </script></body></html>
+========================= */
+<script>
+/* =========================
+BLOCK 3 of 3 (PASTE THIRD)
+This block finishes EVERYTHING:
+- Weighted rarity spins (extremes rarer)
+- Full trait slot UI + unlock juice
+- Full additive stat math (numbers) + UI labels (words / ???)
+- Kayden cursed: red glow, cursed tag, PvP bonus vs Kayden, PvE mocking
+- Armor / weapons / powers / trainer / clan / transformations buffs applied additively
+- Additive steal/copy rules (no swapping) + “defense lock” hook
+- Flee system based on speed closeness (both sides)
+- Soul Stone persistent bonuses + choice modal
+- Adaptation stacks across matches
+- Fusion system (100+ fusions) with weak(always) + strong(Mastered+) gating
+- Full PvP/PvE start buttons + loot screen filling
+- Portrait rendering updated to show subtype/transform overlays (safe if files missing)
+- Closes </script></body></html>
+========================= */
+
+/* =========================================================
+   RARITY WEIGHTING (extremes rarer)
+========================================================= */
+function weightForPhaseOption(phaseKey, option, optionsArray){
+  // Default: all 1
+  // Make extreme ends rarer for MOST wheels (except locked race wheel)
+  if(phaseKey === "race") return 1;
+
+  const n = optionsArray.length;
+  const idx = optionsArray.indexOf(option);
+  if(idx < 0) return 1;
+
+  // Edge distance: 0 at edge, higher in middle
+  const distToEdge = Math.min(idx, n-1-idx);
+  const mid = Math.floor((n-1)/2);
+  const distToMid = Math.abs(idx - mid);
+
+  // Heavier weight near middle, lighter at edges.
+  // In addition, if option is "Kayden" keep it possible but low-ish (still worst).
+  let w = 1;
+
+  // Strong mid-bias
+  w *= (1 + (distToEdge * 0.6));
+  w *= (1 / (1 + distToMid * 0.35));
+
+  // If the option is Kayden on a stat wheel, reduce weight so it’s rare but real.
+  if(String(option).toLowerCase() === "kayden"){
+    w *= 0.45;
+  }
+
+  // Hard-rare: Omnipotent / Universal / MUI / Founding / 10 tails
+  const low = String(option).toLowerCase();
+  const hardRare =
+    low.includes("omnipotent") ||
+    low.includes("universal") ||
+    low === "mui" ||
+    low === "founding" ||
+    low === "10 tails" ||
+    low === "king" ||
+    low === "titan" ||
+    low === "celestial" ||
+    low === "loki" || low === "odin" || low === "zeus" || low === "ares";
+
+  if(hardRare) w *= 0.33;
+
+  // Prevent absurd weights
+  return Math.max(0.08, Math.min(2.25, w));
+}
+
+function weightedPickIndex(phaseKey, options){
+  const weights = options.map(o => weightForPhaseOption(phaseKey, o, options));
+  const total = weights.reduce((a,b)=>a+b,0);
+  let r = Math.random() * total;
+  for(let i=0;i<weights.length;i++){
+    r -= weights[i];
+    if(r <= 0) return i;
+  }
+  return options.length-1;
+}
+
+/* Override startSpin to use weights (same visuals/physics) */
+const _startSpinOriginal = startSpin;
+startSpin = function(fast=false){
+  if(state.build.spinning) return;
+
+  if(dailyLockEnabled() && state.daily.finalizedToday){
+    toast("Daily build already used.");
+    return;
+  }
+  if(state.character.finalized){
+    toast("Build is finalized. Start a new build to spin again.");
+    return;
+  }
+
+  state.build.spinning = true;
+  saveState();
+
+  const baseVel = fast ? 0.45 : 0.32;
+  spinVel = baseVel + Math.random()*0.18;
+
+  const n = Math.max(1, wheelOptions.length);
+  const ang = (Math.PI*2)/n;
+
+  const ph = currentPhase();
+  const stopIdx = weightedPickIndex(ph?.key || "unknown", wheelOptions);
+
+  const fullTurns = 8 + Math.floor(Math.random()*4);
+  const targetAngleForIdx = (-Math.PI/2) - (stopIdx*ang + ang/2);
+  const desiredRotation = -targetAngleForIdx + fullTurns*(Math.PI*2);
+  const cur = wheelRotation;
+
+  targetStopRot = cur + ((desiredRotation - (cur % (Math.PI*2)) + (Math.PI*2)) % (Math.PI*2)) + fullTurns*(Math.PI*2);
+
+  lastTickIndex = currentSliceIndex();
+  playSpinWhoosh();
+};
+
+/* =========================================================
+   TRAIT SLOTS UI + UNLOCK JUICE (restored)
+========================================================= */
+function requiredWinsForSlot(slot){ return SLOT_UNLOCK_WINS[slot] ?? 999; }
 function slotProgress(slot){
   const wins = state.progress.pvpWins || 0;
   const req = requiredWinsForSlot(slot);
@@ -1328,263 +2520,15 @@ function findClosestLockedSlot(){
   }
   return bestSlot;
 }
-
-function slotsForTrait(trait){
-  if(!trait) return [];
-  if(trait.kind === "werebeast"){
-    return WEREBEAST_SLOTS[trait.type] || [];
-  }
-  if(trait.kind === "demi"){
-    return DEMI_SLOTS[trait.type] || [];
-  }
-  return [];
-}
-
-function canApplyTrait(trait){
-  const slots = slotsForTrait(trait);
-  for(const s of slots){
-    if(!isSlotUnlocked(s)){
-      return { ok:false, blockedSlot:s };
-    }
-  }
-  return { ok:true, blockedSlot:null };
-}
-
-function addDemiTrait(trait){
-  state.character.demiTraits ||= [];
-
-  const check = canApplyTrait(trait);
-  if(!check.ok){
-    toast(`Trait needs ${SLOT_LABEL[check.blockedSlot]} slot unlocked.`);
-    return false;
-  }
-  state.character.demiTraits.push(trait);
-  saveState();
-  refreshUI();
-  return true;
-}
-
 function getCurrentTraitForSlot(slot){
   const traits = Array.isArray(state.character.demiTraits) ? state.character.demiTraits : [];
   for(let i = traits.length - 1; i >= 0; i--){
     const t = traits[i];
-    if(slotsForTrait(t).includes(slot)){
-      return `${t.type}`;
-    }
+    if(slotsForTrait(t).includes(slot)) return `${t.type}`;
   }
   return null;
 }
 
-/* =========================================================
-   Demi-human wheel logic
-========================================================= */
-function onDemiSpinResult(result){
-  state.character.demi = result;
-  state.character.werebeastType = null;
-
-  // enforce: only one demi trait per normal spin (stacking later via unlocks)
-  const alreadyHasDemi = (state.character.demiTraits || []).some(t => t.kind === "demi");
-  if(!alreadyHasDemi && result !== "Werebeast"){
-    addDemiTrait({ kind:"demi", type: result });
-  }
-  // If werebeast, we wait for werebeast type wheel to add trait
-  logBuild(`Demi type: ${result}`);
-  refreshUI();
-}
-
-function onWerebeastSpinResult(result){
-  state.character.werebeastType = result;
-  // add werebeast trait (stack-ready but slot-locked)
-  addDemiTrait({ kind:"werebeast", type: result });
-  logBuild(`Werebeast type: ${result}`);
-  refreshUI();
-}
-
-/* =========================================================
-   Overlays & portrait pipeline
-========================================================= */
-function clearSlots(prefix=""){
-  ["head","arms","legs","back","body","armor","weapon"].forEach(slot=>{
-    const el = document.getElementById(`${prefix}layer_${slot}`);
-    if(el) el.src = "";
-  });
-}
-
-function clearBigRigSlots(prefix=""){
-  BIG_RIG_SLOTS.forEach(slot=>{
-    const el = document.getElementById(`${prefix}layer_${slot}`);
-    if(el) el.src = "";
-  });
-}
-
-function getHumanoidBaseForRace(race){
-  // optional: map to your assets later:
-  // return `assets/bases/humanoid/${raceKey}/base.png`;
-  return "assets/bases/humanoid/base.png";
-}
-function getSpecialHumanoidBase(race){
-  return "assets/bases/special/base.png";
-}
-
-function applyRaceBase(char, prefix=""){
-  const base = document.getElementById(`${prefix}layer_base`);
-  if(!base) return;
-
-  const race = char.race;
-  const rig = RACE_RIG[race] || "humanoid";
-
-  if(rig === "golem_big" || rig === "giant_big"){
-    base.src = RACE_BASE_IMAGE[race] || "";
-    return;
-  }
-  if(rig === "dragon_animal"){
-    base.src = "assets/bases/dragon/base.png";
-    return;
-  }
-  if(rig === "special_humanoid"){
-    base.src = getSpecialHumanoidBase(race);
-    return;
-  }
-  base.src = getHumanoidBaseForRace(race);
-}
-
-function applyRigFraming(char, frameId="charFrame"){
-  const frame = document.getElementById(frameId);
-  if(!frame) return;
-  frame.classList.remove("bigRig","idle-sway","idle-heavy");
-
-  const rig = RACE_RIG[char.race] || "humanoid";
-  if(rig === "golem_big" || rig === "giant_big"){
-    frame.classList.add("bigRig");
-  }
-
-  // idle weight from werebeast role OR big rig
-  const beast = char.werebeastType;
-  const heavy = (rig === "golem_big" || rig === "giant_big") ||
-    ["Elephant","Minotaur","Turtle","Killer Whale","Bear"].includes(beast);
-  frame.classList.add(heavy ? "idle-heavy" : "idle-sway");
-}
-
-function applyBigRigOverlays(char, prefix=""){
-  const rig = RACE_RIG[char.race];
-  if(rig !== "golem_big" && rig !== "giant_big") return;
-
-  const basePath = BIG_RIG_OVERLAY_PATH[char.race];
-  if(!basePath) return;
-
-  BIG_RIG_SLOTS.forEach(slot=>{
-    const el = document.getElementById(`${prefix}layer_${slot}`);
-    if(!el) return;
-    el.src = `${basePath}/${slot}/default.png`; // safe if missing
-  });
-}
-
-function applyDemiTraits(char, prefix=""){
-  // clear demi slots first (for humanoids)
-  ["head","arms","legs","back","body"].forEach(slot=>{
-    const el = document.getElementById(`${prefix}layer_${slot}`);
-    if(el) el.src = "";
-  });
-
-  const rig = RACE_RIG[char.race] || "humanoid";
-  if(rig === "golem_big" || rig === "giant_big"){
-    // big rigs use their own overlays
-    applyBigRigOverlays(char, prefix);
-    return;
-  }
-
-  const traits = Array.isArray(char.demiTraits) ? char.demiTraits : [];
-  if(traits.length === 0) return;
-
-  const slotSrc = {}; // newest wins
-
-  for(const t of traits){
-    if(t.kind === "werebeast"){
-      const beast = t.type;
-      const key = beast.toLowerCase().replaceAll(" ", "_");
-      const slots = WEREBEAST_SLOTS[beast] || [];
-      for(const slot of slots){
-        slotSrc[slot] = `assets/overlays/werebeast/${key}/${slot}.png`;
-      }
-    }
-    if(t.kind === "demi"){
-      const key = t.type.toLowerCase().replaceAll(" ", "_");
-      const slots = DEMI_SLOTS[t.type] || [];
-      for(const slot of slots){
-        slotSrc[slot] = `assets/overlays/demi/${key}/${slot}.png`;
-      }
-    }
-  }
-
-  for(const slot of Object.keys(slotSrc)){
-    const el = document.getElementById(`${prefix}layer_${slot}`);
-    if(el) el.src = slotSrc[slot];
-  }
-}
-
-function applyIdleFx(char, prefix=""){
-  const fx = document.getElementById(`${prefix}layer_fx`);
-  if(!fx) return;
-
-  fx.classList.remove("on");
-  fx.src = "";
-
-  const beast = char?.werebeastType;
-  if(!beast) return;
-
-  const src = BEAST_FX[beast];
-  if(src){
-    fx.src = src;
-    fx.classList.add("on");
-  }
-}
-
-/* =========================================================
-   Race stat mods (starter identity)
-========================================================= */
-const RACE_STAT_MODS = {
-  "Golem": { strength: +12, durability: +20, luck: -2 },
-  "Giant": { strength: +18, durability: +10, luck:  0 }
-};
-
-function baseStatsFromChoices(char){
-  const str = parseInt(char.strength || "0", 10) || 0;
-  const dur = parseInt(char.durability || "0", 10) || 0;
-  const luck = parseInt(char.luck || "0", 10) || 0;
-
-  // simple derived stats
-  const speed = Math.max(1, 12 - Math.floor((dur+str)/4));
-  return { strength:str, durability:dur, luck:luck, speed:speed };
-}
-
-function applyRaceStatMods(char, stats){
-  const mods = RACE_STAT_MODS[char.race];
-  if(!mods) return stats;
-  const out = {...stats};
-  for(const k of Object.keys(mods)){
-    out[k] = (out[k] || 0) + mods[k];
-  }
-  return out;
-}
-
-function finalStats(char){
-  let s = baseStatsFromChoices(char);
-  s = applyRaceStatMods(char, s);
-
-  // Werebeast flavor (small)
-  if(char.werebeastType === "Rabbit") s.speed += 2;
-  if(char.werebeastType === "Wolf") s.strength += 2;
-  if(char.werebeastType === "Turtle") s.durability += 3;
-  if(char.werebeastType === "Elephant") s.durability += 4, s.speed -= 1;
-
-  // clamp minimums
-  s.speed = Math.max(1, s.speed);
-  return s;
-}
-
-/* =========================================================
-   Trait slots UI rendering + unlock juice
-========================================================= */
 function renderTraitSlots(){
   const host = $("traitSlots");
   if(!host) return;
@@ -1597,12 +2541,10 @@ function renderTraitSlots(){
     const unlocked = isSlotUnlocked(slot);
     const req = requiredWinsForSlot(slot);
     const current = getCurrentTraitForSlot(slot);
+    const pct = Math.round(slotProgress(slot) * 100);
 
     const card = document.createElement("div");
     card.className = "slotCard" + (unlocked ? "" : " slotLocked") + (!unlocked && slot===closest ? " closestSlot" : "");
-
-    const pct = Math.round(slotProgress(slot) * 100);
-
     card.innerHTML = `
       <div class="slotTop">
         <div class="slotName">${SLOT_LABEL[slot]}</div>
@@ -1634,52 +2576,6 @@ function renderTraitSlots(){
   }
 }
 
-function showPlusOneOnClosestSlot(){
-  const host = $("traitSlots");
-  if(!host) return;
-  const target = findClosestLockedSlot();
-  if(!target) return;
-
-  const cards = host.querySelectorAll(".slotCard");
-  for(const card of cards){
-    const nameEl = card.querySelector(".slotName");
-    if(!nameEl) continue;
-    const label = nameEl.textContent.trim();
-    const slot = Object.keys(SLOT_LABEL).find(k => SLOT_LABEL[k] === label);
-    if(slot !== target) continue;
-
-    const plus = document.createElement("div");
-    plus.className = "plusOne";
-    plus.textContent = "+1";
-    card.appendChild(plus);
-    setTimeout(()=>plus.remove(), 650);
-    break;
-  }
-}
-
-function pulseClosestLockedBar(){
-  const host = $("traitSlots");
-  if(!host) return;
-  const target = findClosestLockedSlot();
-  if(!target) return;
-
-  const cards = host.querySelectorAll(".slotCard");
-  for(const card of cards){
-    const nameEl = card.querySelector(".slotName");
-    if(!nameEl) continue;
-    const label = nameEl.textContent.trim();
-    const slot = Object.keys(SLOT_LABEL).find(k => SLOT_LABEL[k] === label);
-    if(slot !== target) continue;
-
-    const bar = card.querySelector(".slotProgressBar");
-    if(bar){
-      bar.classList.remove("barPulse");
-      void bar.offsetWidth;
-      bar.classList.add("barPulse");
-    }
-  }
-}
-
 function confettiBurst(){
   const wrap = document.createElement("div");
   wrap.className = "confetti";
@@ -1705,7 +2601,6 @@ function confettiBurst(){
   }
   setTimeout(()=>wrap.remove(), 850);
 }
-
 function unlockCelebration(slots){
   confettiBurst();
   const frame = $("charFrame");
@@ -1717,7 +2612,6 @@ function unlockCelebration(slots){
   playUnlockSound();
   toast(`Unlocked: ${slots.map(s=>SLOT_LABEL[s]).join(", ")}!`);
 }
-
 function checkSlotUnlocks(){
   const wins = state.progress.pvpWins || 0;
   const unlocked = state.progress.unlockedSlots;
@@ -1730,325 +2624,1340 @@ function checkSlotUnlocks(){
       newlyUnlocked.push(slot);
     }
   }
-
   if(newlyUnlocked.length){
     saveState();
     unlockCelebration(newlyUnlocked);
     renderTraitSlots();
   }
 }
+function showPlusOneOnClosestSlot(){
+  const host = $("traitSlots");
+  if(!host) return;
+  const target = findClosestLockedSlot();
+  if(!target) return;
+
+  const cards = host.querySelectorAll(".slotCard");
+  for(const card of cards){
+    const nameEl = card.querySelector(".slotName");
+    if(!nameEl) continue;
+    const label = nameEl.textContent.trim();
+    const slot = Object.keys(SLOT_LABEL).find(k => SLOT_LABEL[k] === label);
+    if(slot !== target) continue;
+
+    const plus = document.createElement("div");
+    plus.className = "plusOne";
+    plus.textContent = "+1";
+    card.appendChild(plus);
+    setTimeout(()=>plus.remove(), 650);
+    break;
+  }
+}
+function pulseClosestLockedBar(){
+  const host = $("traitSlots");
+  if(!host) return;
+  const target = findClosestLockedSlot();
+  if(!target) return;
+
+  const cards = host.querySelectorAll(".slotCard");
+  for(const card of cards){
+    const nameEl = card.querySelector(".slotName");
+    if(!nameEl) continue;
+    const label = nameEl.textContent.trim();
+    const slot = Object.keys(SLOT_LABEL).find(k => SLOT_LABEL[k] === label);
+    if(slot !== target) continue;
+
+    const bar = card.querySelector(".slotProgressBar");
+    if(bar){
+      bar.classList.remove("barPulse");
+      void bar.offsetWidth;
+      bar.classList.add("barPulse");
+    }
+  }
+}
 
 /* =========================================================
-   Build flow + bug fix (no spinning after naming/finalize)
+   PORTRAIT PIPELINE (base + overlays for subtypes/transforms/armor)
 ========================================================= */
-function currentPhase(){
-  const phases = phasesForCharacter();
-  const idx = Math.min(state.build.phaseIndex, phases.length-1);
-  return phases[idx];
-}
+function getHumanoidBaseForRace(race){ return "assets/bases/humanoid/base.png"; }
+function getSpecialHumanoidBase(race){ return "assets/bases/special/base.png"; }
 
-function setPhaseIndex(i){
-  state.build.phaseIndex = i;
-  const ph = currentPhase();
-  state.build.phaseKey = ph.key;
-  saveState();
-  setWheel(ph.label, ph.options);
-  $("phaseTag").textContent = `Phase: ${ph.label}`;
-  $("wheelTitle").textContent = ph.label;
-  $("wheelHint").textContent = "Spin the wheel";
-  $("buildHint").textContent = `Spin for ${ph.label}.`;
-}
+function applyRaceBase(char, prefix=""){
+  const base = document.getElementById(`${prefix}layer_base`);
+  if(!base) return;
 
-function proceedToNextPhase(){
-  const phases = phasesForCharacter();
-  const next = state.build.phaseIndex + 1;
-  if(next >= phases.length){
-    // all done -> prompt name
-    $("buildHint").textContent = "All spins complete. Finalize & name your character.";
-    $("wheelHint").textContent = "Complete";
+  const race = char.race;
+  const rig = RACE_RIG[race] || "humanoid";
+
+  if(rig === "golem_big" || rig === "giant_big"){
+    base.src = RACE_BASE_IMAGE[race] || "";
     return;
   }
-  setPhaseIndex(next);
+  if(rig === "dragon_animal"){
+    base.src = RACE_BASE_IMAGE["Dragon"] || "assets/bases/dragon/base.png";
+    return;
+  }
+  if(rig === "special_humanoid"){
+    base.src = getSpecialHumanoidBase(race);
+    return;
+  }
+  base.src = getHumanoidBaseForRace(race);
 }
 
-function setWheel(label, options){
-  wheelOptions = [...options];
-  // Reset rotation slightly so it doesn't look stuck
-  wheelRotation = wheelRotation % (Math.PI*2);
-  drawWheel();
-}
+function applyRigFraming(char, frameId="charFrame"){
+  const frame = document.getElementById(frameId);
+  if(!frame) return;
+  frame.classList.remove("bigRig","idle-sway","idle-heavy");
 
-/* =========================================================
-   Spin result handler
-========================================================= */
-function onSpinResult(result){
-  const ph = currentPhase();
-  if(!ph) return;
-
-  // Assign or run special handler
-  if(ph.key === "demi"){
-    onDemiSpinResult(result);
-  }else if(ph.key === "werebeast"){
-    onWerebeastSpinResult(result);
-  }else{
-    ph.assign(result);
-    logBuild(`${ph.label}: ${result}`);
+  const rig = RACE_RIG[char.race] || "humanoid";
+  if(rig === "golem_big" || rig === "giant_big"){
+    frame.classList.add("bigRig");
   }
 
-  // Special: race affects background immediately
-  if(ph.key === "race"){
-    setRaceBackground(result);
-    // Reset any demi data if not Demi-human
-    if(result !== "Demi-human"){
-      state.character.demi = null;
-      state.character.werebeastType = null;
-      // keep existing demiTraits if you want; for a clean build, clear them:
-      state.character.demiTraits = [];
+  const beast = char.werebeastType;
+  const heavy = (rig === "golem_big" || rig === "giant_big") ||
+    ["Elephant","Minotaur","Turtle","Killer Whale","Bear"].includes(beast);
+  frame.classList.add(heavy ? "idle-heavy" : "idle-sway");
+}
+
+function applyBigRigOverlays(char, prefix=""){
+  const rig = RACE_RIG[char.race];
+  if(rig !== "golem_big" && rig !== "giant_big") return;
+
+  const basePath = BIG_RIG_OVERLAY_PATH[char.race];
+  if(!basePath) return;
+
+  BIG_RIG_SLOTS.forEach(slot=>{
+    const el = document.getElementById(`${prefix}layer_${slot}`);
+    if(!el) return;
+    el.src = `${basePath}/${slot}/default.png`;
+  });
+}
+
+function applyDemiTraits(char, prefix=""){
+  ["head","arms","legs","back","body"].forEach(slot=>{
+    const el = document.getElementById(`${prefix}layer_${slot}`);
+    if(el) el.src = "";
+  });
+
+  const rig = RACE_RIG[char.race] || "humanoid";
+  if(rig === "golem_big" || rig === "giant_big"){
+    applyBigRigOverlays(char, prefix);
+    return;
+  }
+
+  const traits = Array.isArray(char.demiTraits) ? char.demiTraits : [];
+  if(traits.length === 0) return;
+
+  const slotSrc = {};
+  for(const t of traits){
+    if(t.kind === "werebeast"){
+      const key = t.type.toLowerCase().replaceAll(" ", "_");
+      const slots = WEREBEAST_SLOTS[t.type] || [];
+      for(const slot of slots){
+        slotSrc[slot] = `assets/overlays/werebeast/${key}/${slot}.png`;
+      }
+    }
+    if(t.kind === "demi"){
+      const key = t.type.toLowerCase().replaceAll(" ", "_");
+      const slots = DEMI_SLOTS[t.type] || [];
+      for(const slot of slots){
+        slotSrc[slot] = `assets/overlays/demi/${key}/${slot}.png`;
+      }
     }
   }
 
-  // After selecting demi as "Werebeast", insert werebeast phase next
-  // By calling phasesForCharacter() dynamically, proceedToNextPhase will pick it up.
-
-  saveState();
-  refreshUI();
-  proceedToNextPhase();
-}
-
-/* =========================================================
-   Build stats side list
-========================================================= */
-function buildStatLines(){
-  const c = state.character;
-  const lines = [
-    ["Race", c.race || "—"],
-    ["Demi", c.demi || "—"],
-    ["Werebeast", c.werebeastType || "—"],
-    ["Power", c.power || "—"],
-    ["Weapon", c.weapon || "—"],
-    ["Strength", c.strength || "—"],
-    ["Durability", c.durability || "—"],
-    ["Luck", c.luck || "—"],
-  ];
-  return lines;
-}
-
-function renderBuildStats(){
-  const host = $("buildStats");
-  host.innerHTML = "";
-  for(const [k,v] of buildStatLines()){
-    const div = document.createElement("div");
-    div.className = "statLine";
-    div.innerHTML = `<div class="statKey">${escapeHtml(k)}</div><div class="statVal">${escapeHtml(v)}</div>`;
-    host.appendChild(div);
+  for(const slot of Object.keys(slotSrc)){
+    const el = document.getElementById(`${prefix}layer_${slot}`);
+    if(el) el.src = slotSrc[slot];
   }
 }
 
-/* =========================================================
-   Name modal + filter
-========================================================= */
-const BANNED_WORDS = [
-  // Add your own words here later if you want.
-  // Keep it short, and don't include slurs.
-];
+function applyIdleFx(char, prefix=""){
+  const fx = document.getElementById(`${prefix}layer_fx`);
+  if(!fx) return;
+  fx.classList.remove("on");
+  fx.src = "";
 
-function isNameAllowed(name){
-  if(!name) return false;
-  const trimmed = name.trim();
-  if(trimmed.length < 2) return false;
-  if(trimmed.length > 18) return false;
-
-  // Only letters/numbers/spaces
-  if(!/^[a-z0-9 ]+$/i.test(trimmed)) return false;
-
-  const low = trimmed.toLowerCase();
-  for(const w of BANNED_WORDS){
-    if(w && low.includes(w.toLowerCase())) return false;
-  }
-  return true;
-}
-
-function openNameModal(){
-  $("nameInput").value = state.character.name || "";
-  $("nameModal").classList.remove("hidden");
-  setTimeout(()=>$("nameInput").focus(), 30);
-}
-function closeNameModal(){
-  $("nameModal").classList.add("hidden");
-}
-function saveName(){
-  const name = $("nameInput").value.trim();
-  if(!isNameAllowed(name)){
-    toast("Name not allowed.");
+  const beast = char?.werebeastType;
+  if(beast && BEAST_FX[beast]){
+    fx.src = BEAST_FX[beast];
+    fx.classList.add("on");
     return;
   }
-  state.character.name = name;
-  state.character.finalized = true;
 
-  // daily lock
-  if(dailyLockEnabled()){
-    state.daily.lastBuildDay = todayKeyUTC();
-    state.daily.finalizedToday = true;
-  }
-
-  saveState();
-  closeNameModal();
-  refreshUI();
-  toast("Saved!");
-}
-
-/* =========================================================
-   Finalize + New Build buttons
-========================================================= */
-function canFinalize(){
-  const phases = phasesForCharacter();
-  const allKeys = phases.map(p=>p.key);
-
-  // require core keys except conditional
-  const c = state.character;
-  if(!c.race) return false;
-  if(!c.power) return false;
-  if(!c.weapon) return false;
-  if(!c.strength) return false;
-  if(!c.durability) return false;
-  if(!c.luck) return false;
-
-  // if Demi-human -> must have demi and if werebeast -> werebeastType
-  if(c.race === "Demi-human"){
-    if(!c.demi) return false;
-    if(c.demi === "Werebeast" && !c.werebeastType) return false;
-  }
-
-  // must be at the end
-  return state.build.phaseIndex >= allKeys.length-1;
-}
-
-function finalizeBuild(){
-  if(dailyLockEnabled() && state.daily.finalizedToday){
-    toast("Daily build already used.");
+  // transformation FX (safe if missing)
+  const td = char?.transformDetail;
+  if(td?.kind === "ssj" && td.value && td.value !== "None"){
+    fx.src = `assets/overlays/fx/ssj_${td.value.toLowerCase().replaceAll(" ","_")}.png`;
+    fx.classList.add("on");
     return;
   }
-  if(!canFinalize()){
-    toast("Finish all spins first.");
+  if(td?.kind === "titan" && td.value && td.value !== "None"){
+    fx.src = `assets/overlays/fx/titan_${td.value.toLowerCase().replaceAll(" ","_")}.png`;
+    fx.classList.add("on");
     return;
   }
-  openNameModal();
-}
-
-function newBuild(){
-  if(dailyLockEnabled() && state.daily.finalizedToday){
-    toast("Locked until tomorrow.");
+  if(td?.kind === "tailed" && td.value && td.value !== "None"){
+    fx.src = `assets/overlays/fx/tailed_${td.value.toLowerCase().replaceAll(" ","_")}.png`;
+    fx.classList.add("on");
     return;
   }
-  const keepProg = state.progress;
-  const keepSet = state.settings;
-  const keepDaily = state.daily;
-  const keepCurrency = state.currency;
-  state = defaultState();
-  state.progress = keepProg;
-  state.settings = keepSet;
-  state.daily = keepDaily;
-  state.currency = keepCurrency;
+}
 
-  state.build.phaseIndex = 0;
-  state.character.finalized = false;
-  state.character.name = "";
-  state.lastMatch.traitEvent = null;
+function applyArmorOverlay(char, prefix=""){
+  const armor = document.getElementById(`${prefix}layer_armor`);
+  if(!armor) return;
+  armor.src = "";
 
-  saveState();
-  setRaceBackground("");
-  setPhaseIndex(0);
-  $("buildLog").innerHTML = "";
-  logBuild("New build started.");
-  refreshUI();
+  const a = (char.armors || []).slice(-1)[0];
+  if(!a || a === "No Armor") return;
+
+  const key = a.toLowerCase().replaceAll(" ","_").replaceAll("'","");
+  armor.src = `assets/overlays/armor/${key}.png`;
+}
+
+function applyWeaponOverlay(char, prefix=""){
+  const w = document.getElementById(`${prefix}layer_weapon`);
+  if(!w) return;
+  w.src = "";
+
+  const weapon = (char.weapons || []).slice(-1)[0];
+  if(!weapon || weapon === "No Weapon") return;
+
+  const key = weapon.toLowerCase().replaceAll(" ","_").replaceAll("'","");
+  w.src = `assets/overlays/weapons/${key}.png`;
 }
 
 /* =========================================================
-   Skip button (testing)
+   ADDITIVE STAT MATH + EFFECT SYSTEM
 ========================================================= */
-function skipPhase(){
-  if(state.build.spinning) return;
-  if(state.character.finalized){
-    toast("Finalized. New build to continue.");
-    return;
+const MASTERY_RANK = {
+  "None":0, "Dormant":1, "Awakening":2, "Controlled":3,
+  "Mastered":4, "Planetary":5, "Cosmic":6, "Universal":7, "Omnipotent":8
+};
+function masteryAtLeast(char, key){
+  const cur = MASTERY_RANK[char.powerMastery || "None"] || 0;
+  return cur >= (MASTERY_RANK[key] || 0);
+}
+
+function parseLuck(char){
+  const n = parseInt(char.luckW || "0", 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function baseNumbersFromWheels(char){
+  const s = {
+    strength: statWordToNumber("strength", char.strengthW || ""),
+    speed: statWordToNumber("speed", char.speedW || ""),
+    durability: statWordToNumber("durability", char.durabilityW || ""),
+    fight: statWordToNumber("fight", char.fightW || ""),
+    iq: statWordToNumber("iq", char.iqW || ""),
+    luck: parseLuck(char),
+    powerMasteryN: (MASTERY_RANK[char.powerMastery || "None"] || 0)
+  };
+  return s;
+}
+
+function addStats(stats, delta){
+  for(const k of Object.keys(delta)){
+    stats[k] = (stats[k] || 0) + delta[k];
   }
-  // pick random result without spinning
-  const ph = currentPhase();
-  if(!ph) return;
-  const r = ph.options[Math.floor(Math.random()*ph.options.length)];
-  onSpinResult(r);
 }
 
-/* =========================================================
-   Volume toggle
-========================================================= */
-function toggleVolume(){
-  state.settings.muted = !state.settings.muted;
-  saveState();
-  $("volBtn").textContent = state.settings.muted ? "🔇" : "🔊";
-  toast(state.settings.muted ? "Muted" : "Sound on");
-}
-
-/* =========================================================
-   Reset button (clears everything)
-========================================================= */
-function hardReset(){
-  localStorage.removeItem(STORAGE_KEY);
-  state = defaultState();
-  saveState();
-  location.reload();
-}
-
-/* =========================================================
-   PvP / PvE Battles (simple, visually readable)
-========================================================= */
-function cloneChar(c){
-  return JSON.parse(JSON.stringify(c));
-}
-
-function randomOpponent(){
-  // Generate a reasonable opponent build (doesn't use daily lock)
-  const opp = defaultState();
-  opp.character.race = RACE_OPTIONS[Math.floor(Math.random()*RACE_OPTIONS.length)];
-
-  // if opponent is Demi-human, pick demi + maybe werebeast
-  if(opp.character.race === "Demi-human"){
-    opp.character.demi = DEMI_TYPES[Math.floor(Math.random()*DEMI_TYPES.length)];
-    if(opp.character.demi === "Werebeast"){
-      opp.character.werebeastType = WEREBEAST_TYPES[Math.floor(Math.random()*WEREBEAST_TYPES.length)];
-      opp.character.demiTraits.push({kind:"werebeast", type: opp.character.werebeastType});
-    }else{
-      opp.character.demiTraits.push({kind:"demi", type: opp.character.demi});
-    }
-  }
-
-  opp.character.power = POWER_OPTIONS[Math.floor(Math.random()*POWER_OPTIONS.length)];
-  opp.character.weapon = WEAPON_OPTIONS[Math.floor(Math.random()*WEAPON_OPTIONS.length)];
-  opp.character.strength = STRENGTH_OPTIONS[Math.floor(Math.random()*STRENGTH_OPTIONS.length)];
-  opp.character.durability = DURABILITY_OPTIONS[Math.floor(Math.random()*DURABILITY_OPTIONS.length)];
-  opp.character.luck = LUCK_OPTIONS[Math.floor(Math.random()*LUCK_OPTIONS.length)];
-
-  // opponent slot unlocks: scale with your wins so it feels fair-ish
-  const w = state.progress.pvpWins || 0;
-  opp.progress.pvpWins = Math.max(0, w + (Math.random()<0.5 ? -2 : 2));
-  opp.progress.unlockedSlots = {
-    head:true,
-    arms: opp.progress.pvpWins>=3,
-    back: opp.progress.pvpWins>=6,
-    legs: opp.progress.pvpWins>=10,
-    body: opp.progress.pvpWins>=15
+function computeEffects(char){
+  const effects = {
+    tags: [],
+    immunities: [],
+    weaknesses: [],
+    instantWin: [],    // { when, note }
+    cannotDie: false,
+    regen: 0,          // regen amount per round
+    flight: false,
+    element: {},       // { fire:true, water:true, ... }
+    debuffsOnOpponent: { strength:0, speed:0, durability:0, fight:0, iq:0 }
   };
 
-  return opp;
+  // Kayden cursed tag
+  if(computeIsCursed(char)){
+    effects.tags.push("Cursed");
+  }
+
+  // Powers
+  const powers = char.powers || [];
+  if(powers.includes("Immortal")){
+    effects.cannotDie = true;
+    effects.tags.push("Immortal");
+  }
+  if(powers.includes("Regeneration")){
+    effects.regen += 2;
+    effects.tags.push("Regeneration");
+  }
+  if(powers.includes("Flight")){
+    effects.flight = true;
+  }
+  if(powers.includes("Fire")){
+    effects.element.fire = true;
+  }
+  if(powers.includes("Ice Manipulation")){
+    effects.element.ice = true;
+  }
+  if(powers.includes("Lightning")){
+    effects.element.lightning = true;
+  }
+  if(powers.includes("Time Manipulation")){
+    effects.tags.push("Time");
+  }
+  if(powers.includes("Gravity Manipulation")){
+    effects.tags.push("Gravity");
+  }
+  if(powers.includes("Rinnegan")){
+    effects.tags.push("Rinnegan");
+    // from your note: Necromancy, Push/Pull, Replace, Planetary Devastation
+    effects.tags.push("Necromancy");
+  }
+  if(powers.includes("Heavenly Restriction")){
+    effects.tags.push("Heavenly Restriction");
+  }
+  if(powers.includes("Curse Mark")){
+    effects.tags.push("Curse Mark");
+  }
+  if(powers.includes("Adaptation")){
+    effects.tags.push("Adaptation");
+  }
+
+  // Armor effects
+  const armors = char.armors || [];
+  if(armors.includes("Berserk Armor")){
+    effects.tags.push("Pain Negation");
+    effects.tags.push("Fear Negation");
+    effects.regen += 1;
+  }
+  if(armors.includes("Iron Man Suit")){
+    effects.flight = true;
+  }
+  if(armors.includes("Symbiote")){
+    effects.tags.push("Symbiote");
+    effects.weaknesses.push("Fire");
+  }
+  if(armors.includes("Marine Fit")){
+    effects.tags.push("Aura +1000");
+  }
+
+  // Weapons effects
+  const weapons = char.weapons || [];
+  if(weapons.includes("Blades of Chaos")) effects.element.fire = true;
+  if(weapons.includes("Magic Staff")) effects.tags.push("Magic Staff");
+  if(weapons.includes("Infinity Gauntlet")) effects.tags.push("Infinity Gauntlet");
+
+  // Clan effects
+  const clan = char.clan || "No Clan";
+  if(clan === "Uchiha") effects.tags.push("Sharingan");
+  if(clan === "Gojo") effects.tags.push("Limitless");
+  if(clan === "D Clan") effects.tags.push("Conqueror's Haki");
+  if(clan === "Kamado") effects.tags.push("Breathing Style");
+
+  // God intimidation / attraction (debuffs)
+  const deity = char.deity || "";
+  if(deity === "Odin"){
+    effects.tags.push("Intimidation");
+    effects.debuffsOnOpponent.iq -= 2;
+    effects.debuffsOnOpponent.fight -= 2;
+  }
+  if(deity === "Venus" || deity === "Frigg"){
+    effects.tags.push("Attraction");
+    effects.debuffsOnOpponent.iq -= 2;
+    effects.debuffsOnOpponent.fight -= 2;
+    effects.debuffsOnOpponent.strength -= 1;
+  }
+  if(deity === "Ares"){
+    effects.tags.push("War God");
+  }
+
+  // Transformation effects tags (numbers applied elsewhere too)
+  const td = char.transformDetail;
+  if(td?.kind === "gates" && td.value && td.value !== "None"){
+    effects.tags.push(td.value);
+  }
+  if(td?.kind === "kaioken" && td.value && td.value !== "None"){
+    effects.tags.push(`Kaioken ${td.value}`);
+  }
+  if(td?.kind === "tailed" && td.value && td.value !== "None"){
+    effects.tags.push(td.value);
+    effects.tags.push("Beast Bomb");
+  }
+  if(td?.kind === "titan" && td.value && td.value !== "None"){
+    effects.tags.push(`${td.value} Titan`);
+  }
+  if(td?.kind === "ssj" && td.value && td.value !== "None"){
+    effects.tags.push(td.value);
+  }
+
+  return effects;
 }
 
-function setMatchTraitEvent(obj){
-  state.lastMatch.traitEvent = obj;
+function applyRaceAndSubtypeBuffs(char, stats, effects){
+  const r = char.race;
+
+  // RACE BUFFS (from your notes)
+  if(r === "Gnome") addStats(stats, { speed:+1, durability:-1 });
+  if(r === "Goblin") addStats(stats, { iq:-1, speed:+1 });
+  if(r === "Zombie") addStats(stats, { iq:-1, strength:+1, durability:-1 });
+  if(r === "Skeleton") addStats(stats, { iq:-1, strength:+1, speed:+2 });
+  if(r === "Human") addStats(stats, { iq:+1 });
+  if(r === "Orc") addStats(stats, { strength:+2 });
+  if(r === "Cyborg") addStats(stats, { iq:+2, fight:+1, durability:+1 });
+  if(r === "Giant") addStats(stats, { strength:+2, speed:+1 });
+  if(r === "Golem") addStats(stats, { strength:+2, durability:+2, speed:-1 });
+  if(r === "Dragon") { addStats(stats, { strength:+2, speed:+1 }); effects.flight = true; }
+  if(r === "Vampire") addStats(stats, { speed:+2, durability:+1, strength:+1 });
+  if(r === "Hivemind") addStats(stats, { iq:+2, fight:+1, durability:+1, speed:-1 });
+  if(r === "Shinigami") addStats(stats, { strength:+2, fight:+2, speed:+1 });
+  if(r === "Demi-human") addStats(stats, { strength:+1, speed:+1, durability:+1, iq:-1 });
+  if(r === "Demon") { effects.flight = true; effects.element.fire = true; }
+  if(r === "Alien") addStats(stats, { iq:+1 });
+  if(r === "God") effects.flight = true;
+
+  // Demi-human subtype buffs (from your notes)
+  if(char.demi === "Dragonoid"){ effects.flight=true; effects.element.fire=true; addStats(stats, { speed:+2, durability:+2, strength:+1 }); }
+  if(char.demi === "Elves"){ addStats(stats, { speed:+2 }); stats.weaponMastery = (stats.weaponMastery||0) + 1; }
+  if(char.demi === "Werebeast"){ addStats(stats, { strength:+1, speed:+1, durability:+1, fight:+1, iq:-1 }); }
+  if(char.demi === "Troll"){ addStats(stats, { strength:+3, durability:+1 }); }
+  if(char.demi === "Hobgoblin"){ addStats(stats, { fight:+2, strength:+1, speed:+1, durability:+1 }); }
+  if(char.demi === "Lizardmen"){ addStats(stats, { durability:+2, speed:+2 }); stats.weaponMastery = (stats.weaponMastery||0) + 1; }
+  if(char.demi === "Fishman"){ addStats(stats, { strength:+2, durability:+2 }); effects.element.water = true; }
+  if(char.demi === "Dwarf"){ stats.weaponCount = (stats.weaponCount||0) + 1; stats.weaponMastery = (stats.weaponMastery||0) + 2; addStats(stats, { strength:+1 }); }
+
+  // Werebeast type buffs
+  const wb = char.werebeastType;
+  if(wb === "Rabbit") addStats(stats, { speed:+4, strength:+1 });
+  if(wb === "Wolf") addStats(stats, { speed:+1, durability:+1, iq:+2, strength:+1 });
+  if(wb === "Minotaur") addStats(stats, { strength:+3, durability:+3, fight:+1 }); stats.weaponMastery = (stats.weaponMastery||0) + 1;
+  if(wb === "Killer Whale") addStats(stats, { speed:+1, iq:+1, fight:+2, strength:+1, durability:+1 });
+  if(wb === "Elephant") addStats(stats, { strength:+2, durability:+2, iq:+3 });
+  if(wb === "Bear") addStats(stats, { strength:+3, speed:+2, durability:+1, fight:+1 });
+  if(wb === "Giraffe") addStats(stats, { speed:+2, durability:+1, strength:+1, iq:+1 }); stats.heightBonus = (stats.heightBonus||0) + 1;
+  if(wb === "Turtle") addStats(stats, { durability:+4, speed:-2 }); stats.powerMasteryN += 1;
+  if(wb === "Alligator") addStats(stats, { strength:+3, speed:+2, durability:+1 });
+
+  // Alien subtypes
+  if(r === "Alien"){
+    const sub = char.alienSubtype;
+    if(sub === "Saiyan") addStats(stats, { speed:+1, strength:+1, durability:+1 });
+    if(sub === "Otsutsuki"){ addStats(stats, { speed:+1, durability:+1, fight:+1, iq:+1 }); stats.powerMasteryN += 1; }
+    if(sub === "Viltrumite") addStats(stats, { strength:+1, speed:+1 });
+    if(sub === "Zenomorph") addStats(stats, { speed:+1, iq:+1 });
+    if(sub === "Yautja") addStats(stats, { strength:+1, iq:+3 });
+    if(sub === "Illegal") addStats(stats, { iq:-1, speed:+1 });
+    if(sub === "Kryptonian"){ addStats(stats, { strength:+1, durability:+1, speed:+1 }); effects.tags.push("Heat Vision"); effects.tags.push("Frost Breath"); effects.weaknesses.push("Kryptonite"); }
+    if(sub === "Transformer"){ addStats(stats, { durability:+2, strength:+1, iq:+1 }); }
+    if(sub === "Stitch") addStats(stats, { speed:+2, strength:+1, iq:-1 });
+    if(sub === "Groot"){ addStats(stats, { durability:+3 }); effects.element.vines = true; effects.weaknesses.push("Fire"); }
+    if(sub === "The Krang") addStats(stats, { iq:+3, durability:-1 });
+    if(sub === "Kaiju") addStats(stats, { durability:+2, strength:+2, speed:-1 });
+    if(sub === "Killer Clown") addStats(stats, { fight:+2, iq:+1 }); stats.weaponCount = (stats.weaponCount||0) + 1;
+
+    // detail wheels
+    const det = char.alienSubtypeDetail?.value;
+    if(sub === "Yautja"){
+      if(det === "Young") addStats(stats, { iq:+1 });
+      if(det === "Elite") addStats(stats, { iq:+2, strength:+1 });
+      if(det === "Super") addStats(stats, { iq:+2, strength:+1, durability:+1 });
+    }
+    if(sub === "Zenomorph"){
+      if(det === "Normal") addStats(stats, { strength:+1, iq:+1 });
+      if(det === "Queen") addStats(stats, { strength:+2, durability:+2, iq:+1 });
+    }
+    if(sub === "Transformer"){
+      if(det === "Normal") addStats(stats, { strength:+1, iq:+1 });
+      if(det === "Prime") addStats(stats, { strength:+3, speed:+2, durability:+2, iq:+2 });
+    }
+  }
+
+  // God type buffs
+  if(r === "God"){
+    const gt = char.godType;
+    if(gt === "Halfling") addStats(stats, { strength:+1, durability:+1 });
+    if(gt === "Demigod") addStats(stats, { strength:+1, speed:+1, durability:+1, fight:+1 });
+    if(gt === "Lesser Deity") addStats(stats, { strength:+2, speed:+1, durability:+1, fight:+1, iq:+1 });
+    if(gt === "Deity") addStats(stats, { strength:+2, durability:+2, speed:+1, fight:+1, iq:+1 });
+    if(gt === "Greater Deity") addStats(stats, { strength:+2, speed:+2, durability:+2, fight:+2, iq:+2 });
+    if(gt === "Roman") addStats(stats, { strength:+2, speed:+2, durability:+2, fight:+2, iq:+2 });
+    if(gt === "Norse") addStats(stats, { strength:+3, speed:+3, durability:+3, fight:+3, iq:+3 });
+    if(gt === "Greek") addStats(stats, { strength:+4, speed:+4, durability:+4, fight:+4, iq:+4 });
+
+    // deity specifics (partial but meaningful)
+    const d = char.deity;
+    if(d === "Jupiter" || d === "Thor" || d === "Zeus"){ effects.element.lightning = true; }
+    if(d === "Neptune" || d === "Poseidon"){ effects.element.water = true; effects.element.earth = true; }
+    if(d === "Vulcan" || d === "Prometheus"){ effects.element.fire = true; }
+    if(d === "Hel" || d === "Hades"){ effects.tags.push("Necromancy"); }
+    if(d === "Hermes" || d === "Mercury"){ addStats(stats, { speed:+3 }); }
+    if(d === "Ares"){ addStats(stats, { fight:+5 }); }
+  }
+
+  // Shinigami rank
+  if(r === "Shinigami"){
+    const rank = char.shinigamiRank;
+    if(rank === "F") addStats(stats, { strength:+1, speed:+1, durability:+1, fight:+1, iq:+1 });
+    if(rank === "D") addStats(stats, { speed:+2, strength:+1, durability:+1, fight:+1, iq:+1 });
+    if(rank === "C") addStats(stats, { strength:+2, speed:+2, durability:+2, fight:+2, iq:+2 });
+    if(rank === "B") addStats(stats, { strength:+2, speed:+3, durability:+2, fight:+2, iq:+2 });
+    if(rank === "A") addStats(stats, { strength:+3, speed:+3, durability:+3, fight:+3, iq:+3 });
+    if(rank === "S") addStats(stats, { strength:+3, speed:+4, durability:+3, fight:+3, iq:+3 });
+    if(rank === "King of Death"){ addStats(stats, { strength:+4, speed:+4, durability:+4, fight:+4, iq:+4 }); effects.tags.push("Teleportation"); }
+  }
+
+  // Demon rank
+  if(r === "Demon"){
+    const rk = char.demonRank;
+    if(rk === "Jelly") addStats(stats, { strength:+1, speed:+1, iq:+2, durability:-2 });
+    if(rk === "Knight") addStats(stats, { strength:+1, speed:+1, durability:+1, iq:+2 });
+    if(rk === "Earl") addStats(stats, { strength:+2, speed:+2, durability:+2, fight:+2, iq:+2 });
+    if(rk === "Marquis") addStats(stats, { strength:+2, speed:+3, durability:+3, fight:+3, iq:+3 });
+    if(rk === "Prince") addStats(stats, { strength:+2, speed:+3, durability:+4, fight:+4, iq:+4 });
+    if(rk === "Duke") addStats(stats, { strength:+4, speed:+4, durability:+4, fight:+4, iq:+4 });
+    if(rk === "King"){ addStats(stats, { strength:+5, speed:+5, durability:+5, fight:+5, iq:+5 }); effects.tags.push("Intimidation"); effects.debuffsOnOpponent.iq -= 2; effects.debuffsOnOpponent.fight -= 2; }
+  }
+
+  // Golem type
+  if(r === "Golem"){
+    const gt = char.golemType;
+    if(gt === "Cotton Candy" || gt === "Grass") addStats(stats, { durability:-1 });
+    if(gt === "Ice") addStats(stats, { durability:+1 }); effects.element.ice = true;
+    if(gt === "Rock") addStats(stats, { strength:+1, durability:+1 }); effects.element.earth = true;
+    if(gt === "Iron") addStats(stats, { durability:+2, strength:+1 });
+    if(gt === "Diamond") addStats(stats, { durability:+2, strength:+2 });
+    if(gt === "Lava") addStats(stats, { durability:+3, strength:+3 }); effects.element.fire = true;
+  }
+
+  // Giant type
+  if(r === "Giant"){
+    const gt = char.giantType;
+    if(gt === "Hill") addStats(stats, { strength:+2, durability:+2, iq:-2 });
+    if(gt === "Stone") addStats(stats, { strength:+2, durability:+2 });
+    if(gt === "Frost") addStats(stats, { strength:+2, durability:+2, iq:+1, fight:+1 }); effects.element.ice = true;
+    if(gt === "Fire") addStats(stats, { strength:+3, durability:+3, iq:-2, fight:+2 }); effects.element.fire = true;
+    if(gt === "Cloud") addStats(stats, { strength:+3, durability:+3 });
+    if(gt === "Storm"){ addStats(stats, { strength:+4, durability:+3 }); effects.element.lightning = true; }
+    if(gt === "Titan") addStats(stats, { strength:+5, durability:+4 });
+  }
+
+  // Dragon type
+  if(r === "Dragon"){
+    const dt = char.dragonType;
+    if(dt === "Baby") addStats(stats, { speed:+1 });
+    if(dt === "Water"){ effects.element.water = true; }
+    if(dt === "Earth"){ effects.element.earth = true; }
+    if(dt === "Fire"){ effects.element.fire = true; }
+    if(dt === "Lightning"){ effects.element.lightning = true; }
+    if(dt === "Magic"){ effects.element.fire = true; effects.element.water = true; effects.element.earth = true; effects.element.ice = true; effects.element.lightning = true; }
+    if(dt === "Celestial"){ addStats(stats, { speed:+2 }); effects.element.fire = true; effects.element.water = true; effects.element.earth = true; effects.element.ice = true; effects.element.lightning = true; effects.tags.push("Gravity"); }
+  }
+
+  // Orc type
+  if(r === "Orc"){
+    const ot = char.orcType;
+    if(ot === "Mordor") addStats(stats, { strength:+1 });
+    if(ot === "Isengard") addStats(stats, { strength:+1, speed:+1 });
+    if(ot === "Moria") addStats(stats, { strength:+1, speed:+1, iq:+1 });
+    if(ot === "Morannon") addStats(stats, { strength:+2, speed:+1, fight:+1, durability:+1 });
+    if(ot === "Uruk-Hai") addStats(stats, { strength:+2, speed:+2, durability:+2, fight:+2, iq:+2 });
+  }
+
+  // Zombie type
+  if(r === "Zombie"){
+    const zt = char.zombieType;
+    if(zt === "Crawler") addStats(stats, { speed:-2 });
+    if(zt === "Armored") addStats(stats, { durability:+1 });
+    if(zt === "Runner") addStats(stats, { speed:+1 });
+    if(zt === "Mutated") addStats(stats, { strength:+1, durability:+1 });
+    if(zt === "Eternal"){ effects.cannotDie = true; addStats(stats, { strength:+1 }); }
+  }
+
+  // Vampire age
+  if(r === "Vampire"){
+    const age = char.vampireAge || "";
+    const map = {
+      "1 year": { iq:-1, strength:-1 },
+      "5 years": { strength:+1 },
+      "10 years": { strength:+1, speed:+1 },
+      "20 years": { strength:+1, speed:+1, iq:+1 },
+      "50 years": { strength:+2, speed:+1, iq:+1, fight:+1 },
+      "100 years": { strength:+2, speed:+1, iq:+1, fight:+1 },
+      "250 years": { strength:+2, speed:+2, durability:+2, fight:+2, iq:+2 },
+      "500 years": { strength:+2, speed:+2, durability:+2, fight:+2, iq:+2 },
+      "1000 years": { strength:+3, speed:+3, durability:+3, fight:+3, iq:+3 },
+      "10,000 years": { strength:+3, durability:+3, fight:+3, iq:+3, speed:+4 },
+      "100,000 years": { strength:+4, speed:+4, durability:+4, fight:+4, iq:+4 },
+      "1,000,000 years": { strength:+5, speed:+5, durability:+5, fight:+5, iq:+5 },
+    };
+    if(map[age]) addStats(stats, map[age]);
+    // Regen bonus
+    if(age === "10,000 years" || age === "100,000 years" || age === "1,000,000 years"){
+      effects.regen += 2;
+      effects.tags.push("Ancient Regen");
+    }
+    // flight older
+    if(["500 years","1000 years","10,000 years","100,000 years","1,000,000 years"].includes(age)){
+      effects.flight = true;
+    }
+  }
+}
+
+function applyArmorTrainerClanTransformation(char, stats, effects){
+  // Armor numeric buffs (additive, always on)
+  const armors = char.armors || [];
+  if(armors.includes("Berserk Armor")) addStats(stats, { strength:+1, speed:+1, durability:+1, fight:+1, iq:+1 });
+  if(armors.includes("Iron Man Suit")) addStats(stats, { durability:+1, speed:+1, iq:+1 });
+  if(armors.includes("Jauger")) addStats(stats, { durability:+2, speed:+1, strength:+1 });
+  if(armors.includes("Turtle Helmet")) addStats(stats, { durability:+2 });
+  if(armors.includes("Ashborn's Armor")) addStats(stats, { durability:+3 });
+  if(armors.includes("Marine Fit")) addStats(stats, { fight:+1 });
+  if(armors.includes("Symbiote")) addStats(stats, { strength:+1, speed:+1, durability:+1, fight:+1, iq:+1 });
+  // Rock Lee weights / Goku gi are fight-conditional in your notes:
+  // We implement: first fight penalty, then if you WIN you gain permanent +3.
+  // (Tracked via effects + progress flags handled after battle.)
+  if(armors.includes("Rock Lee Weights")) effects.tags.push("Weights (First Fight -Speed)");
+  if(armors.includes("Goku's Gi")) effects.tags.push("Gi (First Fight -Strength)");
+
+  // Trainer
+  const t = char.trainer;
+  if(t === "Master Roshi") addStats(stats, { strength:+1 }); stats.powerMasteryN += 1;
+  if(t === "Jiraiya") addStats(stats, { iq:+1, fight:+1 });
+  if(t === "Hisoka") stats.powerMasteryN += 1;
+  if(t === "Korro") addStats(stats, { speed:+1, iq:+1 });
+  if(t === "Yuujirou") addStats(stats, { fight:+1, durability:+1 });
+
+  // Clan
+  if(char.clan === "Uchiha"){ addStats(stats, { speed:+2, fight:+1 }); }
+  if(char.clan === "Gojo"){ addStats(stats, { speed:+1, fight:+1 }); }
+  if(char.clan === "D Clan"){ addStats(stats, { strength:+1 }); }
+  if(char.clan === "Kamado"){ stats.weaponCount = (stats.weaponCount||0) + 1; stats.weaponMastery = (stats.weaponMastery||0) + 2; }
+
+  // Transformation numeric buffs
+  const td = char.transformDetail;
+  if(!td) return;
+
+  if(td.kind === "kaioken"){
+    const map = {
+      "X2": { strength:+1, speed:+1, durability:+1, pm:+0 },
+      "X3": { strength:+2, speed:+2, durability:+2, pm:+0 },
+      "X4": { strength:+2, speed:+2, durability:+2, pm:+1 },
+      "X5": { strength:+3, speed:+3, durability:+3, pm:+1 },
+      "X10": { strength:+3, speed:+3, durability:+3, pm:+2 },
+      "X25": { strength:+4, speed:+4, durability:+4, pm:+2 },
+      "X50": { strength:+4, speed:+4, durability:+4, pm:+3 },
+      "X100":{ strength:+5, speed:+5, durability:+5, pm:+3 },
+    };
+    const d = map[td.value] || null;
+    if(d){ addStats(stats, { strength:d.strength, speed:d.speed, durability:d.durability }); stats.powerMasteryN += d.pm; }
+  }
+
+  if(td.kind === "gates"){
+    const map = {
+      "First Gate": { strength:+2, speed:+2 },
+      "Second Gate": { regen:+2 },
+      "Third Gate": { strength:+1, speed:+1 },
+      "Fourth Gate": { strength:+2, speed:+2 },
+      "Fifth Gate": { strength:+2, speed:+2, durability:-2 },
+      "Sixth Gate": { strength:+1, speed:+1, durability:+1, pm:+1 },
+      "Seventh Gate": { strength:+2, speed:+2 },
+      "Eighth Gate": { strength:+3, speed:+3, durability:+3, deathUnlessInstantRegen:true }
+    };
+    const d = map[td.value] || null;
+    if(d?.strength) addStats(stats, { strength:d.strength, speed:d.speed, durability:(d.durability||0) });
+    if(d?.pm) stats.powerMasteryN += d.pm;
+    if(d?.regen) effects.regen += d.regen;
+    if(d?.deathUnlessInstantRegen){
+      effects.tags.push("Eighth Gate (Death Risk)");
+      // handled in battle end: if no instant regen -> you die after fight (treated as lose)
+    }
+  }
+
+  if(td.kind === "ssj"){
+    const map = {
+      "Super Saiyan": { strength:+1, speed:+1 },
+      "Super Saiyan 4": { strength:+2, speed:+1 },
+      "Super Saiyan God": { strength:+2, speed:+1, durability:+1, pm:+1 },
+      "Super Saiyan Blue": { strength:+2, speed:+2, durability:+2, pm:+1 },
+      "Ultra Instinct": { strength:+2, speed:+3, durability:+1, pm:+1 },
+      "MUI": { strength:+3, speed:+4, durability:+2, pm:+2 }
+    };
+    const d = map[td.value] || null;
+    if(d){
+      addStats(stats, { strength:d.strength, speed:d.speed, durability:d.durability });
+      stats.powerMasteryN += (d.pm||0);
+      effects.tags.push("Future Sight");
+    }
+    // UI rule: if power mastery is Planetary+ upgrade UI to MUI — we treat as a bonus if already Ultra Instinct
+    if(td.value === "Ultra Instinct" && stats.powerMasteryN >= MASTERY_RANK["Planetary"]){
+      addStats(stats, { strength:+1, speed:+1, durability:+1 });
+      stats.powerMasteryN += 1;
+      effects.tags.push("MUI (auto)");
+    }
+  }
+
+  if(td.kind === "titan"){
+    const map = {
+      "Cart": { speed:+2, height:13 },
+      "Jaw": { speed:+3, height:16, flight:true },
+      "Female": { speed:+1, strength:+2, height:46 },
+      "Attack": { strength:+3, durability:+1, fight:+2, height:50 },
+      "Armored": { durability:+3, strength:+3, height:49 },
+      "Beast": { strength:+3, iq:+2, height:55 },
+      "Warhammer": { durability:+4, height:50 },
+      "Colossal": { speed:-2, strength:+3, durability:+2, fight:+2, height:200, colossalWin:true },
+      "Founding": { strength:+4, speed:+4, durability:+4, fight:+4, iq:+4, height:1200 }
+    };
+    const d = map[td.value] || null;
+    if(d){
+      addStats(stats, {
+        strength:(d.strength||0),
+        speed:(d.speed||0),
+        durability:(d.durability||0),
+        fight:(d.fight||0),
+        iq:(d.iq||0)
+      });
+      if(d.flight) effects.flight = true;
+      if(d.colossalWin){
+        // Instant-win condition: if opponent durability label is below "Nuclear"… we approximate with a numeric threshold.
+        effects.instantWin.push({ when:"colossal_check", note:"Colossal Titan can auto-win vs low durability." });
+      }
+    }
+  }
+
+  if(td.kind === "tailed"){
+    // parse number
+    const m = String(td.value).match(/^(\d+)\s*tails?$/i);
+    const n = m ? parseInt(m[1],10) : 0;
+    if(n){
+      // base buff
+      const base = (n <= 4) ? 1 : (n <= 6 ? 2 : (n <= 9 ? 3 : 4));
+      addStats(stats, { strength:+base, speed:+base, durability:+base, fight:+base, iq:+base });
+
+      // special tweaks from your list
+      if(n === 1){ addStats(stats, { iq:-1 }); effects.element.sand = true; }
+      if(n === 2){ addStats(stats, { speed:-1 }); effects.tags.push("Poison Spit"); }
+      if(n === 3){ addStats(stats, { durability:+2 }); }
+      if(n === 4){ effects.element.fire = true; }
+      if(n === 5){ addStats(stats, { speed:+3 }); }
+      if(n === 7){ addStats(stats, { iq:+2, fight:+2 }); effects.flight = true; }
+      if(n === 8){ effects.element.water = true; }
+      if(n === 9){ addStats(stats, { speed:+4 }); effects.element.fire = true; }
+      if(n === 10){ effects.flight = true; stats.weaponCount = (stats.weaponCount||0) + 1; effects.tags.push("Sword of Destruction"); }
+
+      effects.tags.push("Beast Bomb");
+    }
+  }
+}
+
+function applyWeaponPowerBonuses(char, stats, effects){
+  const weapons = char.weapons || [];
+  const powers = char.powers || [];
+
+  // Water gun vs cyborg handled in battle as conditional
+  if(weapons.includes("Infinity Gauntlet")) addStats(stats, { strength:+1 });
+
+  // Magic staff: +3 power mastery
+  if(weapons.includes("Magic Staff")){
+    stats.powerMasteryN += 3;
+  }
+
+  // Green lantern ring scales with IQ: +floor(iq/10)
+  if(weapons.includes("Green Lantern Ring")){
+    addStats(stats, { strength: Math.floor((stats.iq||0)/10) });
+  }
+
+  // Demon Slayer Sword: negates magic only if powerless
+  if(weapons.includes("Demon Slayer Sword") && (powers.includes("No Power") || powers.length===0)){
+    effects.tags.push("Magic Negation");
+  }
+
+  // Escanor’s Axe time-based (we simulate: 50% chance day, 10% noon)
+  if(weapons.includes("Escanor's Axe")){
+    const roll = Math.random();
+    if(roll < 0.10){
+      addStats(stats, { strength:+3, durability:+3 });
+      effects.tags.push("Noon Power");
+    }else if(roll < 0.60){
+      addStats(stats, { strength:+1, durability:+1 });
+      effects.tags.push("Day Power");
+    }
+  }
+
+  // Samehada: +1 strength after every fight (handled post-fight)
+  if(weapons.includes("Samehada")){
+    effects.tags.push("Samehada Growth");
+  }
+
+  // Blades of Chaos: fire
+  if(weapons.includes("Blades of Chaos")){
+    effects.element.fire = true;
+  }
+
+  // Uzumaki Chains: debuff opp speed -2
+  if(weapons.includes("Uzumaki Chains")){
+    effects.debuffsOnOpponent.speed -= 2;
+    effects.tags.push("Sealing Chains");
+  }
+
+  // Heavenly restriction: cannot have other powers (enforced)
+  if(powers.includes("Heavenly Restriction")){
+    // Remove other powers (additive rule exception: HR replaces powers, by your note)
+    char.powers = ["Heavenly Restriction"];
+    addStats(stats, { strength:+3, speed:+3, durability:+3, fight:+3, iq:+3 });
+    stats.weaponMastery = (stats.weaponMastery||0) + 3;
+  }
+
+  // Adaptation: +1 speed/strength/durability/fight after every fight (handled post-fight)
+}
+
+/* Persistent progression effects */
+function applyPersistentProgress(char, stats, effects){
+  // Soul bonuses (Soul Stone)
+  const sb = state.progress.soulBonus || {};
+  addStats(stats, {
+    strength: sb.strength || 0,
+    speed: sb.speed || 0,
+    durability: sb.durability || 0,
+    fight: sb.fight || 0,
+    iq: sb.iq || 0
+  });
+
+  // Adaptation stacks
+  const a = state.progress.adaptationStacks || 0;
+  if(a > 0){
+    addStats(stats, { strength:+a, speed:+a, durability:+a, fight:+a });
+    effects.tags.push(`Adaptation +${a}`);
+  }
+}
+
+/* Compute FINAL stats & effects */
+function computeFinal(char, forEnemy=false){
+  // Clone to avoid mutating stored arrays mid-battle
+  const c = JSON.parse(JSON.stringify(char));
+
+  const stats = baseNumbersFromWheels(c);
+  const effects = computeEffects(c);
+
+  applyRaceAndSubtypeBuffs(c, stats, effects);
+  applyArmorTrainerClanTransformation(c, stats, effects);
+  applyWeaponPowerBonuses(c, stats, effects);
+  applyPersistentProgress(c, stats, effects);
+
+  // Apply opponent debuffs by returning them; battle will apply them to the other side
+  // Kayden PvP bonus AGAINST Kayden players: handled in battle (damage mult)
+  // Kayden cursed builds glow red: handled in refreshUI (already)
+
+  // Ensure minimums
+  for(const k of ["strength","speed","durability","fight","iq"]){
+    stats[k] = Math.max(1, stats[k] || 1);
+  }
+  stats.luck = Math.max(0, stats.luck || 0);
+
+  // Derived
+  stats.hpMax = 35 + stats.durability*4 + Math.floor(stats.strength*0.8);
+  stats.weaponMastery = stats.weaponMastery || 0;
+  stats.weaponCount = stats.weaponCount || 0;
+
+  return { char:c, stats, effects };
+}
+
+function statPanelLinesFromFinal(finalObj){
+  const s = finalObj.stats;
+  const out = [
+    ["Strength", labelForStat("strength", s.strength)],
+    ["Speed", labelForStat("speed", s.speed)],
+    ["Durability", labelForStat("durability", s.durability)],
+    ["Fight", labelForStat("fight", s.fight)],
+    ["IQ", labelForStat("iq", s.iq)],
+    ["Luck", String(s.luck)],
+    ["Power Mastery", String(s.powerMasteryN)],
+    ["HP", String(s.hpMax)]
+  ];
+  return out;
+}
+
+/* =========================================================
+   FUSIONS (100+)
+   - weak fusions: always on
+   - strong fusions: require Mastery Mastered+
+========================================================= */
+function fusionKey(a,b){
+  return [String(a||"").toLowerCase(), String(b||"").toLowerCase()].sort().join("|");
+}
+
+const FUSION_RULES = new Map();
+
+/* Hand-crafted fusions (good ones) */
+function addFusionRule(a, b, fusionName, { strong=false, addStatsDelta={}, addTags=[], fxKey=null }={}){
+  FUSION_RULES.set(fusionKey(a,b), { a, b, fusionName, strong, addStatsDelta, addTags, fxKey });
+}
+
+// Example you mentioned: Vampire + Blood Manipulation => Blood Lord
+// (We don’t have “Blood Manipulation” as a power wheel option yet; still included if you add it later.)
+addFusionRule("Vampire","Blood Manipulation","Blood Lord", { strong:false, addStatsDelta:{ strength:+2, speed:+2, durability:+2 }, addTags:["Blood Arts"], fxKey:"blood_lord" });
+
+// Strong fusions (Mastered+)
+addFusionRule("Infinity Gauntlet","Time Manipulation","Chrono Titan", { strong:true, addStatsDelta:{ strength:+2, speed:+2, iq:+2 }, addTags:["Time Warp"], fxKey:"chrono_titan" });
+addFusionRule("Rinnegan","Necromancy","Grave Emperor", { strong:true, addStatsDelta:{ fight:+2, iq:+2, durability:+2 }, addTags:["Soul Command"], fxKey:"grave_emperor" });
+addFusionRule("Curse Mark","Sharingan","Cursed Eye", { strong:true, addStatsDelta:{ speed:+2, fight:+2, iq:+1 }, addTags:["Mark Control"], fxKey:"cursed_eye" });
+addFusionRule("Golem","Lava","Magma Colossus", { strong:false, addStatsDelta:{ strength:+2, durability:+2 }, addTags:["Magma Core"], fxKey:"magma" });
+addFusionRule("Dragon","Celestial","Star Drake", { strong:true, addStatsDelta:{ strength:+2, speed:+2, durability:+2, iq:+2 }, addTags:["Gravity Breath"], fxKey:"star_drake" });
+addFusionRule("Kaioken","Ultra Instinct","Red Instinct", { strong:true, addStatsDelta:{ speed:+3, fight:+2 }, addTags:["Perfect Counter"], fxKey:"red_instinct" });
+addFusionRule("Tailed Beast","Rinnegan","Ten Tails Sage", { strong:true, addStatsDelta:{ strength:+3, speed:+3, durability:+3, fight:+3, iq:+3 }, addTags:["Beast God"], fxKey:"ten_tails_sage" });
+
+// Auto-generate lots of sensible fusions from templates
+const ELEMENTS = [
+  ["Fire","Inferno"],
+  ["Ice Manipulation","Frost"],
+  ["Lightning","Storm"],
+  ["Water Manipulation","Tide"],           // placeholder if added later
+  ["Earth Manipulation","Terra"],          // placeholder if added later
+  ["Gravity Manipulation","Void"],
+  ["Time Manipulation","Chrono"],
+  ["Teleportation","Blink"],
+  ["Telekinesis","Mind"],
+  ["Regeneration","Wolverine"],
+];
+const RACE_KEYS_FOR_FUSIONS = ["Vampire","Demon","Alien","God","Dragon","Golem","Giant","Shinigami","Cyborg","Hivemind","Orc","Human","Zombie","Skeleton","Demi-human","Goblin","Gnome"];
+const WEAPON_KEYS_FOR_FUSIONS = ["Sword","Scythe","Axe","Hammer","Magic Staff","Infinity Gauntlet","Green Lantern Ring","Samehada","Uzumaki Chains","Blades of Chaos"];
+
+function seedGeneratedFusions(){
+  // 1) Race + Element => themed title
+  for(const rk of RACE_KEYS_FOR_FUSIONS){
+    for(const [power, title] of ELEMENTS){
+      const name = `${title} ${rk}`;
+      const strong = ["Void","Chrono"].includes(title); // gravity/time are strong
+      addFusionRule(rk, power, name, {
+        strong,
+        addStatsDelta: strong ? { strength:+2, speed:+2, durability:+2, iq:+2 } : { strength:+1, speed:+1, durability:+1 },
+        addTags: [title],
+        fxKey: `${title.toLowerCase()}_${rk.toLowerCase().replaceAll(" ","_")}`
+      });
+    }
+  }
+
+  // 2) Weapon + Element => special weapon form
+  for(const wk of WEAPON_KEYS_FOR_FUSIONS){
+    for(const [power, title] of ELEMENTS){
+      const name = `${wk} of ${title}`;
+      const strong = (wk === "Infinity Gauntlet" || title === "Chrono" || title === "Void");
+      addFusionRule(wk, power, name, {
+        strong,
+        addStatsDelta: strong ? { strength:+2, fight:+2, iq:+1 } : { strength:+1, fight:+1 },
+        addTags: ["Weapon Form", title],
+        fxKey: `weapon_${wk.toLowerCase().replaceAll(" ","_")}_${title.toLowerCase()}`
+      });
+    }
+  }
+
+  // 3) Armor + Power => suit/curse forms
+  const ARMOR_KEYS = ["Berserk Armor","Iron Man Suit","Symbiote","Ashborn's Armor","Marine Fit","Turtle Helmet","Jauger"];
+  for(const ak of ARMOR_KEYS){
+    for(const [power, title] of ELEMENTS){
+      const name = `${title} ${ak}`;
+      const strong = (ak === "Symbiote" && (title === "Inferno" || title === "Void")) || title === "Chrono";
+      addFusionRule(ak, power, name, {
+        strong,
+        addStatsDelta: strong ? { strength:+2, speed:+2, durability:+2, fight:+1 } : { durability:+1, fight:+1, iq:+1 },
+        addTags: ["Armor Form", title],
+        fxKey: `armor_${ak.toLowerCase().replaceAll(" ","_").replaceAll("'","")}_${title.toLowerCase()}`
+      });
+    }
+  }
+}
+seedGeneratedFusions();
+
+/* Apply fusions to character (computed each refresh/battle) */
+function computeFusions(char, finalObj){
+  const c = char;
+  const sources = [];
+
+  // include race + subtype strings too
+  sources.push(c.race);
+  if(c.demi) sources.push(c.demi);
+  if(c.werebeastType) sources.push(c.werebeastType);
+  if(c.alienSubtype && c.alienSubtype !== "None") sources.push(c.alienSubtype);
+  if(c.godType) sources.push(c.godType);
+  if(c.deity) sources.push(c.deity);
+  if(c.transformDetail?.value && c.transformDetail.value !== "None") sources.push(c.transformDetail.value);
+
+  (c.powers||[]).forEach(x=>sources.push(x));
+  (c.weapons||[]).forEach(x=>sources.push(x));
+  (c.armors||[]).forEach(x=>sources.push(x));
+  if(c.clan) sources.push(c.clan);
+  if(c.trainer) sources.push(c.trainer);
+
+  const uniq = [...new Set(sources.filter(Boolean))];
+
+  const found = [];
+  for(let i=0;i<uniq.length;i++){
+    for(let j=i+1;j<uniq.length;j++){
+      const a = uniq[i], b = uniq[j];
+      const rule = FUSION_RULES.get(fusionKey(a,b));
+      if(!rule) continue;
+
+      // gating
+      if(rule.strong && !masteryAtLeast(c, "Mastered")) continue;
+      found.push(rule);
+    }
+  }
+
+  // limit so it doesn’t explode visually; keep strongest first
+  found.sort((x,y)=> (y.strong?1:0) - (x.strong?1:0));
+  return found.slice(0, 6);
+}
+
+/* =========================================================
+   PvP STEAL RULES (Additive: copy, don’t remove)
+========================================================= */
+function setMatchTraitEvent(obj){ state.lastMatch.traitEvent = obj; }
+
+function markStolenFrom(defender){
+  defender.progress ||= {};
+  defender.progress.lastStolenAt = Date.now();
+  defender.progress.revengeReady = true;
+}
+
+function getStealableTraits(attacker, defender){
+  const atkSlots = attacker.progress?.unlockedSlots || {};
+  const defTraits = defender.character?.demiTraits || [];
+  const stealable = [];
+  for(const trait of defTraits){
+    const slots = slotsForTrait(trait);
+    if(slots.length === 0) continue;
+    if(slots.every(s => atkSlots[s])) stealable.push(trait);
+  }
+  return stealable;
+}
+
+function attemptTraitSteal(attacker, defender){
+  // defender blocks 1 steal if Trait Lock exists
+  if(defender?.progress?.traitLockCharges > 0){
+    defender.progress.traitLockCharges -= 1;
+    setMatchTraitEvent({ label:"Steal Blocked", note:"Opponent's Trait Lock prevented the steal.", value:"🛡️" });
+    toast("Steal blocked by Trait Lock!");
+    playBlockSound();
+    return false;
+  }
+
+  if(Math.random() > TRAIT_STEAL_CHANCE) return false;
+
+  const candidates = getStealableTraits(attacker, defender);
+  if(candidates.length === 0) return false;
+
+  const stolen = candidates[Math.floor(Math.random()*candidates.length)];
+
+  // ADDITIVE COPY: attacker gains, defender keeps
+  attacker.character.demiTraits.push(JSON.parse(JSON.stringify(stolen)));
+
+  markStolenFrom(defender);
+  setMatchTraitEvent({ label:"Trait Copied", note:`You copied ${stolen.type}.`, value:"🗡️" });
+
+  return stolen;
+}
+
+/* =========================================================
+   Currency helpers
+========================================================= */
+function awardCoins(n){ state.currency.coins += n; }
+function grantXP(n){ state.currency.xp += n; }
+
+function applyRevengeBonus(){
+  if(!state.progress.revengeReady) return;
+  state.progress.revengeReady = false;
+  awardCoins(25);
+  grantXP(18);
+  toast("REVENGE BONUS! +Coins +XP");
+  saveState();
+}
+
+function progressSnapshot(){
+  const wins = state.progress.pvpWins || 0;
+  const next = findClosestLockedSlot();
+  if(!next){
+    return [{ label:"All slots unlocked", note:"Max trait slots reached.", value:`${wins} wins` }];
+  }
+  const req = requiredWinsForSlot(next);
+  return [
+    { label:"PvP Wins", note:"Unlock more trait slots by winning.", value:`${wins}` },
+    { label:`Next Slot: ${SLOT_LABEL[next]}`, note:"Progress to unlock.", value:`${Math.min(wins, req)} / ${req}` }
+  ];
+}
+
+function fillLootRows(hostId, rows){
+  const host = $(hostId);
+  if(!host) return;
+  host.innerHTML = "";
+  rows.forEach(r=>{
+    const row = document.createElement("div");
+    row.className = "lootRow";
+    row.innerHTML = `
+      <div class="lootLeft">
+        <div class="lootLabel">${escapeHtml(r.label || "")}</div>
+        <div class="lootNote">${escapeHtml(r.note || "")}</div>
+      </div>
+      <div class="lootValue">${escapeHtml(r.value || "")}</div>
+    `;
+    host.appendChild(row);
+  });
+}
+function openLoot(payload){
+  $("lootTitle").textContent = payload.outcome === "win" ? "Victory" : (payload.outcome === "lose" ? "Defeat" : "Escape");
+  $("lootSub").textContent = payload.sub || "";
+  fillLootRows("lootRewards", payload.rewards || []);
+  fillLootRows("lootTrait", payload.traitEvents || []);
+  fillLootRows("lootProgress", payload.progress || []);
+  $("lootModal").classList.remove("hidden");
+}
+
+/* =========================================================
+   Soul Stone (Mind Stone / Soul Stone mechanics)
+   - Soul Stone: capture soul after each win if you have Infinity Gauntlet
+   - After each soul captured, choose ONE stat to permanently +1
+========================================================= */
+async function maybeSoulStoneOnWin(playerFinal){
+  const hasGauntlet = (state.character.weapons || []).includes("Infinity Gauntlet");
+  if(!hasGauntlet) return;
+
+  // Capture soul
+  state.progress.soulsCaptured = (state.progress.soulsCaptured || 0) + 1;
+
+  // Choose stat to buff
+  const pick = await openChoiceModal({
+    title: "Soul Stone",
+    sub: "You captured a soul. Choose ONE stat to permanently increase by +1.",
+    options: [
+      { label:"Strength +1", value:"strength" },
+      { label:"Speed +1", value:"speed" },
+      { label:"Durability +1", value:"durability" },
+      { label:"Fight +1", value:"fight" },
+      { label:"IQ +1", value:"iq" }
+    ]
+  });
+
+  if(pick && state.progress.soulBonus){
+    state.progress.soulBonus[pick] = (state.progress.soulBonus[pick] || 0) + 1;
+    logBuild(`Soul Stone: +1 ${pick.toUpperCase()}`);
+  }
+}
+
+/* =========================================================
+   POST-FIGHT PERMANENT GROWTH RULES
+========================================================= */
+function postFightGrowthOnWin(playerFinal){
+  const weapons = state.character.weapons || [];
+  const powers = state.character.powers || [];
+  const armors = state.character.armors || [];
+
+  // Adaptation: +1 to core stats each win
+  if(powers.includes("Adaptation")){
+    state.progress.adaptationStacks = (state.progress.adaptationStacks || 0) + 1;
+    logBuild("Adaptation: stacks increased (+1 all core stats).");
+  }
+
+  // Samehada: +1 strength each win
+  if(weapons.includes("Samehada")){
+    state.progress.soulBonus ||= { strength:0, speed:0, durability:0, fight:0, iq:0 };
+    state.progress.soulBonus.strength += 1;
+    logBuild("Samehada: +1 Strength (permanent).");
+  }
+
+  // Rock Lee Weights: first fight -1 speed; if survived (win) then permanent +3 speed
+  if(armors.includes("Rock Lee Weights")){
+    state.progress._weightsCleared = true;
+    state.progress.soulBonus ||= { strength:0, speed:0, durability:0, fight:0, iq:0 };
+    state.progress.soulBonus.speed += 3;
+    logBuild("Rock Lee Weights: survived → +3 Speed (permanent).");
+  }
+
+  // Goku's Gi: first fight -1 strength; if survived (win) then permanent +3 strength
+  if(armors.includes("Goku's Gi")){
+    state.progress._giCleared = true;
+    state.progress.soulBonus ||= { strength:0, speed:0, durability:0, fight:0, iq:0 };
+    state.progress.soulBonus.strength += 3;
+    logBuild("Goku's Gi: survived → +3 Strength (permanent).");
+  }
+}
+
+/* =========================================================
+   BATTLE SIM (Additive, flee, Kayden bonus, instant win hooks)
+========================================================= */
+function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+function battleSimFull(playerChar, enemyChar, logEl, hpEls, mode="pvp"){
+  // Returns outcome: "win" | "lose" | "escape"
+  const pFinal = computeFinal(playerChar);
+  const eFinal = computeFinal(enemyChar, true);
+
+  // Apply debuffs on opponent
+  addStats(pFinal.stats, eFinal.effects.debuffsOnOpponent);
+  addStats(eFinal.stats, pFinal.effects.debuffsOnOpponent);
+
+  // Apply fight-conditional penalties (weights/gi)
+  if((playerChar.armors||[]).includes("Rock Lee Weights") && !state.progress._weightsCleared){
+    pFinal.stats.speed -= 1;
+  }
+  if((playerChar.armors||[]).includes("Goku's Gi") && !state.progress._giCleared){
+    pFinal.stats.strength -= 1;
+  }
+
+  // Instant win check (Colossal)
+  const pHasColossal = playerChar.transformDetail?.kind === "titan" && playerChar.transformDetail.value === "Colossal";
+  if(pHasColossal){
+    // Approx: if enemy durability is under 30 => instant win
+    if(eFinal.stats.durability < 30){
+      logEl.innerHTML = `<div><b style="color:var(--good)">COLOSSAL CRUSH</b> Enemy couldn’t withstand it.</div>` + logEl.innerHTML;
+      return { outcome:"win", pFinal, eFinal, reason:"colossal" };
+    }
+  }
+
+  let pHP = pFinal.stats.hpMax;
+  let eHP = eFinal.stats.hpMax;
+
+  // set bars full
+  hpEls.p.style.width = "100%";
+  hpEls.e.style.width = "100%";
+
+  function write(line){
+    logEl.innerHTML = `<div>${escapeHtml(line)}</div>` + logEl.innerHTML;
+  }
+
+  // Kayden PvP bonus against Kayden players:
+  const playerCursed = computeIsCursed(playerChar);
+  const enemyCursed = computeIsCursed(enemyChar);
+
+  // If opponent is cursed (Kayden), you do extra damage; if YOU are cursed, you do less
+  const dmgMultP = (enemyCursed ? 1.12 : 1.0) * (playerCursed ? 0.92 : 1.0);
+  const dmgMultE = (playerCursed ? 1.12 : 1.0) * (enemyCursed ? 0.92 : 1.0);
+
+  // PvE mock you if cursed
+  if(mode === "pve" && playerCursed){
+    write("Enemy: “No way… you rolled Kayden?”");
+    write("Enemy: “That’s tragic.”");
+    write("Enemy: “I almost feel bad.”");
+  }
+
+  // Anti-infinite rage
+  let rage = 0;
+  const maxRounds = 30;
+
+  function dmg(attS, defS, mult){
+    const base = 6 + attS.strength*1.25 + attS.fight*0.55;
+    const mit = 0.24 + (defS.durability*0.018);
+    const crit = (Math.random() < (attS.luck*0.010)) ? 1.55 : 1.0;
+    const iqBoost = 1 + Math.min(0.20, (attS.iq*0.004));
+    const rageBoost = 1 + rage*0.05;
+    const raw = base * crit * iqBoost * rageBoost * mult;
+    const final = Math.max(2, Math.floor(raw * (1 - mit)));
+    return final;
+  }
+
+  function applyRegen(){
+    if(pFinal.effects.regen > 0){
+      pHP = Math.min(pFinal.stats.hpMax, pHP + pFinal.effects.regen);
+    }
+    if(eFinal.effects.regen > 0){
+      eHP = Math.min(eFinal.stats.hpMax, eHP + eFinal.effects.regen);
+    }
+  }
+
+  function updateBars(){
+    hpEls.p.style.width = `${(pHP / pFinal.stats.hpMax) * 100}%`;
+    hpEls.e.style.width = `${(eHP / eFinal.stats.hpMax) * 100}%`;
+  }
+
+  // Flee checks
+  function maybeFlee(side){
+    const pPct = pHP / pFinal.stats.hpMax;
+    const ePct = eHP / eFinal.stats.hpMax;
+
+    if(side === "player" && pPct <= FLEE_HP_THRESHOLD){
+      const chance = fleeChanceFromSpeedGap(pFinal.stats.speed, eFinal.stats.speed);
+      if(chance > 0 && Math.random() < chance){
+        write(`You fled! (chance ${(chance*100).toFixed(0)}%)`);
+        return true;
+      }
+    }
+    if(side === "enemy" && ePct <= FLEE_HP_THRESHOLD){
+      const chance = fleeChanceFromSpeedGap(eFinal.stats.speed, pFinal.stats.speed);
+      if(chance > 0 && Math.random() < chance){
+        write(`Enemy fled! (chance ${(chance*100).toFixed(0)}%)`);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Battle loop
+  for(let round=1; round<=maxRounds; round++){
+    rage++;
+
+    // regen at start of round
+    applyRegen();
+
+    // player attacks
+    const pDmg = dmg(pFinal.stats, eFinal.stats, dmgMultP);
+    eHP -= pDmg;
+    write(`Round ${round}: You hit for ${pDmg}.`);
+    updateBars();
+    if(eHP <= 0){
+      if(eFinal.effects.cannotDie){
+        eHP = 1; // immortal can’t die
+        write("Enemy refuses to die (Immortal).");
+      }else{
+        return { outcome:"win", pFinal, eFinal, reason:"ko" };
+      }
+    }
+
+    // enemy flee chance
+    if(maybeFlee("enemy")){
+      return { outcome:"escape", pFinal, eFinal, reason:"enemy_fled" };
+    }
+
+    // enemy attacks
+    const eDmg = dmg(eFinal.stats, pFinal.stats, dmgMultE);
+    pHP -= eDmg;
+    write(`Round ${round}: Enemy hits for ${eDmg}.`);
+    updateBars();
+    if(pHP <= 0){
+      if(pFinal.effects.cannotDie){
+        pHP = 1;
+        write("You refuse to die (Immortal).");
+      }else{
+        return { outcome:"lose", pFinal, eFinal, reason:"ko" };
+      }
+    }
+
+    // player flee chance
+    if(maybeFlee("player")){
+      return { outcome:"escape", pFinal, eFinal, reason:"player_fled" };
+    }
+  }
+
+  // Rage timer ended: compare HP
+  write("Rage timer ended the fight.");
+  if(pHP >= eHP) return { outcome:"win", pFinal, eFinal, reason:"rage" };
+  return { outcome:"lose", pFinal, eFinal, reason:"rage" };
+}
+
+/* =========================================================
+   PvP WIN HANDLING + LOOT
+========================================================= */
+function onPvpWin(){
+  state.progress.pvpWins = (state.progress.pvpWins || 0) + 1;
+  saveState();
+
+  renderTraitSlots();
+  showPlusOneOnClosestSlot();
+  pulseClosestLockedBar();
+  checkSlotUnlocks();
 }
 
 function showStealPopup(trait){
   const el = $("stealPopup");
-  el.textContent = `Stolen Trait: ${trait.type}`;
+  el.textContent = `Copied Trait: ${trait.type}`;
   el.classList.remove("hidden");
   playStealSound();
   setTimeout(()=>el.classList.add("hidden"), 1600);
@@ -2089,189 +3998,28 @@ function playStealAnimation(trait){
   }, 700);
 }
 
-function getStealableTraits(attacker, defender){
-  const atkSlots = attacker.progress?.unlockedSlots || {};
-  const defTraits = defender.character?.demiTraits || [];
-  const stealable = [];
-  for(const trait of defTraits){
-    const slots = slotsForTrait(trait);
-    if(slots.length === 0) continue;
-    if(slots.every(s => atkSlots[s])) stealable.push(trait);
-  }
-  return stealable;
-}
-
-function markStolenFrom(defender){
-  defender.progress ||= {};
-  defender.progress.lastStolenAt = Date.now();
-  defender.progress.revengeReady = true;
-}
-
-function attemptTraitSteal(attacker, defender){
-  // defender blocks 1 steal if they have Trait Lock
-  if(defender?.progress?.traitLockCharges > 0){
-    defender.progress.traitLockCharges -= 1;
-    setMatchTraitEvent({ label:"Steal Blocked", note:"Opponent's Trait Lock prevented the steal.", value:"🛡️" });
-    toast("Steal blocked by Trait Lock!");
-    playBlockSound();
-    return false;
-  }
-
-  if(Math.random() > TRAIT_STEAL_CHANCE) return false;
-
-  const candidates = getStealableTraits(attacker, defender);
-  if(candidates.length === 0) return false;
-
-  const stolen = candidates[Math.floor(Math.random()*candidates.length)];
-
-  defender.character.demiTraits = defender.character.demiTraits.filter(t => t !== stolen);
-  attacker.character.demiTraits.push(stolen);
-
-  markStolenFrom(defender);
-  setMatchTraitEvent({ label:"Trait Stolen", note:`You stole ${stolen.type}.`, value:"🗡️" });
-
-  return stolen;
-}
-
-function awardCoins(n, reason="reward"){
-  state.currency.coins += n;
-}
-function grantXP(n, reason="reward"){
-  state.currency.xp += n;
-}
-
-function applyRevengeBonus(){
-  if(!state.progress.revengeReady) return;
-  state.progress.revengeReady = false;
-  awardCoins(25, "revenge bonus");
-  grantXP(18, "revenge bonus");
-  toast("REVENGE BONUS! +Coins +XP");
-  saveState();
-}
-
-function progressSnapshot(){
-  const wins = state.progress.pvpWins || 0;
-  const next = findClosestLockedSlot();
-  if(!next){
-    return [{ label:"All slots unlocked", note:"Max trait slots reached.", value:`${wins} wins` }];
-  }
-  const req = requiredWinsForSlot(next);
-  return [
-    { label:"PvP Wins", note:"Unlock more trait slots by winning.", value:`${wins}` },
-    { label:`Next Slot: ${SLOT_LABEL[next]}`, note:"Progress to unlock.", value:`${Math.min(wins, req)} / ${req}` }
-  ];
-}
-
-function fillLootRows(hostId, rows){
-  const host = $(hostId);
-  if(!host) return;
-  host.innerHTML = "";
-  rows.forEach(r=>{
-    const row = document.createElement("div");
-    row.className = "lootRow";
-    row.innerHTML = `
-      <div class="lootLeft">
-        <div class="lootLabel">${escapeHtml(r.label || "")}</div>
-        <div class="lootNote">${escapeHtml(r.note || "")}</div>
-      </div>
-      <div class="lootValue">${escapeHtml(r.value || "")}</div>
-    `;
-    host.appendChild(row);
-  });
-}
-
-function openLoot(payload){
-  $("lootTitle").textContent = payload.outcome === "win" ? "Victory" : "Defeat";
-  $("lootSub").textContent = payload.sub || "";
-  fillLootRows("lootRewards", payload.rewards || []);
-  fillLootRows("lootTrait", payload.traitEvents || []);
-  fillLootRows("lootProgress", payload.progress || []);
-  $("lootModal").classList.remove("hidden");
-}
-function closeLoot(){ $("lootModal").classList.add("hidden"); }
-
-/* =========================================================
-   Battle simulator (no infinite fights)
-========================================================= */
-function battleSim(attackerChar, defenderChar, logEl, hpEls){
-  // Returns true if attacker wins
-  const aStats = finalStats(attackerChar);
-  const dStats = finalStats(defenderChar);
-
-  let aHP = 35 + aStats.durability*4;
-  let dHP = 35 + dStats.durability*4;
-
-  // anti-infinite: rage timer (damage ramps)
-  let rage = 0;
-
-  function dmg(att, def){
-    const base = 6 + att.strength*1.4;
-    const mit = 0.25 + (def.durability*0.02);
-    const luckCrit = (Math.random() < (att.luck*0.012)) ? 1.6 : 1.0;
-    const rageBoost = 1 + rage*0.06;
-
-    const raw = base * luckCrit * rageBoost;
-    const final = Math.max(2, Math.floor(raw * (1-mit)));
-    return final;
-  }
-
-  function write(line){
-    logEl.innerHTML = `<div>${escapeHtml(line)}</div>` + logEl.innerHTML;
-  }
-
-  const maxRounds = 24;
-  for(let round=1; round<=maxRounds; round++){
-    rage++;
-
-    const aDmg = dmg(aStats, dStats);
-    dHP -= aDmg;
-    write(`Round ${round}: You hit for ${aDmg}.`);
-    hpEls.p.style.width = `${Math.max(0, aHP)/(35 + aStats.durability*4)*100}%`;
-    hpEls.e.style.width = `${Math.max(0, dHP)/(35 + dStats.durability*4)*100}%`;
-    if(dHP <= 0) return true;
-
-    const dDmg = dmg(dStats, aStats);
-    aHP -= dDmg;
-    write(`Round ${round}: Enemy hits for ${dDmg}.`);
-    hpEls.p.style.width = `${Math.max(0, aHP)/(35 + aStats.durability*4)*100}%`;
-    hpEls.e.style.width = `${Math.max(0, dHP)/(35 + dStats.durability*4)*100}%`;
-    if(aHP <= 0) return false;
-  }
-
-  // If still alive, choose winner by remaining HP (prevents infinite)
-  write("Rage timer ended the fight.");
-  return aHP >= dHP;
-}
-
-/* =========================================================
-   PvP win handling (progress bars + unlock checks + steal)
-========================================================= */
-function onPvpWin(){
-  state.progress.pvpWins = (state.progress.pvpWins || 0) + 1;
-  saveState();
-
-  renderTraitSlots();
-  showPlusOneOnClosestSlot();
-  pulseClosestLockedBar();
-
-  checkSlotUnlocks();
-}
-
-function onPvpVictory(playerState, enemyState){
+async function onPvpVictory(playerState, enemyState, battleResult){
   setMatchTraitEvent(null);
 
   onPvpWin();
   applyRevengeBonus();
 
+  // Copy-steal a trait
   const stolen = attemptTraitSteal(playerState, enemyState);
   if(stolen){
     showStealPopup(stolen);
     playStealAnimation(stolen);
   }
 
-  // rewards (tune anytime)
-  awardCoins(20, "pvp");
-  grantXP(22, "pvp");
+  // Rewards
+  awardCoins(20);
+  grantXP(22);
+
+  // Post-win growth
+  postFightGrowthOnWin(battleResult.pFinal);
+
+  // Soul stone choice (async)
+  await maybeSoulStoneOnWin(battleResult.pFinal);
 
   const rewards = [
     { label:"Coins", note:"Arena rewards", value:`+20 (Total: ${state.currency.coins})` },
@@ -2297,8 +4045,8 @@ function onPvpVictory(playerState, enemyState){
 function onPvpDefeat(){
   setMatchTraitEvent(null);
 
-  awardCoins(6, "loss");
-  grantXP(8, "loss");
+  awardCoins(6);
+  grantXP(8);
 
   openLoot({
     outcome: "lose",
@@ -2315,103 +4063,105 @@ function onPvpDefeat(){
   refreshUI();
 }
 
-/* =========================================================
-   Tab switching
-========================================================= */
-document.querySelectorAll(".tab").forEach(t=>{
-  t.addEventListener("click", ()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    t.classList.add("active");
-    const key = t.dataset.tab;
-    showTab(key);
+function onPvpEscape(){
+  openLoot({
+    outcome: "escape",
+    sub: "Someone fled. No win counted.",
+    rewards: [
+      { label:"Coins", note:"None", value:"+0" },
+      { label:"XP", note:"None", value:"+0" }
+    ],
+    traitEvents: [{ label:"None", note:"No trait event on escape.", value:"—" }],
+    progress: progressSnapshot()
   });
-});
-
-function showTab(key){
-  ["build","stats","pve","pvp"].forEach(k=>{
-    const sec = document.getElementById(`tab-${k}`);
-    if(sec) sec.classList.toggle("hidden", k !== key);
-  });
+  saveState();
   refreshUI();
 }
 
 /* =========================================================
-   PvE / PvP start buttons
+   OPPONENT GENERATOR (now includes all wheels)
 ========================================================= */
-$("pvpStartBtn").addEventListener("click", ()=>{
-  if(!state.character.finalized){
-    toast("Finalize your build first.");
-    return;
+function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function randomOpponent(){
+  const opp = defaultState();
+
+  const c = opp.character;
+  c.race = randomFrom(RACE_OPTIONS);
+
+  // pipelines
+  if(c.race === "Demi-human"){
+    c.demi = randomFrom(DEMI_TYPES);
+    if(c.demi === "Werebeast"){
+      c.werebeastType = randomFrom(WEREBEAST_TYPES);
+      c.demiTraits.push({kind:"werebeast", type:c.werebeastType});
+    }else{
+      c.demiTraits.push({kind:"demi", type:c.demi});
+    }
   }
-  const enemy = randomOpponent();
-
-  // Set portraits
-  renderPortraitTo(enemy.character, "e_");
-  renderPortraitTo(state.character, "p_");
-
-  // role tags
-  $("p_roleTag").textContent = state.character.werebeastType ? `Role: ${BEAST_ROLE[state.character.werebeastType] || "—"}` : "";
-  $("e_roleTag").textContent = enemy.character.werebeastType ? `Role: ${BEAST_ROLE[enemy.character.werebeastType] || "—"}` : "";
-
-  const logEl = $("pvpLog");
-  logEl.innerHTML = "";
-
-  // set HP bars full
-  $("p_hp").style.width = "100%";
-  $("e_hp").style.width = "100%";
-
-  const playerState = { character: state.character, progress: state.progress };
-  const enemyState = { character: enemy.character, progress: enemy.progress };
-
-  const won = battleSim(playerState.character, enemyState.character, logEl, {p:$("p_hp"), e:$("e_hp")});
-  if(won){
-    logEl.innerHTML = `<div><b style="color:var(--good)">YOU WIN</b></div>` + logEl.innerHTML;
-    onPvpVictory(playerState, enemyState);
-  }else{
-    logEl.innerHTML = `<div><b style="color:var(--bad)">YOU LOSE</b></div>` + logEl.innerHTML;
-    // If you were stolen-from last time, revengeReady stays until you win.
-    onPvpDefeat();
+  if(c.race === "Alien"){
+    c.alienSubtype = randomFrom(ALIEN_SUBTYPE_OPTIONS);
+    if(c.alienSubtype === "Yautja") c.alienSubtypeDetail = {kind:"yautja", value:randomFrom(YAUTJA_TYPE_OPTIONS)};
+    if(c.alienSubtype === "Zenomorph") c.alienSubtypeDetail = {kind:"zenomorph", value:randomFrom(ZENOMORPH_TYPE_OPTIONS)};
+    if(c.alienSubtype === "Transformer") c.alienSubtypeDetail = {kind:"transformer", value:randomFrom(TRANSFORMER_TYPE_OPTIONS)};
   }
-});
-
-$("pveStartBtn").addEventListener("click", ()=>{
-  if(!state.character.finalized){
-    toast("Finalize your build first.");
-    return;
+  if(c.race === "Vampire") c.vampireAge = randomFrom(VAMPIRE_AGE_OPTIONS);
+  if(c.race === "Shinigami") c.shinigamiRank = randomFrom(SHINIGAMI_RANK_OPTIONS);
+  if(c.race === "Demon") c.demonRank = randomFrom(DEMON_RANK_OPTIONS);
+  if(c.race === "Golem") c.golemType = randomFrom(GOLEM_TYPE_OPTIONS);
+  if(c.race === "Giant") c.giantType = randomFrom(GIANT_TYPE_OPTIONS);
+  if(c.race === "Dragon") c.dragonType = randomFrom(DRAGON_TYPE_OPTIONS);
+  if(c.race === "Orc") c.orcType = randomFrom(ORC_TYPE_OPTIONS);
+  if(c.race === "Zombie") c.zombieType = randomFrom(ZOMBIE_TYPE_OPTIONS);
+  if(c.race === "God"){
+    c.godType = randomFrom(GOD_TYPE_OPTIONS);
+    if(c.godType === "Roman") c.deity = randomFrom(ROMAN_DEITY_OPTIONS);
+    if(c.godType === "Norse") c.deity = randomFrom(NORSE_DEITY_OPTIONS);
+    if(c.godType === "Greek") c.deity = randomFrom(GREEK_DEITY_OPTIONS);
   }
-  const enemy = randomOpponent();
 
-  renderPortraitTo(enemy.character, "pve_e_");
-  renderPortraitTo(state.character, "pve_p_");
+  // universal add-ons
+  c.powers = [ randomFrom(POWER_OPTIONS) ].filter(x=>x && x!=="No Power");
+  c.powerMastery = randomFrom(POWER_MASTERY_OPTIONS);
+  c.weapons = [ randomFrom(WEAPON_OPTIONS) ].filter(x=>x && x!=="No Weapon");
+  c.armors = [ randomFrom(ARMOR_OPTIONS) ].filter(x=>x && x!=="No Armor");
+  c.trainer = randomFrom(TRAINER_OPTIONS);
+  c.clan = randomFrom(CLAN_OPTIONS);
 
-  $("pve_p_roleTag").textContent = state.character.werebeastType ? `Role: ${BEAST_ROLE[state.character.werebeastType] || "—"}` : "";
-  $("pve_e_roleTag").textContent = enemy.character.werebeastType ? `Role: ${BEAST_ROLE[enemy.character.werebeastType] || "—"}` : "";
+  // transformation with detail
+  c.transformation = randomFrom(TRANSFORM_OPTIONS);
+  if(c.transformation === "Kaioken") c.transformDetail = {kind:"kaioken", value:randomFrom(KAIOKEN_OPTIONS)};
+  if(c.transformation === "Eight Gates") c.transformDetail = {kind:"gates", value:randomFrom(GATES_OPTIONS)};
+  if(c.transformation === "Super Saiyan") c.transformDetail = {kind:"ssj", value:randomFrom(SAIYAN_FORM_OPTIONS)};
+  if(c.transformation === "Titan Transformation") c.transformDetail = {kind:"titan", value:randomFrom(TITAN_TYPE_OPTIONS)};
+  if(c.transformation === "Tailed Beast") c.transformDetail = {kind:"tailed", value:randomFrom(TAILED_BEAST_OPTIONS)};
 
-  const logEl = $("pveLog");
-  logEl.innerHTML = "";
+  // stats words
+  c.strengthW = randomFrom(STRENGTH_WORDS);
+  c.speedW = randomFrom(SPEED_WORDS);
+  c.durabilityW = randomFrom(DUR_WORDS);
+  c.fightW = randomFrom(FIGHT_WORDS);
+  c.iqW = randomFrom(IQ_WORDS);
+  c.luckW = randomFrom(LUCK_OPTIONS);
 
-  $("pve_p_hp").style.width = "100%";
-  $("pve_e_hp").style.width = "100%";
+  // opponent slot unlocks scale with your wins
+  const w = state.progress.pvpWins || 0;
+  opp.progress.pvpWins = Math.max(0, w + (Math.random()<0.5 ? -2 : 2));
+  opp.progress.unlockedSlots = {
+    head:true,
+    arms: opp.progress.pvpWins>=3,
+    back: opp.progress.pvpWins>=6,
+    legs: opp.progress.pvpWins>=10,
+    body: opp.progress.pvpWins>=15
+  };
 
-  const won = battleSim(state.character, enemy.character, logEl, {p:$("pve_p_hp"), e:$("pve_e_hp")});
-  if(won){
-    logEl.innerHTML = `<div><b style="color:var(--good)">EVENT CLEARED</b> +Coins +XP</div>` + logEl.innerHTML;
-    awardCoins(12, "pve");
-    grantXP(14, "pve");
-    saveState();
-    refreshUI();
-  }else{
-    logEl.innerHTML = `<div><b style="color:var(--bad)">EVENT FAILED</b> (try again)</div>` + logEl.innerHTML;
-  }
-});
+  return opp;
+}
 
 /* =========================================================
-   Portrait rendering for other tabs (prefixes)
+   Portrait rendering for PvP/PvE tabs (prefix ids p_/e_/pve_p_/pve_e_)
 ========================================================= */
 function renderPortraitTo(char, prefix){
-  // prefix examples: "p_", "e_", "pve_p_", "pve_e_"
-  // We map to ids like p_base, but our apply functions use layer_*.
-  // So we temporarily render by setting sources manually:
   function set(id, src){
     const el = document.getElementById(prefix + id);
     if(el) el.src = src || "";
@@ -2420,12 +4170,12 @@ function renderPortraitTo(char, prefix){
   // clear
   ["head","arms","legs","back","body"].forEach(k=>set(k,""));
   set("fx","");
+  set("base","");
 
   // base
   const rig = RACE_RIG[char.race] || "humanoid";
   if(rig === "golem_big" || rig === "giant_big"){
     set("base", RACE_BASE_IMAGE[char.race] || "");
-    // big overlays
     const root = BIG_RIG_OVERLAY_PATH[char.race] || "";
     for(const slot of BIG_RIG_SLOTS){
       set(slot, root ? `${root}/${slot}/default.png` : "");
@@ -2433,10 +4183,9 @@ function renderPortraitTo(char, prefix){
   }else if(rig === "special_humanoid"){
     set("base", getSpecialHumanoidBase(char.race));
   }else if(rig === "dragon_animal"){
-    set("base", "assets/bases/dragon/base.png");
+    set("base", RACE_BASE_IMAGE["Dragon"] || "assets/bases/dragon/base.png");
   }else{
     set("base", getHumanoidBaseForRace(char.race));
-    // apply traits overlays (newest wins)
     const slotSrc = {};
     const traits = Array.isArray(char.demiTraits) ? char.demiTraits : [];
     for(const t of traits){
@@ -2456,7 +4205,7 @@ function renderPortraitTo(char, prefix){
     }
   }
 
-  // fx
+  // fx: werebeast or transform
   const beast = char.werebeastType;
   if(beast && BEAST_FX[beast]){
     set("fx", BEAST_FX[beast]);
@@ -2465,22 +4214,166 @@ function renderPortraitTo(char, prefix){
   }else{
     const fxEl = document.getElementById(prefix+"fx");
     if(fxEl) fxEl.classList.remove("on");
+    // transform fx fallback
+    const td = char.transformDetail;
+    if(td?.kind && td.value && td.value !== "None"){
+      set("fx", `assets/overlays/fx/${td.kind}_${td.value.toLowerCase().replaceAll(" ","_")}.png`);
+      const fx2 = document.getElementById(prefix+"fx");
+      if(fx2) fx2.classList.add("on");
+    }
   }
 }
 
 /* =========================================================
-   Refresh UI
+   PvP / PvE START BUTTONS
 ========================================================= */
-function refreshUI(){
+$("pvpStartBtn").addEventListener("click", async ()=>{
+  if(!state.character.finalized){
+    toast("Finalize your build first.");
+    return;
+  }
+  const enemy = randomOpponent();
+
+  renderPortraitTo(enemy.character, "e_");
+  renderPortraitTo(state.character, "p_");
+
+  $("p_roleTag").textContent = state.character.werebeastType ? `Role: ${BEAST_ROLE[state.character.werebeastType] || "—"}` : "";
+  $("e_roleTag").textContent = enemy.character.werebeastType ? `Role: ${BEAST_ROLE[enemy.character.werebeastType] || "—"}` : "";
+
+  const logEl = $("pvpLog");
+  logEl.innerHTML = "";
+
+  const playerState = { character: state.character, progress: state.progress };
+  const enemyState = { character: enemy.character, progress: enemy.progress };
+
+  const res = battleSimFull(playerState.character, enemyState.character, logEl, {p:$("p_hp"), e:$("e_hp")}, "pvp");
+
+  if(res.outcome === "win"){
+    logEl.innerHTML = `<div><b style="color:var(--good)">YOU WIN</b></div>` + logEl.innerHTML;
+    await onPvpVictory(playerState, enemyState, res);
+  }else if(res.outcome === "lose"){
+    logEl.innerHTML = `<div><b style="color:var(--bad)">YOU LOSE</b></div>` + logEl.innerHTML;
+    onPvpDefeat();
+  }else{
+    logEl.innerHTML = `<div><b style="color:var(--warn)">ESCAPE</b></div>` + logEl.innerHTML;
+    onPvpEscape();
+  }
+});
+
+$("pveStartBtn").addEventListener("click", ()=>{
+  if(!state.character.finalized){
+    toast("Finalize your build first.");
+    return;
+  }
+  const enemy = randomOpponent();
+
+  renderPortraitTo(enemy.character, "pve_e_");
+  renderPortraitTo(state.character, "pve_p_");
+
+  $("pve_p_roleTag").textContent = state.character.werebeastType ? `Role: ${BEAST_ROLE[state.character.werebeastType] || "—"}` : "";
+  $("pve_e_roleTag").textContent = enemy.character.werebeastType ? `Role: ${BEAST_ROLE[enemy.character.werebeastType] || "—"}` : "";
+
+  const logEl = $("pveLog");
+  logEl.innerHTML = "";
+
+  const res = battleSimFull(state.character, enemy.character, logEl, {p:$("pve_p_hp"), e:$("pve_e_hp")}, "pve");
+
+  if(res.outcome === "win"){
+    logEl.innerHTML = `<div><b style="color:var(--good)">EVENT CLEARED</b> +Coins +XP</div>` + logEl.innerHTML;
+    awardCoins(12);
+    grantXP(14);
+    postFightGrowthOnWin(res.pFinal);
+    saveState();
+    refreshUI();
+  }else if(res.outcome === "lose"){
+    logEl.innerHTML = `<div><b style="color:var(--bad)">EVENT FAILED</b> (try again)</div>` + logEl.innerHTML;
+  }else{
+    logEl.innerHTML = `<div><b style="color:var(--warn)">ESCAPE</b> (no rewards)</div>` + logEl.innerHTML;
+  }
+});
+
+/* =========================================================
+   FINAL STATS TAB RENDER (labels + ???)
+========================================================= */
+function renderStatsTab(){
+  const statsHost = $("statsList");
+  const finalHost = $("finalStatsList");
+  const c = state.character;
+
+  if(statsHost){
+    statsHost.innerHTML = "";
+    const cursed = computeIsCursed(c);
+    const core = [
+      ["Name", c.name || "—"],
+      ["Race", c.race || "—"],
+      ["Demi", c.demi || "—"],
+      ["Werebeast", c.werebeastType || "—"],
+      ["Alien Subtype", c.alienSubtype || "—"],
+      ["God Type", c.godType || "—"],
+      ["Deity", c.deity || "—"],
+      ["Powers", (c.powers||[]).length ? c.powers.join(", ") : "—"],
+      ["Weapons", (c.weapons||[]).length ? c.weapons.join(", ") : "—"],
+      ["Armor", (c.armors||[]).length ? c.armors.join(", ") : "—"],
+      ["Trainer", c.trainer || "—"],
+      ["Clan", c.clan || "—"],
+      ["Transformation", c.transformDetail?.value || c.transformation || "—"],
+      ["Cursed", cursed ? "YES" : "No"],
+      ["Trait Slots", `${Object.values(state.progress.unlockedSlots).filter(Boolean).length}/5 unlocked`],
+      ["PvP Wins", String(state.progress.pvpWins || 0)],
+      ["Souls Captured", String(state.progress.soulsCaptured || 0)],
+      ["Adaptation Stacks", String(state.progress.adaptationStacks || 0)],
+    ];
+    core.forEach(([k,v])=>{
+      const div = document.createElement("div");
+      div.className = "statLine";
+      div.innerHTML = `<div class="statKey">${escapeHtml(k)}</div><div class="statVal">${escapeHtml(v)}</div>`;
+      statsHost.appendChild(div);
+    });
+  }
+
+  if(finalHost){
+    finalHost.innerHTML = "";
+    const finalObj = computeFinal(c);
+    const fusions = computeFusions(c, finalObj);
+
+    // apply fusion stat changes for display
+    const sCopy = JSON.parse(JSON.stringify(finalObj.stats));
+    const fxCopy = JSON.parse(JSON.stringify(finalObj.effects));
+    for(const fu of fusions){
+      addStats(sCopy, fu.addStatsDelta || {});
+      (fu.addTags||[]).forEach(t=>fxCopy.tags.push(t));
+    }
+
+    const lines = [
+      ...statPanelLinesFromFinal({stats:sCopy}),
+      ["Fusions", fusions.length ? fusions.map(x=>x.fusionName).join(", ") : "—"],
+      ["Tags", fxCopy.tags.length ? fxCopy.tags.slice(0,10).join(", ") + (fxCopy.tags.length>10 ? "…" : "") : "—"],
+      ["Weaknesses", fxCopy.weaknesses.length ? fxCopy.weaknesses.join(", ") : "—"],
+    ];
+
+    lines.forEach(([k,v])=>{
+      const div = document.createElement("div");
+      div.className = "statLine";
+      div.innerHTML = `<div class="statKey">${escapeHtml(k)}</div><div class="statVal">${escapeHtml(v)}</div>`;
+      finalHost.appendChild(div);
+    });
+  }
+}
+
+/* =========================================================
+   FULL refreshUI (complete)
+========================================================= */
+const _refreshUI_prev = refreshUI;
+refreshUI = function(){
   updateDailyLock();
 
-  // buttons
   $("volBtn").textContent = state.settings.muted ? "🔇" : "🔊";
 
-  // build stats
+  // Build stats + badges
   renderBuildStats();
+  renderBadges();
 
-  // trait slots
+  // Trait slots
   renderTraitSlots();
 
   // phase tag
@@ -2499,143 +4392,58 @@ function refreshUI(){
   // background
   setRaceBackground(state.character.race || "");
 
-  // portrait in build
+  // cursed glow
+  const cursed = computeIsCursed(state.character);
+  $("charFrame")?.classList.toggle("cursed", cursed);
+  $("statsCharFrame")?.classList.toggle("cursed", cursed);
+
+  // portrait (build)
   applyRaceBase(state.character, "");
   applyRigFraming(state.character, "charFrame");
   applyDemiTraits(state.character, "");
+  applyArmorOverlay(state.character, "");
+  applyWeaponOverlay(state.character, "");
   applyIdleFx(state.character, "");
 
-  // stats tab: copy portrait & values
+  // portrait (stats)
   applyRaceBase(state.character, "s_");
   applyRigFraming(state.character, "statsCharFrame");
   applyDemiTraits(state.character, "s_");
+  applyArmorOverlay(state.character, "s_");
+  applyWeaponOverlay(state.character, "s_");
   applyIdleFx(state.character, "s_");
 
-  // stats lists
-  const statsHost = $("statsList");
-  const finalHost = $("finalStatsList");
-  const c = state.character;
+  // stats tab values
+  renderStatsTab();
 
-  if(statsHost){
-    statsHost.innerHTML = "";
-    const core = [
-      ["Name", c.name || "—"],
-      ["Race", c.race || "—"],
-      ["Demi", c.demi || "—"],
-      ["Werebeast", c.werebeastType || "—"],
-      ["Power", c.power || "—"],
-      ["Weapon", c.weapon || "—"],
-      ["Trait Slots", `${Object.values(state.progress.unlockedSlots).filter(Boolean).length}/5 unlocked`],
-      ["PvP Wins", String(state.progress.pvpWins || 0)]
-    ];
-    core.forEach(([k,v])=>{
-      const div = document.createElement("div");
-      div.className = "statLine";
-      div.innerHTML = `<div class="statKey">${escapeHtml(k)}</div><div class="statVal">${escapeHtml(v)}</div>`;
-      statsHost.appendChild(div);
-    });
-  }
-
-  if(finalHost){
-    finalHost.innerHTML = "";
-    const fs = finalStats(c);
-    Object.entries(fs).forEach(([k,v])=>{
-      const div = document.createElement("div");
-      div.className = "statLine";
-      div.innerHTML = `<div class="statKey">${escapeHtml(k.toUpperCase())}</div><div class="statVal">${escapeHtml(v)}</div>`;
-      finalHost.appendChild(div);
-    });
-  }
-
-  $("namedTag").textContent = c.finalized ? "Finalized" : "Not finalized";
+  $("namedTag").textContent = state.character.finalized ? "Finalized" : "Not finalized";
 
   // hint
   if(state.character.finalized){
-    $("buildHint").textContent = "Build finalized. Start a new build to spin again.";
+    $("buildHint").textContent = "Build finalized. Fight in PvE/PvP or start a new build.";
   }
 
   // skip button (only in test mode)
   $("skipBtn").style.display = TEST_MODE ? "inline-flex" : "none";
   $("testFastBtn").style.display = TEST_MODE ? "inline-flex" : "none";
   $("newBuildBtn").style.display = (dailyLockEnabled() && state.daily.finalizedToday) ? "none" : "inline-flex";
-}
+};
 
 /* =========================================================
-   Save / Load
+   PATCH: Name modal stuck fix (extra safety)
 ========================================================= */
-function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-function loadState(){
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if(!raw) return defaultState();
-  try{
-    const s = JSON.parse(raw);
-    // shallow patch missing keys
-    const d = defaultState();
-    return deepMerge(d, s);
-  }catch(e){
-    return defaultState();
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape"){
+    if(!$("nameModal")?.classList.contains("hidden")) closeNameModal();
+    if(!$("lootModal")?.classList.contains("hidden")) closeLoot();
+    if(!$("choiceModal")?.classList.contains("hidden")) closeChoiceModal();
   }
-}
-function deepMerge(base, extra){
-  if(typeof base !== "object" || base === null) return extra;
-  const out = Array.isArray(base) ? [...base] : {...base};
-  if(typeof extra !== "object" || extra === null) return out;
-  for(const k of Object.keys(extra)){
-    if(k in out){
-      out[k] = deepMerge(out[k], extra[k]);
-    }else{
-      out[k] = extra[k];
-    }
-  }
-  return out;
-}
+});
 
 /* =========================================================
-   Bind UI events
+   FINAL INIT PATCH: rerender everything
 ========================================================= */
-$("spinBtn").addEventListener("click", ()=>startSpin(false));
-$("testFastBtn").addEventListener("click", ()=>startSpin(true));
-$("skipBtn").addEventListener("click", skipPhase);
-$("finalizeBtn").addEventListener("click", finalizeBuild);
-$("newBuildBtn").addEventListener("click", newBuild);
-$("volBtn").addEventListener("click", toggleVolume);
-$("resetBtn").addEventListener("click", hardReset);
-
-/* =========================================================
-   Init
-========================================================= */
-function init(){
-  updateDailyLock();
-
-  // If daily lock enabled, reset daily flag when day changes
-  const tk = todayKeyUTC();
-  if(state.daily.lastBuildDay !== tk){
-    state.daily.lastBuildDay = tk;
-    state.daily.finalizedToday = false;
-    saveState();
-  }
-
-  // restore phase/wheel
-  const phases = phasesForCharacter();
-  state.build.phaseIndex = Math.min(state.build.phaseIndex || 0, phases.length-1);
-  setPhaseIndex(state.build.phaseIndex);
-
-  // restore background
-  setRaceBackground(state.character.race || "");
-
-  // show log
-  if(!$("buildLog").innerHTML){
-    logBuild("Loaded.");
-  }
-
-  refreshUI();
-  drawWheel();
-  requestAnimationFrame(stepWheel);
-}
-
-init();
+refreshUI();
 </script>
 </body>
 </html>
