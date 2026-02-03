@@ -4458,6 +4458,25 @@ refreshUI = function(){
 /* =========================================================
    PATCH: Name modal stuck fix (extra safety)
 ========================================================= */
+<script>
+/* =========================================================
+   DEBUG SAFETY: show the exact crash (so buttons don’t “die” silently)
+========================================================= */
+window.addEventListener("error", (e) => {
+  alert("JS error: " + (e.message || "unknown") + "\nLine: " + (e.lineno || "?"));
+});
+window.addEventListener("unhandledrejection", (e) => {
+  alert("Promise error: " + (e.reason?.message || e.reason || "unknown"));
+});
+
+/* =========================================================
+   ...YOUR EXISTING BLOCK 3 CODE ABOVE THIS POINT...
+   (keep everything you already have)
+========================================================= */
+
+/* =========================================================
+   PATCH: Name modal stuck fix (extra safety)
+========================================================= */
 document.addEventListener("keydown", (e)=>{
   if(e.key === "Escape"){
     if(!$("nameModal")?.classList.contains("hidden")) closeNameModal();
@@ -4467,9 +4486,14 @@ document.addEventListener("keydown", (e)=>{
 });
 
 /* =========================================================
-   FINAL INIT PATCH: rerender everything
+   FINAL INIT PATCH: rerender everything (but don’t let it kill the app)
 ========================================================= */
-refreshUI();
+try{
+  refreshUI();
+}catch(err){
+  alert("refreshUI crash: " + (err?.message || err));
+  console.error(err);
+}
 </script>
 </body>
 </html>
