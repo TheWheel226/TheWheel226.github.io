@@ -512,10 +512,16 @@ After pasting Block 1, paste Block 2 directly under it, then Block 3.
       100%{opacity:0; transform:translate(calc(var(--dx) - 50%), calc(var(--dy) - 50%)) scale(1.05);}
     }
     .flyNow{animation: chipFly 650ms ease-out forwards;}
-
+    
+    .model-overlay{
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+    }
     /* naming modal */
     .modal{
-      position:fixed; inset:0;
+      position:fixed;
+      inset:0;
       background: rgba(0,0,0,.72);
       display:flex;
       align-items:center;
