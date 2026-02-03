@@ -433,172 +433,239 @@
         </div>
       </div>
     </section>
+<!-- =========================
+PART 4 / 6 — CORE ENGINE (STATE + WHEEL + TABS)
+PASTE BETWEEN PART 3 AND PART 5
+========================= -->
 <script>
 /* =========================================================
-   PART 4 — CORE ENGINE / WHEEL / PHASES / NAME
+   HELPERS
 ========================================================= */
-
-/* ---------- helpers ---------- */
-const $ = (id)=>document.getElementById(id);
-const escapeHtml = (s)=>String(s??"").replace(/[&<>"']/g,m=>({
+const $ = (id) => document.getElementById(id);
+const escapeHtml = (s)=> String(s ?? "").replace(/[&<>"']/g, m => ({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[m]));
 
-/* ---------- constants ---------- */
-const PHASES = ["Race","Power","Weapon","Armor","Trainer","Transformation"];
-let currentPhaseIndex = 0;
+/* =========================================================
+   FULL OPTION LISTS (RESTORED)
+========================================================= */
+const RACE_OPTIONS = [
+  "Human","Saiyan","Demon","Angel","God","Dragon","Vampire","Werewolf",
+  "Giant","Golem","Alien","Cyborg","Hybrid","Shinigami","Soul Eater",
+  "Hivemind","Zombie","Skeleton","Orc","Goblin","Gnome","Demi Human"
+];
 
-/* ---------- options ---------- */
-const RACE_OPTIONS = ["Human","Saiyan","Demon","Angel","God","Dragon"];
-const POWER_OPTIONS = ["Fire","Ice","Lightning","Adaptation","Regeneration","No Power"];
-const WEAPON_OPTIONS = ["Sword","Axe","Hammer","No Weapon"];
-const ARMOR_OPTIONS = ["Berserk Armor","Iron Man Suit","No Armor"];
-const TRAINER_OPTIONS = ["Master Roshi","Jiraiya","Yuujirou","No Trainer"];
-const TRANSFORM_OPTIONS = ["None","Kaioken","Super Saiyan"];
+const POWER_OPTIONS = [
+  "No Power","Fire","Ice Manipulation","Lightning","Gravity Manipulation",
+  "Time Manipulation","Teleportation","Telekinesis","Regeneration",
+  "Adaptation","Immortal","Weapon Creation","Heavenly Restriction","Rinnegan"
+];
 
-/* ---------- state ---------- */
-function defaultState(){
-  return {
-    character:{
-      finalized:false,
-      name:"",
-      race:null,
-      powers:[],
-      weapons:[],
-      armors:[],
-      trainer:null,
-      transformation:"None",
-      strengthW:"Human",
-      speedW:"Human",
-      durabilityW:"Human",
-      fightW:"Street",
-      iqW:"Average",
-      luckW:"5"
-    },
-    progress:{ adaptationStacks:0, soulBonus:{} },
-    currency:{ coins:0, xp:0 }
+const WEAPON_OPTIONS = [
+  "No Weapon","Sword","Scythe","Axe","Hammer","Spear","Brass Knuckles",
+  "Blades of Chaos","Samehada","Uzumaki Chains","Infinity Gauntlet","Green Lantern Ring"
+];
+
+const ARMOR_OPTIONS = [
+  "No Armor","Berserk Armor","Iron Man Suit","Jauger","Symbiote",
+  "Ashborn's Armor","Rock Lee Weights","Goku's Gi"
+];
+
+const TRAINER_OPTIONS = [
+  "No Trainer","Master Roshi","Jiraiya","Hisoka","Korro","Yuujirou"
+];
+
+const CLAN_OPTIONS = [
+  "No Clan","Uchiha","Gojo","D Clan","Kamado"
+];
+
+const POWER_MASTERY_OPTIONS = [
+  "None","Dormant","Awakening","Controlled","Mastered","Planetary","Cosmic","Universal","Omnipotent"
+];
+
+const TRANSFORM_OPTIONS = [
+  "None","Kaioken","Eight Gates","Super Saiyan","Titan Transformation","Tailed Beast"
+];
+
+const KAIOKEN_OPTIONS = ["X2","X5","X10","X20"];
+const GATES_OPTIONS = ["First","Second","Third","Fourth","Fifth","Sixth","Seventh","Eighth"];
+const SAIYAN_FORM_OPTIONS = ["SSJ","SSJ2","SSJ3","SSJ God","SSJ Blue"];
+const TITAN_TYPE_OPTIONS = ["Pure","Armored","Colossal","Beast"];
+const TAILED_BEAST_OPTIONS = ["One Tail","Two Tails","Three Tails","Four Tails","Five Tails","Six Tails","Seven Tails","Eight Tails","Nine Tails"];
+
+/* =========================================================
+   STAT WORDS
+========================================================= */
+const STRENGTH_WORDS = ["Peak Human","Superhuman","City","Mountain","Country","Planetary","Star","Galaxy","Universal","???"];
+const SPEED_WORDS    = ["Human","Supersonic","Hypersonic","Relativistic","FTL","Massively FTL","Infinite","???"];
+const DUR_WORDS      = ["Fragile","Bulletproof","Tank","City","Mountain","Planetary","Star","Universal","???"];
+const FIGHT_WORDS    = ["Untrained","Street","Martial Artist","Master","Grandmaster","Legendary","???"];
+const IQ_WORDS       = ["Low","Average","High","Genius","Super Genius","Cosmic Mind","???"];
+
+function statWordToNumber(type, word){
+  const map = {
+    strength: STRENGTH_WORDS,
+    speed: SPEED_WORDS,
+    durability: DUR_WORDS,
+    fight: FIGHT_WORDS,
+    iq: IQ_WORDS
   };
+  const arr = map[type] || [];
+  const i = arr.indexOf(word);
+  return i < 0 ? 0 : i + 1;
+}
+function labelForStat(type, num){
+  const map = {
+    strength: STRENGTH_WORDS,
+    speed: SPEED_WORDS,
+    durability: DUR_WORDS,
+    fight: FIGHT_WORDS,
+    iq: IQ_WORDS
+  };
+  const arr = map[type] || [];
+  return arr[Math.min(arr.length-1, Math.max(0, num-1))] || "???";
 }
 
-let state = JSON.parse(localStorage.getItem("wheelForgeState")||"null") || defaultState();
-function saveState(){ localStorage.setItem("wheelForgeState", JSON.stringify(state)); }
+/* =========================================================
+   STATE
+========================================================= */
+let state = {
+  phaseIndex: 0,
+  phases: ["Race","Power","Weapon","Armor","Trainer","Clan","Transformation"],
+  character: {
+    finalized:false,
+    race:null,
+    powers:[],
+    weapons:[],
+    armors:[],
+    trainer:null,
+    clan:null,
+    transformation:null,
+    transformDetail:null,
+    strengthW:null,
+    speedW:null,
+    durabilityW:null,
+    fightW:null,
+    iqW:null,
+    luckW:"5"
+  },
+  progress:{
+    adaptationStacks:0,
+    soulBonus:{}
+  },
+  currency:{ coins:0, xp:0 }
+};
 
-/* ---------- toast ---------- */
-function toast(msg){
-  const t = $("toast");
-  if(!t) return;
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),1200);
-}
+/* =========================================================
+   TABS
+========================================================= */
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
 
-/* ---------- wheel ---------- */
-const canvas = $("wheel");
-const ctx = canvas.getContext("2d");
+    ["build","stats","pve","pvp"].forEach(k=>{
+      const sec = $("tab-"+k);
+      if(sec) sec.classList.add("hidden");
+    });
+
+    const target = $("tab-"+tab.dataset.tab);
+    if(target) target.classList.remove("hidden");
+  });
+});
+
+/* =========================================================
+   WHEEL CORE
+========================================================= */
+const wheel = $("wheel");
+const ctx = wheel.getContext("2d");
 let spinning = false;
 
-function drawWheel(options){
-  const r = canvas.width/2;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  const slice = (Math.PI*2)/options.length;
-
-  options.forEach((opt,i)=>{
-    ctx.beginPath();
-    ctx.moveTo(r,r);
-    ctx.arc(r,r,r,i*slice,(i+1)*slice);
-    ctx.fillStyle = i%2 ? "#1b2a44" : "#243a66";
-    ctx.fill();
-    ctx.save();
-    ctx.translate(r,r);
-    ctx.rotate(i*slice+slice/2);
-    ctx.fillStyle="#fff";
-    ctx.font="bold 14px system-ui";
-    ctx.fillText(opt, r*0.55, 4);
-    ctx.restore();
-  });
-}
-
 function currentOptions(){
-  switch(PHASES[currentPhaseIndex]){
+  switch(state.phases[state.phaseIndex]){
     case "Race": return RACE_OPTIONS;
     case "Power": return POWER_OPTIONS;
     case "Weapon": return WEAPON_OPTIONS;
     case "Armor": return ARMOR_OPTIONS;
     case "Trainer": return TRAINER_OPTIONS;
+    case "Clan": return CLAN_OPTIONS;
     case "Transformation": return TRANSFORM_OPTIONS;
+    default: return [];
   }
 }
 
-function applyResult(result){
-  const c = state.character;
-  switch(PHASES[currentPhaseIndex]){
-    case "Race": c.race=result; break;
-    case "Power": if(result!=="No Power") c.powers.push(result); break;
-    case "Weapon": if(result!=="No Weapon") c.weapons.push(result); break;
-    case "Armor": if(result!=="No Armor") c.armors.push(result); break;
-    case "Trainer": if(result!=="No Trainer") c.trainer=result; break;
-    case "Transformation": c.transformation=result; break;
-  }
-}
-
-function spinWheel(){
-  if(spinning || state.character.finalized) return;
-  spinning=true;
+function drawWheel(){
   const opts = currentOptions();
-  drawWheel(opts);
+  if(!opts.length) return;
+
+  const r = wheel.width/2;
+  ctx.clearRect(0,0,wheel.width,wheel.height);
+
+  opts.forEach((opt,i)=>{
+    const a0 = (i/opts.length)*Math.PI*2;
+    const a1 = ((i+1)/opts.length)*Math.PI*2;
+
+    ctx.beginPath();
+    ctx.moveTo(r,r);
+    ctx.arc(r,r,r,a0,a1);
+    ctx.fillStyle = i%2 ? "#182238" : "#101726";
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(r,r);
+    ctx.rotate((a0+a1)/2);
+    ctx.textAlign="right";
+    ctx.fillStyle="#fff";
+    ctx.font="14px system-ui";
+    ctx.fillText(opt, r-12, 4);
+    ctx.restore();
+  });
+}
+
+function applyResult(val){
+  const phase = state.phases[state.phaseIndex];
+  const c = state.character;
+
+  if(phase==="Race") c.race = val;
+  if(phase==="Power" && val!=="No Power") c.powers.push(val);
+  if(phase==="Weapon" && val!=="No Weapon") c.weapons.push(val);
+  if(phase==="Armor" && val!=="No Armor") c.armors.push(val);
+  if(phase==="Trainer" && val!=="No Trainer") c.trainer = val;
+  if(phase==="Clan" && val!=="No Clan") c.clan = val;
+  if(phase==="Transformation" && val!=="None") c.transformation = val;
+
+  $("buildLog").innerHTML = `<div>${phase}: <b>${escapeHtml(val)}</b></div>` + $("buildLog").innerHTML;
+
+  state.phaseIndex = Math.min(state.phaseIndex+1, state.phases.length-1);
+  refreshUI();
+}
+
+$("spinBtn").addEventListener("click", ()=>{
+  if(spinning) return;
+  const opts = currentOptions();
+  if(!opts.length) return;
+
+  spinning = true;
+  const pick = opts[Math.floor(Math.random()*opts.length)];
   setTimeout(()=>{
-    const pick = opts[Math.floor(Math.random()*opts.length)];
+    spinning = false;
     applyResult(pick);
-    $("buildLog").innerHTML =
-      `<div>${PHASES[currentPhaseIndex]}: <b>${escapeHtml(pick)}</b></div>` +
-      $("buildLog").innerHTML;
-    currentPhaseIndex++;
-    spinning=false;
-    refreshUI();
-    if(currentPhaseIndex >= PHASES.length){
-      toast("All phases complete. Finalize!");
-    }
-  },900);
-}
+  }, 500);
+});
 
-/* ---------- finalize + name ---------- */
-function finalizeBuild(){
-  if(currentPhaseIndex < PHASES.length){
-    toast("Finish all spins first");
-    return;
-  }
-  state.character.finalized = true;
-  openNameModal();
-  refreshUI();
-}
-
-function openNameModal(){
-  $("nameModal").classList.remove("hidden");
-  $("nameInput").value = "";
-}
-
-function confirmName(){
-  const v = $("nameInput").value.trim();
-  if(!v) return;
-  state.character.name = v;
-  $("nameModal").classList.add("hidden");
-  saveState();
-  refreshUI();
-}
-
-/* ---------- UI ---------- */
+/* =========================================================
+   UI REFRESH (BASE)
+========================================================= */
 function refreshUI(){
-  $("wheelTitle").textContent = PHASES[currentPhaseIndex] || "Complete";
-  $("namedTag").textContent = state.character.finalized ? "Finalized" : "Not finalized";
-  drawWheel(currentOptions());
-  saveState();
+  $("wheelTitle").textContent = state.phases[state.phaseIndex];
+  $("wheelHint").textContent = "Spin the wheel";
+  $("phaseTag").textContent = "Phase: " + state.phases[state.phaseIndex];
+  drawWheel();
 }
 
-/* ---------- buttons ---------- */
-$("spinBtn").addEventListener("click", spinWheel);
-$("finalizeBtn").addEventListener("click", finalizeBuild);
-
-/* ---------- init ---------- */
+/* =========================================================
+   INIT
+========================================================= */
 refreshUI();
 </script>
 <script>
