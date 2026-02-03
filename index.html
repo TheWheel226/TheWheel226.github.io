@@ -435,7 +435,9 @@
     </section>
 <!-- ✅ PART 4 / 6 — STATS + PvE + PvP tabs (HTML) + core JS (wheel, tabs, state, rendering) -->
 <!-- Paste this RIGHT AFTER your Part 3 closing </section> -->
-
+<style>
+  .btn[disabled]{opacity:.45; cursor:not-allowed; filter:grayscale(.2)}
+</style>
 <!-- STATS TAB -->
 <section id="tab-stats" class="grid hidden">
   <div class="card">
@@ -719,8 +721,24 @@ const defaultState = ()=>({
 });
 
 let state = defaultState();
-
-function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function storageWorks(){
+  try{
+    const k="__wf_test__";
+    localStorage.setItem(k,"1");
+    localStorage.removeItem(k);
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+function saveState(){
+  if(!storageWorks()){
+    console.warn("LocalStorage blocked — progress will reset on refresh.");
+    $("dailyPill")?.querySelector("strong") && ($("dailyPill").querySelector("strong").textContent = "STORAGE OFF");
+    return;
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -735,7 +753,9 @@ function loadState(){
   }catch(e){}
 }
 loadState();
-
+if(!storageWorks()){
+  toast("⚠️ Storage is blocked: progress will reset on refresh.");
+}
 /* =========================================================
    TABS (FIXES: stats/pve/pvp buttons not working)
 ========================================================= */
@@ -836,6 +856,13 @@ function pickFromWheel(){
 
 async function spinWheel(){
   if(wheelSpinning) return;
+
+  // ✅ LOCK: cannot spin after finalize
+  if(state.character.finalized){
+    toast("Locked: build is finalized.");
+    return;
+  }
+
   wheelSpinning=true;
 
   // spin params
@@ -852,14 +879,22 @@ async function spinWheel(){
 
     if(ticks > minTicks && v < 0.01){
       wheelSpinning=false;
+
+      // ✅ LOCK: extra safety (if finalized during spin somehow)
+      if(state.character.finalized){
+        toast("Locked: build is finalized.");
+        return;
+      }
+
       const result = pickFromWheel();
       state.character.race = result;
       logBuild(`Race → ${result}`);
       $("wheelTitle").textContent = "Race";
       $("wheelHint").textContent = `Result: ${result}`;
       $("buildHint").textContent = `Race chosen: ${result}. Now finalize or new build.`;
-      refreshUI();
+
       saveState();
+      refreshUI();
       return;
     }
     requestAnimationFrame(step);
@@ -930,8 +965,10 @@ function finalizeBuild(){
     return;
   }
   state.character.finalized = true;
+
   $("namedTag").textContent = state.character.name ? `Final: ${state.character.name}` : "Finalized";
-  toast("Build finalized.");
+  toast("Build finalized (race locked).");
+
   saveState();
   refreshUI();
 }
@@ -993,6 +1030,13 @@ function refreshUI(){
   // phase tag
   $("phaseTag").textContent = state.character.finalized ? "Phase: Final" : "Phase: Build";
 
+  // ✅ disable buttons when finalized
+  const locked = !!state.character.finalized;
+  const spinBtn = $("spinBtn");
+  const finBtn  = $("finalizeBtn");
+  if(spinBtn) spinBtn.disabled = locked;
+  if(finBtn)  finBtn.disabled  = locked;
+  
   // portraits (safe)
   applyRaceBase(state.character, "");
   applyRigFraming(state.character, "charFrame");
