@@ -2591,3 +2591,45 @@ $("wheelHint").textContent = "Spin to begin";
 drawWheelPhase();
 refreshUI();
 </script>
+<script>
+/* =========================================================
+   HOTFIX: Rebind Spin/Fast buttons to the NEW spinWheel
+   (because Part 4 attached old function references)
+========================================================= */
+(function rebindSpinButtons(){
+  const spin = $("spinBtn");
+  const fast = $("testFastBtn");
+
+  if(spin){
+    // wipe old listeners by cloning
+    const clone = spin.cloneNode(true);
+    spin.parentNode.replaceChild(clone, spin);
+    clone.addEventListener("click", ()=>spinWheel()); // calls latest spinWheel
+  }
+
+  if(fast){
+    const clone2 = fast.cloneNode(true);
+    fast.parentNode.replaceChild(clone2, fast);
+    clone2.addEventListener("click", ()=>spinWheel());
+  }
+})();
+
+/* =========================================================
+   HOTFIX: Prevent Part 4 refreshUI from forcing "Race" title
+========================================================= */
+const _refreshUI_fix = refreshUI;
+refreshUI = function(){
+  _refreshUI_fix();
+
+  const c = ensureActiveLiving?.() || state.character;
+  if(!c) return;
+
+  // keep wheel UI synced to phase
+  $("wheelTitle").textContent = phaseTitle(c.phase || "race");
+  $("wheelHint").textContent = c.wheelLocked && c.phase==="transform"
+    ? "Build locked"
+    : `Spin for ${phaseTitle(c.phase || "race")}`;
+
+  drawWheelPhase();
+};
+</script>
