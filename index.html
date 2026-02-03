@@ -433,45 +433,28 @@
         </div>
       </div>
     </section>
-  <script>
+<script>
 /* =========================================================
-   PART 4 — CORE ENGINE / STATE / HELPERS
+   PART 4 — CORE ENGINE / WHEEL / PHASES / NAME
 ========================================================= */
 
 /* ---------- helpers ---------- */
-const $ = (id) => document.getElementById(id);
-const escapeHtml = (s)=> String(s??"").replace(/[&<>"']/g,m=>({
+const $ = (id)=>document.getElementById(id);
+const escapeHtml = (s)=>String(s??"").replace(/[&<>"']/g,m=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[m]));
 
 /* ---------- constants ---------- */
-const FLEE_HP_THRESHOLD = 0.28;
-const TRAIT_STEAL_CHANCE = 0.22;
+const PHASES = ["Race","Power","Weapon","Armor","Trainer","Transformation"];
+let currentPhaseIndex = 0;
 
-/* ---------- stat words ---------- */
-const STAT_WORDS = {
-  strength:["Weak","Human","Enhanced","Superhuman","City","Mountain","Continental","Planetary","Stellar","Galactic","Universal","???"],
-  speed:["Immobile","Human","Supersonic","Hypersonic","Lightning","Light","FTL","Massively FTL","Infinite","???"],
-  durability:["Fragile","Human","Enhanced","Steel","City","Mountain","Continental","Planetary","Stellar","Universal","???"],
-  fight:["Untrained","Street","Martial","Elite","Master","Grandmaster","Legendary","Mythic","???"],
-  iq:["Dull","Average","Smart","Genius","Supergenius","Omniscient","???"]
-};
-
-function statWordToNumber(key, word){
-  const list = STAT_WORDS[key] || [];
-  const idx = list.indexOf(word);
-  return idx < 0 ? 0 : idx * 10;
-}
-function labelForStat(key, value){
-  const list = STAT_WORDS[key] || [];
-  const tier = Math.floor(value / 10);
-  return list[Math.min(tier, list.length-1)] || "???";
-}
-
-/* ---------- curse ---------- */
-function computeIsCursed(char){
-  return (char.effects||[]).includes("Cursed");
-}
+/* ---------- options ---------- */
+const RACE_OPTIONS = ["Human","Saiyan","Demon","Angel","God","Dragon"];
+const POWER_OPTIONS = ["Fire","Ice","Lightning","Adaptation","Regeneration","No Power"];
+const WEAPON_OPTIONS = ["Sword","Axe","Hammer","No Weapon"];
+const ARMOR_OPTIONS = ["Berserk Armor","Iron Man Suit","No Armor"];
+const TRAINER_OPTIONS = ["Master Roshi","Jiraiya","Yuujirou","No Trainer"];
+const TRANSFORM_OPTIONS = ["None","Kaioken","Super Saiyan"];
 
 /* ---------- state ---------- */
 function defaultState(){
@@ -483,40 +466,24 @@ function defaultState(){
       powers:[],
       weapons:[],
       armors:[],
-      effects:[],
+      trainer:null,
+      transformation:"None",
       strengthW:"Human",
       speedW:"Human",
       durabilityW:"Human",
       fightW:"Street",
       iqW:"Average",
-      luckW:"5",
-      transformation:"None",
-      transformDetail:null,
-      powerMastery:"None",
-      clan:null,
-      trainer:null
+      luckW:"5"
     },
-    progress:{
-      adaptationStacks:0,
-      soulBonus:{},
-      soulsCaptured:0
-    },
+    progress:{ adaptationStacks:0, soulBonus:{} },
     currency:{ coins:0, xp:0 }
   };
 }
 
-let state;
-try{
-  state = JSON.parse(localStorage.getItem("wheelForgeState")) || defaultState();
-}catch{
-  state = defaultState();
-}
+let state = JSON.parse(localStorage.getItem("wheelForgeState")||"null") || defaultState();
+function saveState(){ localStorage.setItem("wheelForgeState", JSON.stringify(state)); }
 
-function saveState(){
-  localStorage.setItem("wheelForgeState", JSON.stringify(state));
-}
-
-/* ---------- UI ---------- */
+/* ---------- toast ---------- */
 function toast(msg){
   const t = $("toast");
   if(!t) return;
@@ -525,155 +492,202 @@ function toast(msg){
   setTimeout(()=>t.classList.remove("show"),1200);
 }
 
-/* ---------- tabs ---------- */
-document.querySelectorAll(".tab").forEach(tab=>{
-  tab.addEventListener("click",()=>{
-    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-    tab.classList.add("active");
-    document.querySelectorAll("[id^='tab-']").forEach(s=>s.classList.add("hidden"));
-    $("tab-"+tab.dataset.tab)?.classList.remove("hidden");
-  });
-});
+/* ---------- wheel ---------- */
+const canvas = $("wheel");
+const ctx = canvas.getContext("2d");
+let spinning = false;
 
-/* ---------- refresh ---------- */
+function drawWheel(options){
+  const r = canvas.width/2;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const slice = (Math.PI*2)/options.length;
+
+  options.forEach((opt,i)=>{
+    ctx.beginPath();
+    ctx.moveTo(r,r);
+    ctx.arc(r,r,r,i*slice,(i+1)*slice);
+    ctx.fillStyle = i%2 ? "#1b2a44" : "#243a66";
+    ctx.fill();
+    ctx.save();
+    ctx.translate(r,r);
+    ctx.rotate(i*slice+slice/2);
+    ctx.fillStyle="#fff";
+    ctx.font="bold 14px system-ui";
+    ctx.fillText(opt, r*0.55, 4);
+    ctx.restore();
+  });
+}
+
+function currentOptions(){
+  switch(PHASES[currentPhaseIndex]){
+    case "Race": return RACE_OPTIONS;
+    case "Power": return POWER_OPTIONS;
+    case "Weapon": return WEAPON_OPTIONS;
+    case "Armor": return ARMOR_OPTIONS;
+    case "Trainer": return TRAINER_OPTIONS;
+    case "Transformation": return TRANSFORM_OPTIONS;
+  }
+}
+
+function applyResult(result){
+  const c = state.character;
+  switch(PHASES[currentPhaseIndex]){
+    case "Race": c.race=result; break;
+    case "Power": if(result!=="No Power") c.powers.push(result); break;
+    case "Weapon": if(result!=="No Weapon") c.weapons.push(result); break;
+    case "Armor": if(result!=="No Armor") c.armors.push(result); break;
+    case "Trainer": if(result!=="No Trainer") c.trainer=result; break;
+    case "Transformation": c.transformation=result; break;
+  }
+}
+
+function spinWheel(){
+  if(spinning || state.character.finalized) return;
+  spinning=true;
+  const opts = currentOptions();
+  drawWheel(opts);
+  setTimeout(()=>{
+    const pick = opts[Math.floor(Math.random()*opts.length)];
+    applyResult(pick);
+    $("buildLog").innerHTML =
+      `<div>${PHASES[currentPhaseIndex]}: <b>${escapeHtml(pick)}</b></div>` +
+      $("buildLog").innerHTML;
+    currentPhaseIndex++;
+    spinning=false;
+    refreshUI();
+    if(currentPhaseIndex >= PHASES.length){
+      toast("All phases complete. Finalize!");
+    }
+  },900);
+}
+
+/* ---------- finalize + name ---------- */
+function finalizeBuild(){
+  if(currentPhaseIndex < PHASES.length){
+    toast("Finish all spins first");
+    return;
+  }
+  state.character.finalized = true;
+  openNameModal();
+  refreshUI();
+}
+
+function openNameModal(){
+  $("nameModal").classList.remove("hidden");
+  $("nameInput").value = "";
+}
+
+function confirmName(){
+  const v = $("nameInput").value.trim();
+  if(!v) return;
+  state.character.name = v;
+  $("nameModal").classList.add("hidden");
+  saveState();
+  refreshUI();
+}
+
+/* ---------- UI ---------- */
 function refreshUI(){
+  $("wheelTitle").textContent = PHASES[currentPhaseIndex] || "Complete";
   $("namedTag").textContent = state.character.finalized ? "Finalized" : "Not finalized";
+  drawWheel(currentOptions());
   saveState();
 }
+
+/* ---------- buttons ---------- */
+$("spinBtn").addEventListener("click", spinWheel);
+$("finalizeBtn").addEventListener("click", finalizeBuild);
+
+/* ---------- init ---------- */
+refreshUI();
 </script>
 <script>
 /* =========================================================
    PART 5 — ADDITIVE STAT SYSTEM
 ========================================================= */
 
-const MASTERY_RANK = {
-  None:0,Dormant:1,Awakening:2,Controlled:3,Mastered:4,Planetary:5,Cosmic:6,Universal:7,Omnipotent:8
+const STAT_WORDS = {
+  strength:["Weak","Human","Enhanced","Superhuman","City","Mountain","Planetary","Universal","???"],
+  speed:["Slow","Human","Supersonic","Lightning","Light","FTL","Infinite","???"],
+  durability:["Fragile","Human","Steel","City","Mountain","Planetary","Universal","???"],
+  fight:["Untrained","Street","Elite","Master","Legendary","???"],
+  iq:["Dull","Average","Genius","Supergenius","Omniscient","???"]
 };
 
-function masteryAtLeast(c,k){
-  return (MASTERY_RANK[c.powerMastery]||0) >= (MASTERY_RANK[k]||0);
+function statWordToNumber(k,w){
+  const i = (STAT_WORDS[k]||[]).indexOf(w);
+  return i<0?0:i*10;
 }
-
-function parseLuck(c){
-  const n = parseInt(c.luckW||"5",10);
-  return Math.max(1,Math.min(10,n));
+function labelForStat(k,v){
+  const t=Math.floor(v/10);
+  return (STAT_WORDS[k]||[])[Math.min(t,(STAT_WORDS[k]||[]).length-1)]||"???";
 }
 
 function computeFinalStats(c){
-  const base = {
+  const base={
     strength:statWordToNumber("strength",c.strengthW),
     speed:statWordToNumber("speed",c.speedW),
     durability:statWordToNumber("durability",c.durabilityW),
     fight:statWordToNumber("fight",c.fightW),
     iq:statWordToNumber("iq",c.iqW)
   };
-
-  const mods = {strength:0,speed:0,durability:0,fight:0,iq:0};
-
-  if(masteryAtLeast(c,"Cosmic")) mods.strength+=2,mods.speed+=2;
-  if(masteryAtLeast(c,"Universal")) mods.strength+=3,mods.speed+=3,mods.durability+=3;
-
-  mods.durability += state.progress.adaptationStacks||0;
-  Object.keys(state.progress.soulBonus||{}).forEach(k=>{
-    mods[k]+=state.progress.soulBonus[k];
+  Object.keys(state.progress.soulBonus).forEach(k=>{
+    base[k]+=state.progress.soulBonus[k];
   });
-
-  const out = {};
-  Object.keys(base).forEach(k=>{
-    out[k] = base[k]+mods[k];
-  });
-
-  out.luck = parseLuck(c);
-  out.labels = {
-    strength:labelForStat("strength",out.strength),
-    speed:labelForStat("speed",out.speed),
-    durability:labelForStat("durability",out.durability),
-    fight:labelForStat("fight",out.fight),
-    iq:labelForStat("iq",out.iq)
+  base.luck=parseInt(c.luckW)||5;
+  base.labels={
+    strength:labelForStat("strength",base.strength),
+    speed:labelForStat("speed",base.speed),
+    durability:labelForStat("durability",base.durability),
+    fight:labelForStat("fight",base.fight),
+    iq:labelForStat("iq",base.iq)
   };
-  out.isCursed = computeIsCursed(c);
-  return out;
+  return base;
 }
-
-const _refreshUI_P5 = refreshUI;
-refreshUI = function(){
-  _refreshUI_P5();
-};
 </script>
 <script>
 /* =========================================================
-   PART 6 — BATTLES + BUTTON WIRING
+   PART 6 — PvE / PvP
 ========================================================= */
 
+const FLEE_HP_THRESHOLD = 0.3;
+
 function fleeChanceFromSpeedGap(p,e){
-  const d = Math.abs(p-e);
-  if(d > 40) return 0;
-  return Math.max(0.05, 1 - d/40);
+  const d=Math.abs(p-e);
+  if(d>40) return 0;
+  return Math.max(0.05,1-d/40);
 }
+function roll(c){return Math.random()<c;}
 
-function roll(c){ return Math.random()<c; }
-
-function computeHP(s){
-  return 60 + s.durability*8 + s.fight*2;
-}
-
+function computeHP(s){ return 60 + s.durability*8 + s.fight*2; }
 function computeDamage(a,d){
-  const atk = a.strength*2 + a.fight*3 + a.speed;
-  const mit = d.durability*2 + d.fight;
-  return Math.max(5, Math.round((atk - mit*0.6) * (0.85+Math.random()*0.3)));
+  return Math.max(5,Math.round((a.strength*2+a.fight*3)-(d.durability*1.5)));
 }
 
-function tryFlee(p,e){
-  const ch = fleeChanceFromSpeedGap(p.speed,e.speed);
-  if(ch<=0) return false;
-  return roll(ch);
-}
-
-/* ---------- PvP ---------- */
 async function startPVP(){
-  if(!state.character.finalized){
-    toast("Finalize your build first");
-    return;
-  }
-  const pStats = computeFinalStats(state.character);
-  const eStats = { ...pStats, strength:pStats.strength-5 };
-
-  let pHP = computeHP(pStats);
-  let eHP = computeHP(eStats);
-
-  while(pHP>0 && eHP>0){
-    if(pHP/computeHP(pStats) < FLEE_HP_THRESHOLD && tryFlee(pStats,eStats)){
+  if(!state.character.finalized){toast("Finalize first");return;}
+  const p=computeFinalStats(state.character);
+  const e={...p,strength:p.strength-10};
+  let php=computeHP(p),ehp=computeHP(e);
+  while(php>0&&ehp>0){
+    if(php/computeHP(p)<FLEE_HP_THRESHOLD && roll(fleeChanceFromSpeedGap(p.speed,e.speed))){
       toast("You fled!");
       return;
     }
-    eHP -= computeDamage(pStats,eStats);
-    if(eHP<=0) break;
-    pHP -= computeDamage(eStats,pStats);
+    ehp-=computeDamage(p,e);
+    if(ehp<=0) break;
+    php-=computeDamage(e,p);
     await new Promise(r=>setTimeout(r,80));
   }
-
-  toast(pHP>0?"PvP Victory!":"Defeat");
+  toast(php>0?"PvP Victory!":"Defeat");
 }
 
-/* ---------- PvE ---------- */
 async function startPVE(){
-  if(!state.character.finalized){
-    toast("Finalize your build first");
-    return;
-  }
-  toast("PvE encounter complete!");
+  if(!state.character.finalized){toast("Finalize first");return;}
+  toast("PvE victory!");
 }
 
 /* ---------- buttons ---------- */
-$("spinBtn")?.addEventListener("click",()=>toast("Spin wired ✅"));
-$("finalizeBtn")?.addEventListener("click",()=>{
-  state.character.finalized = true;
-  toast("Build finalized");
-  refreshUI();
-});
 $("pvpStartBtn")?.addEventListener("click", startPVP);
 $("pveStartBtn")?.addEventListener("click", startPVE);
-
-/* ---------- init ---------- */
-refreshUI();
 </script>
