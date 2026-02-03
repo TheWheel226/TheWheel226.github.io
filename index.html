@@ -433,766 +433,247 @@
         </div>
       </div>
     </section>
-   <!-- =========================
-PART 5 / 6 — CONTINUED (paste after your current Part 4)
-========================= -->
+  <script>
+/* =========================================================
+   PART 4 — CORE ENGINE / STATE / HELPERS
+========================================================= */
+
+/* ---------- helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const escapeHtml = (s)=> String(s??"").replace(/[&<>"']/g,m=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[m]));
+
+/* ---------- constants ---------- */
+const FLEE_HP_THRESHOLD = 0.28;
+const TRAIT_STEAL_CHANCE = 0.22;
+
+/* ---------- stat words ---------- */
+const STAT_WORDS = {
+  strength:["Weak","Human","Enhanced","Superhuman","City","Mountain","Continental","Planetary","Stellar","Galactic","Universal","???"],
+  speed:["Immobile","Human","Supersonic","Hypersonic","Lightning","Light","FTL","Massively FTL","Infinite","???"],
+  durability:["Fragile","Human","Enhanced","Steel","City","Mountain","Continental","Planetary","Stellar","Universal","???"],
+  fight:["Untrained","Street","Martial","Elite","Master","Grandmaster","Legendary","Mythic","???"],
+  iq:["Dull","Average","Smart","Genius","Supergenius","Omniscient","???"]
+};
+
+function statWordToNumber(key, word){
+  const list = STAT_WORDS[key] || [];
+  const idx = list.indexOf(word);
+  return idx < 0 ? 0 : idx * 10;
+}
+function labelForStat(key, value){
+  const list = STAT_WORDS[key] || [];
+  const tier = Math.floor(value / 10);
+  return list[Math.min(tier, list.length-1)] || "???";
+}
+
+/* ---------- curse ---------- */
+function computeIsCursed(char){
+  return (char.effects||[]).includes("Cursed");
+}
+
+/* ---------- state ---------- */
+function defaultState(){
+  return {
+    character:{
+      finalized:false,
+      name:"",
+      race:null,
+      powers:[],
+      weapons:[],
+      armors:[],
+      effects:[],
+      strengthW:"Human",
+      speedW:"Human",
+      durabilityW:"Human",
+      fightW:"Street",
+      iqW:"Average",
+      luckW:"5",
+      transformation:"None",
+      transformDetail:null,
+      powerMastery:"None",
+      clan:null,
+      trainer:null
+    },
+    progress:{
+      adaptationStacks:0,
+      soulBonus:{},
+      soulsCaptured:0
+    },
+    currency:{ coins:0, xp:0 }
+  };
+}
+
+let state;
+try{
+  state = JSON.parse(localStorage.getItem("wheelForgeState")) || defaultState();
+}catch{
+  state = defaultState();
+}
+
+function saveState(){
+  localStorage.setItem("wheelForgeState", JSON.stringify(state));
+}
+
+/* ---------- UI ---------- */
+function toast(msg){
+  const t = $("toast");
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1200);
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    document.querySelectorAll("[id^='tab-']").forEach(s=>s.classList.add("hidden"));
+    $("tab-"+tab.dataset.tab)?.classList.remove("hidden");
+  });
+});
+
+/* ---------- refresh ---------- */
+function refreshUI(){
+  $("namedTag").textContent = state.character.finalized ? "Finalized" : "Not finalized";
+  saveState();
+}
+</script>
 <script>
 /* =========================================================
-   ADDITIVE STAT MATH + EFFECT SYSTEM (continued)
+   PART 5 — ADDITIVE STAT SYSTEM
 ========================================================= */
-const MASTERY_RANK = { "None":0, "Dormant":1, "Awakening":2, "Controlled":3, "Mastered":4, "Planetary":5, "Cosmic":6, "Universal":7, "Omnipotent":8 };
 
-function masteryAtLeast(char, key){
-  const cur = MASTERY_RANK[char.powerMastery || "None"] || 0;
-  return cur >= (MASTERY_RANK[key] || 0);
+const MASTERY_RANK = {
+  None:0,Dormant:1,Awakening:2,Controlled:3,Mastered:4,Planetary:5,Cosmic:6,Universal:7,Omnipotent:8
+};
+
+function masteryAtLeast(c,k){
+  return (MASTERY_RANK[c.powerMastery]||0) >= (MASTERY_RANK[k]||0);
 }
 
-function parseLuck(char){
-  const n = parseInt(char.luckW || "0", 10);
-  return Number.isFinite(n) ? Math.max(1, Math.min(10, n)) : 1;
+function parseLuck(c){
+  const n = parseInt(c.luckW||"5",10);
+  return Math.max(1,Math.min(10,n));
 }
 
-function statBaseFromWords(char){
-  const strength = statWordToNumber("strength", char.strengthW);
-  const speed    = statWordToNumber("speed", char.speedW);
-  const dura     = statWordToNumber("durability", char.durabilityW);
-  const fight    = statWordToNumber("fight", char.fightW);
-  const iq       = statWordToNumber("iq", char.iqW);
-  return { strength, speed, durability:dura, fight, iq };
-}
-
-/* --- additive mods from lists --- */
-function addMods(mods, add){
-  for(const k of Object.keys(add)){
-    mods[k] = (mods[k] || 0) + add[k];
-  }
-}
-
-function powerMods(power){
-  switch(power){
-    case "Adaptation": return { durability:2, fight:1 };
-    case "Regeneration": return { durability:3 };
-    case "Gravity Manipulation": return { strength:2, fight:1 };
-    case "Time Manipulation": return { speed:3, iq:1 };
-    case "Telekinesis": return { iq:2, fight:1 };
-    case "Teleportation": return { speed:2 };
-    case "Fire": return { strength:1 };
-    case "Ice Manipulation": return { durability:1 };
-    case "Lightning": return { speed:2 };
-    case "Weapon Creation": return { fight:2 };
-    case "Heavenly Restriction": return { strength:3, speed:2, durability:2, fight:2, iq:-1 };
-    case "Immortal": return { durability:4 };
-    case "Rinnegan": return { iq:2, fight:2 };
-    default: return {};
-  }
-}
-
-function weaponMods(weapon){
-  switch(weapon){
-    case "Sword": return { fight:2 };
-    case "Scythe": return { fight:2, strength:1 };
-    case "Axe": return { strength:2 };
-    case "Hammer": return { strength:2, durability:1 };
-    case "Spear": return { fight:1, speed:1 };
-    case "Brass Knuckles": return { fight:1, strength:1 };
-    case "Blades of Chaos": return { fight:2, speed:1 };
-    case "Samehada": return { durability:1, fight:2 };
-    case "Uzumaki Chains": return { durability:2, fight:1 };
-    case "Infinity Gauntlet": return { strength:3, durability:3, iq:2, fight:2 };
-    case "Green Lantern Ring": return { iq:3, durability:2 };
-    default: return {};
-  }
-}
-
-function armorMods(armor){
-  switch(armor){
-    case "Berserk Armor": return { strength:2, durability:2, fight:1 };
-    case "Iron Man Suit": return { speed:2, durability:2, iq:1 };
-    case "Jauger": return { durability:2 };
-    case "Symbiote": return { strength:1, speed:1, durability:1, fight:1 };
-    case "Ashborn's Armor": return { durability:3, fight:1 };
-    case "Rock Lee Weights": return { speed:-2, strength:2, durability:1 };
-    case "Goku's Gi": return { fight:1 };
-    default: return {};
-  }
-}
-
-function trainerMods(trainer){
-  switch(trainer){
-    case "Master Roshi": return { fight:2, iq:1 };
-    case "Jiraiya": return { fight:2, iq:1 };
-    case "Hisoka": return { fight:2, iq:1 };
-    case "Korro": return { durability:1, fight:1 };
-    case "Yuujirou": return { strength:3, fight:2 };
-    default: return {};
-  }
-}
-
-function clanMods(clan){
-  switch(clan){
-    case "Uchiha": return { fight:2, iq:1 };
-    case "Gojo": return { iq:2, speed:1 };
-    case "D Clan": return { durability:1, fight:1 };
-    case "Kamado": return { fight:2 };
-    default: return {};
-  }
-}
-
-/* Transform multipliers/additions (kept simple but additive-ready) */
-function transformMods(char){
-  const t = char.transformation;
-  const d = char.transformDetail?.value || "None";
-  if(!t || t === "None" || d === "None") return { add:{}, mult:{} };
-
-  if(t === "Kaioken"){
-    const m = parseInt(String(d).replace("X",""),10);
-    const mul = Number.isFinite(m) ? Math.min(100, Math.max(2, m)) : 2;
-    return { add:{}, mult:{ strength:1+mul*0.03, speed:1+mul*0.03, durability:1+mul*0.01, fight:1+mul*0.02 } };
-  }
-  if(t === "Eight Gates"){
-    const is8 = String(d).toLowerCase().includes("eighth");
-    const gateIndex = Math.max(0, GATES_OPTIONS.indexOf(d));
-    const boost = is8 ? 10 : 1 + gateIndex*0.8;
-    return { add:{ strength:boost, speed:boost, fight:Math.floor(boost*0.7) }, mult:{} };
-  }
-  if(t === "Super Saiyan"){
-    const idx = Math.max(0, SAIYAN_FORM_OPTIONS.indexOf(d));
-    return { add:{ strength:2+idx*2, speed:1+idx, durability:1+idx, fight:1+idx }, mult:{} };
-  }
-  if(t === "Titan Transformation"){
-    const idx = Math.max(0, TITAN_TYPE_OPTIONS.indexOf(d));
-    return { add:{ strength:2+idx, durability:3+idx, fight:1+Math.floor(idx/2) }, mult:{} };
-  }
-  if(t === "Tailed Beast"){
-    const idx = Math.max(0, TAILED_BEAST_OPTIONS.indexOf(d));
-    return { add:{ strength:idx, durability:idx, speed:Math.floor(idx/2), fight:Math.floor(idx/2) }, mult:{} };
-  }
-  return { add:{}, mult:{} };
-}
-
-/* =========================================================
-   FINAL COMPUTED STATS (numbers + label)
-========================================================= */
-function computeFinalStats(char){
-  const base = statBaseFromWords(char);
-  const mods = { strength:0, speed:0, durability:0, fight:0, iq:0 };
-
-  // add from powers/weapons/armor
-  (char.powers || []).forEach(p => addMods(mods, powerMods(p)));
-  (char.weapons || []).forEach(w => addMods(mods, weaponMods(w)));
-  (char.armors || []).forEach(a => addMods(mods, armorMods(a)));
-
-  // trainer/clan
-  addMods(mods, trainerMods(char.trainer));
-  addMods(mods, clanMods(char.clan));
-
-  // mastery bump
-  if(masteryAtLeast(char,"Mastered")) addMods(mods, { fight:1, durability:1 });
-  if(masteryAtLeast(char,"Cosmic")) addMods(mods, { strength:2, speed:2, iq:1 });
-  if(masteryAtLeast(char,"Universal")) addMods(mods, { strength:3, speed:3, durability:3, fight:2, iq:2 });
-
-  // adaptation stacks (permanent)
-  if((char.powers || []).includes("Adaptation")){
-    addMods(mods, { durability: state.progress.adaptationStacks || 0 });
-  }
-
-  // soul bonus (permanent)
-  addMods(mods, state.progress.soulBonus || {});
-
-  // transformation
-  const tm = transformMods(char);
-
-  // apply
-  let out = {
-    strength: base.strength + mods.strength + (tm.add.strength||0),
-    speed: base.speed + mods.speed + (tm.add.speed||0),
-    durability: base.durability + mods.durability + (tm.add.durability||0),
-    fight: base.fight + mods.fight + (tm.add.fight||0),
-    iq: base.iq + mods.iq + (tm.add.iq||0),
-    luck: parseLuck(char)
+function computeFinalStats(c){
+  const base = {
+    strength:statWordToNumber("strength",c.strengthW),
+    speed:statWordToNumber("speed",c.speedW),
+    durability:statWordToNumber("durability",c.durabilityW),
+    fight:statWordToNumber("fight",c.fightW),
+    iq:statWordToNumber("iq",c.iqW)
   };
 
-  // multipliers
-  for(const k of ["strength","speed","durability","fight","iq"]){
-    const mul = tm.mult[k] || 1;
-    out[k] = Math.round(out[k] * mul);
-  }
+  const mods = {strength:0,speed:0,durability:0,fight:0,iq:0};
 
-  // labels
+  if(masteryAtLeast(c,"Cosmic")) mods.strength+=2,mods.speed+=2;
+  if(masteryAtLeast(c,"Universal")) mods.strength+=3,mods.speed+=3,mods.durability+=3;
+
+  mods.durability += state.progress.adaptationStacks||0;
+  Object.keys(state.progress.soulBonus||{}).forEach(k=>{
+    mods[k]+=state.progress.soulBonus[k];
+  });
+
+  const out = {};
+  Object.keys(base).forEach(k=>{
+    out[k] = base[k]+mods[k];
+  });
+
+  out.luck = parseLuck(c);
   out.labels = {
-    strength: labelForStat("strength", out.strength),
-    speed: labelForStat("speed", out.speed),
-    durability: labelForStat("durability", out.durability),
-    fight: labelForStat("fight", out.fight),
-    iq: labelForStat("iq", out.iq),
+    strength:labelForStat("strength",out.strength),
+    speed:labelForStat("speed",out.speed),
+    durability:labelForStat("durability",out.durability),
+    fight:labelForStat("fight",out.fight),
+    iq:labelForStat("iq",out.iq)
   };
-
-  out.isCursed = computeIsCursed(char);
-
+  out.isCursed = computeIsCursed(c);
   return out;
 }
 
-/* =========================================================
-   STATS TAB RENDER
-========================================================= */
-function renderStatsTab(){
-  const host = $("statsList");
-  const host2 = $("finalStatsList");
-  if(!host || !host2) return;
-
-  const c = state.character;
-  host.innerHTML = "";
-  host2.innerHTML = "";
-
-  const lines = buildStatLines();
-  for(const [k,v] of lines){
-    const div = document.createElement("div");
-    div.className = "statLine";
-    div.innerHTML = `<div class="statKey">${escapeHtml(k)}</div><div class="statVal">${escapeHtml(v)}</div>`;
-    host.appendChild(div);
-  }
-
-  const fin = computeFinalStats(c);
-  const statOrder = [
-    ["strength","Strength"],
-    ["speed","Speed"],
-    ["durability","Durability"],
-    ["fight","Fight"],
-    ["iq","IQ"],
-    ["luck","Luck"],
-  ];
-
-  statOrder.forEach(([key,label])=>{
-    const div = document.createElement("div");
-    div.className = "statLine";
-    if(key === "luck"){
-      div.innerHTML = `<div class="statKey">${label}</div><div class="statVal">${fin.luck}</div>`;
-    } else {
-      const word = fin.labels[key];
-      div.innerHTML = `<div class="statKey">${label}</div><div class="statVal">${word} <span class="muted">(${fin[key]})</span></div>`;
-    }
-    host2.appendChild(div);
-  });
-}
-
-/* Extend refreshUI to update stats tab content */
-const _refreshUI_p5 = refreshUI;
+const _refreshUI_P5 = refreshUI;
 refreshUI = function(){
-  _refreshUI_p5();
-  renderStatsTab();
+  _refreshUI_P5();
 };
 </script>
-    <!-- =========================
-PART 6 / 6 — PvE/PvP battles + flee + steal/copy + soul stone + loot UI
-PASTE SIXTH (last)
-========================= -->
 <script>
 /* =========================================================
-   BATTLE HELPERS
+   PART 6 — BATTLES + BUTTON WIRING
 ========================================================= */
-function logPVP(msg){
-  const el = $("pvpLog");
-  if(!el) return;
-  const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  el.innerHTML = `<div><span class="muted">[${time}]</span> ${escapeHtml(msg)}</div>` + el.innerHTML;
-}
-function logPVE(msg){
-  const el = $("pveLog");
-  if(!el) return;
-  const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  el.innerHTML = `<div><span class="muted">[${time}]</span> ${escapeHtml(msg)}</div>` + el.innerHTML;
-}
-function setHP(barId, pct){
-  const el = $(barId);
-  if(!el) return;
-  el.style.width = `${Math.max(0, Math.min(1, pct)) * 100}%`;
-}
-function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
 
-function roll(chance){
-  return Math.random() < chance;
+function fleeChanceFromSpeedGap(p,e){
+  const d = Math.abs(p-e);
+  if(d > 40) return 0;
+  return Math.max(0.05, 1 - d/40);
 }
 
-/* =========================================================
-   SIMPLE ENEMY GENERATION (event enemies + pvp opponents)
-========================================================= */
-function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function roll(c){ return Math.random()<c; }
 
-function genEnemyBase(){
-  // lightweight opponent generator (not a full wheel build)
-  const race = randomFrom(RACE_OPTIONS);
-  const enemy = {
-    name: "Enemy",
-    race,
-    demi:null, werebeastType:null, demiTraits:[],
-    powers:[], weapons:[], armors:[], effects:[],
-    powerMastery: randomFrom(POWER_MASTERY_OPTIONS),
-    clan: randomFrom(CLAN_OPTIONS),
-    trainer: randomFrom(TRAINER_OPTIONS),
-    transformation: randomFrom(TRANSFORM_OPTIONS),
-    transformDetail:null,
-
-    strengthW: randomFrom(STRENGTH_WORDS),
-    speedW: randomFrom(SPEED_WORDS),
-    durabilityW: randomFrom(DUR_WORDS),
-    fightW: randomFrom(FIGHT_WORDS),
-    iqW: randomFrom(IQ_WORDS),
-    luckW: String(Math.floor(1+Math.random()*10))
-  };
-
-  // small chance to have some gear/power
-  if(Math.random() < 0.75) enemy.powers.push(randomFrom(POWER_OPTIONS));
-  if(Math.random() < 0.75) enemy.weapons.push(randomFrom(WEAPON_OPTIONS));
-  if(Math.random() < 0.65) enemy.armors.push(randomFrom(ARMOR_OPTIONS));
-
-  // transform detail
-  if(enemy.transformation === "Kaioken") enemy.transformDetail = {kind:"kaioken", value: randomFrom(KAIOKEN_OPTIONS)};
-  if(enemy.transformation === "Eight Gates") enemy.transformDetail = {kind:"gates", value: randomFrom(GATES_OPTIONS)};
-  if(enemy.transformation === "Super Saiyan") enemy.transformDetail = {kind:"ssj", value: randomFrom(SAIYAN_FORM_OPTIONS)};
-  if(enemy.transformation === "Titan Transformation") enemy.transformDetail = {kind:"titan", value: randomFrom(TITAN_TYPE_OPTIONS)};
-  if(enemy.transformation === "Tailed Beast") enemy.transformDetail = {kind:"tailed", value: randomFrom(TAILED_BEAST_OPTIONS)};
-
-  // tame "No Power/Weapon/Armor"
-  enemy.powers = enemy.powers.filter(x=>x && x!=="No Power");
-  enemy.weapons = enemy.weapons.filter(x=>x && x!=="No Weapon");
-  enemy.armors = enemy.armors.filter(x=>x && x!=="No Armor");
-
-  return enemy;
+function computeHP(s){
+  return 60 + s.durability*8 + s.fight*2;
 }
 
-/* =========================================================
-   FLEE LOGIC (only if speeds close enough, and scales by gap)
-========================================================= */
-function tryFlee(playerStats, enemyStats, logger){
-  const chance = fleeChanceFromSpeedGap(playerStats.speed, enemyStats.speed);
-  if(chance <= 0){
-    logger(`Flee failed: speed gap too large.`);
-    return { fled:false };
-  }
-  if(roll(chance)){
-    logger(`Flee succeeded! (chance ${(chance*100).toFixed(0)}%)`);
-    return { fled:true };
-  }
-  logger(`Flee failed. (chance ${(chance*100).toFixed(0)}%)`);
-  return { fled:false };
+function computeDamage(a,d){
+  const atk = a.strength*2 + a.fight*3 + a.speed;
+  const mit = d.durability*2 + d.fight;
+  return Math.max(5, Math.round((atk - mit*0.6) * (0.85+Math.random()*0.3)));
 }
 
-/* =========================================================
-   DAMAGE MODEL (simple but additive)
-========================================================= */
-function computeHP(stats){
-  // durability is the biggest HP driver
-  return 60 + stats.durability*8 + stats.fight*2;
-}
-function computeDamage(att, def){
-  const atk = att.strength*2 + att.fight*3 + att.speed;
-  const mitig = def.durability*2 + def.fight;
-  const base = Math.max(8, atk - mitig*0.65);
-  // luck small variance
-  const varMul = 0.85 + (att.luck-1) * 0.03 + Math.random()*0.18;
-  return Math.round(base * varMul);
+function tryFlee(p,e){
+  const ch = fleeChanceFromSpeedGap(p.speed,e.speed);
+  if(ch<=0) return false;
+  return roll(ch);
 }
 
-/* =========================================================
-   SOUL STONE (Infinity Gauntlet captures souls)
-========================================================= */
-function hasSoulStone(char){
-  return (char.weapons || []).includes("Infinity Gauntlet");
-}
-async function soulStonePickBonus(){
-  const choices = [
-    { label:"+1 Strength", value:"strength" },
-    { label:"+1 Speed", value:"speed" },
-    { label:"+1 Durability", value:"durability" },
-    { label:"+1 Fight", value:"fight" },
-    { label:"+1 IQ", value:"iq" },
-  ];
-  const picked = await openChoiceModal({
-    title:"Soul Stone",
-    sub:"Choose a permanent +1 bonus stat.",
-    options: choices
-  });
-  if(!picked) return;
-  state.progress.soulsCaptured = (state.progress.soulsCaptured || 0) + 1;
-  state.progress.soulBonus[picked] = (state.progress.soulBonus[picked] || 0) + 1;
-  saveState();
-  toast(`Soul captured: +1 ${picked.toUpperCase()}`);
-}
-
-/* =========================================================
-   ADAPTATION (permanent stacks on wins if you have Adaptation)
-========================================================= */
-function applyAdaptationWin(char){
-  if(!(char.powers || []).includes("Adaptation")) return;
-  state.progress.adaptationStacks = (state.progress.adaptationStacks || 0) + 1;
-  saveState();
-}
-
-/* =========================================================
-   STEAL / COPY (additive)
-========================================================= */
-function showStealPopup(text){
-  const p = $("stealPopup");
-  if(!p) return;
-  p.textContent = text;
-  p.classList.remove("hidden");
-  setTimeout(()=>p.classList.add("hidden"), 1100);
-}
-function playStealAnim(text){
-  const wrap = $("stealAnim");
-  const chip = $("stealChip");
-  if(!wrap || !chip) return;
-
-  wrap.classList.remove("hidden");
-  chip.textContent = text;
-  chip.style.left = "50%";
-  chip.style.top = "18%";
-
-  chip.classList.remove("flyNow");
-  void chip.offsetWidth;
-  chip.classList.add("flyNow");
-
-  setTimeout(()=>wrap.classList.add("hidden"), 750);
-}
-
-function enemyTraitsPool(enemy){
-  const pool = [];
-  (enemy.powers||[]).forEach(x => x && x!=="No Power" && pool.push({kind:"power", value:x}));
-  (enemy.weapons||[]).forEach(x => x && x!=="No Weapon" && pool.push({kind:"weapon", value:x}));
-  (enemy.armors||[]).forEach(x => x && x!=="No Armor" && pool.push({kind:"armor", value:x}));
-  if(enemy.clan && enemy.clan!=="No Clan") pool.push({kind:"clan", value:enemy.clan});
-  if(enemy.trainer && enemy.trainer!=="No Trainer") pool.push({kind:"trainer", value:enemy.trainer});
-  if(enemy.transformation && enemy.transformation!=="None") pool.push({kind:"transform", value:enemy.transformation});
-  return pool;
-}
-
-function addTraitToPlayer(tr){
-  const c = state.character;
-  if(tr.kind === "power"){
-    c.powers ||= [];
-    if(!c.powers.includes(tr.value)) c.powers.push(tr.value);
-  }
-  if(tr.kind === "weapon"){
-    c.weapons ||= [];
-    if(!c.weapons.includes(tr.value)) c.weapons.push(tr.value);
-  }
-  if(tr.kind === "armor"){
-    c.armors ||= [];
-    if(!c.armors.includes(tr.value)) c.armors.push(tr.value);
-  }
-  if(tr.kind === "clan"){
-    // additive: keep a list instead of swap
-    c.fusions ||= [];
-    if(!c.fusions.includes(`Clan:${tr.value}`)) c.fusions.push(`Clan:${tr.value}`);
-  }
-  if(tr.kind === "trainer"){
-    c.fusions ||= [];
-    if(!c.fusions.includes(`Trainer:${tr.value}`)) c.fusions.push(`Trainer:${tr.value}`);
-  }
-  if(tr.kind === "transform"){
-    c.fusions ||= [];
-    if(!c.fusions.includes(`Transform:${tr.value}`)) c.fusions.push(`Transform:${tr.value}`);
-  }
-}
-
-async function maybeStealTrait(enemy, logger){
-  const now = Date.now();
-  // small cooldown so it doesn't spam
-  if(now - (state.progress.lastStolenAt || 0) < 5000) return;
-
-  const pool = enemyTraitsPool(enemy);
-  if(pool.length === 0) return;
-
-  if(!roll(TRAIT_STEAL_CHANCE)) return;
-
-  const pick = randomFrom(pool);
-  addTraitToPlayer(pick);
-  state.progress.lastStolenAt = now;
-  saveState();
-
-  showStealPopup(`Stole ${pick.kind}: ${pick.value}`);
-  playStealAnim(`+ ${pick.value}`);
-  playStealSound();
-  logger(`Stole ${pick.kind}: ${pick.value} (additive).`);
-}
-
-/* =========================================================
-   PVP BATTLE
-========================================================= */
+/* ---------- PvP ---------- */
 async function startPVP(){
   if(!state.character.finalized){
-    toast("Finalize your build first.");
+    toast("Finalize your build first");
     return;
   }
-  $("pvpLog").innerHTML = "";
-  const player = state.character;
-  const enemy = genEnemyBase();
-
-  // set portraits
-  applyRaceBase(player, "p_"); applyRigFraming(player, "p_charFrame"); applyDemiTraits(player, "p_"); applyIdleFx(player, "p_");
-  applyRaceBase(enemy, "e_"); applyRigFraming(enemy, "e_charFrame"); applyDemiTraits(enemy, "e_"); applyIdleFx(enemy, "e_");
-
-  $("p_roleTag").textContent = player.name ? player.name : "You";
-  $("e_roleTag").textContent = "Opponent";
-
-  const pStats = computeFinalStats(player);
-  const eStats = computeFinalStats(enemy);
+  const pStats = computeFinalStats(state.character);
+  const eStats = { ...pStats, strength:pStats.strength-5 };
 
   let pHP = computeHP(pStats);
   let eHP = computeHP(eStats);
-  let pMax = pHP, eMax = eHP;
 
-  setHP("p_hp", 1); setHP("e_hp", 1);
-
-  logPVP(`Match started vs ${enemy.race}.`);
-  if(pStats.isCursed) logPVP(`The arena laughs… cursed build detected.`);
-  if(eStats.isCursed) logPVP(`Opponent is cursed too.`);
-
-  // battle loop
-  let turn = 0;
-  while(pHP > 0 && eHP > 0 && turn < 60){
-    turn++;
-
-    // flee check (only if low HP)
-    if(pHP / pMax <= FLEE_HP_THRESHOLD){
-      const flee = tryFlee(pStats, eStats, logPVP);
-      if(flee.fled){
-        logPVP("You fled the match.");
-        return;
-      }
+  while(pHP>0 && eHP>0){
+    if(pHP/computeHP(pStats) < FLEE_HP_THRESHOLD && tryFlee(pStats,eStats)){
+      toast("You fled!");
+      return;
     }
-
-    // speed decides who hits first
-    const playerFirst = (pStats.speed + Math.random()*3) >= (eStats.speed + Math.random()*3);
-
-    const doHit = (attStats, defStats, who, whoHPRef) => {
-      const dmg = computeDamage(attStats, defStats);
-      if(who === "enemy"){
-        eHP -= dmg;
-        logPVP(`You hit for ${dmg}.`);
-        setHP("e_hp", eHP/eMax);
-      } else {
-        pHP -= dmg;
-        logPVP(`Enemy hit for ${dmg}.`);
-        setHP("p_hp", pHP/pMax);
-      }
-    };
-
-    if(playerFirst){
-      doHit(pStats, eStats, "enemy");
-      if(eHP > 0) doHit(eStats, pStats, "player");
-    } else {
-      doHit(eStats, pStats, "player");
-      if(pHP > 0) doHit(pStats, eStats, "enemy");
-    }
-
-    // steal chance
-    await maybeStealTrait(enemy, logPVP);
-
-    // tiny delay so UI feels alive
-    await new Promise(r=>setTimeout(r, 80));
+    eHP -= computeDamage(pStats,eStats);
+    if(eHP<=0) break;
+    pHP -= computeDamage(eStats,pStats);
+    await new Promise(r=>setTimeout(r,80));
   }
 
-  if(pHP <= 0){
-    logPVP("Defeat.");
-    playBlockSound();
-    return;
-  }
-
-  logPVP("Victory!");
-  state.progress.pvpWins = (state.progress.pvpWins || 0) + 1;
-  state.currency.coins = (state.currency.coins || 0) + 20;
-  state.currency.xp = (state.currency.xp || 0) + 10;
-
-  saveState();
-
-  // progress UI fun
-  showPlusOneOnClosestSlot();
-  pulseClosestLockedBar();
-
-  applyAdaptationWin(player);
-  checkSlotUnlocks();
-
-  if(hasSoulStone(player)){
-    await soulStonePickBonus();
-  }
-
-  // show loot modal
-  openLootModal({
-    title:"PvP Victory",
-    sub:`You defeated a ${enemy.race}.`,
-    rewards:[
-      {label:"Coins", note:"+20", value:`${state.currency.coins}`},
-      {label:"XP", note:"+10", value:`${state.currency.xp}`},
-    ],
-    traitEvents:[
-      {label:"Trait Progress", note:"Closest slot +1", value:""},
-      {label:"Adaptation", note: (player.powers||[]).includes("Adaptation") ? "+1 stack" : "—", value:`${state.progress.adaptationStacks||0}`},
-      {label:"Souls", note: hasSoulStone(player) ? "+1 if chosen" : "—", value:`${state.progress.soulsCaptured||0}`},
-    ],
-    progress:[
-      {label:"PvP Wins", note:"+1", value:`${state.progress.pvpWins}`},
-    ]
-  });
-
-  refreshUI();
+  toast(pHP>0?"PvP Victory!":"Defeat");
 }
 
-/* =========================================================
-   PVE BATTLE
-========================================================= */
+/* ---------- PvE ---------- */
 async function startPVE(){
   if(!state.character.finalized){
-    toast("Finalize your build first.");
+    toast("Finalize your build first");
     return;
   }
-  $("pveLog").innerHTML = "";
-  const player = state.character;
+  toast("PvE encounter complete!");
+}
 
-  // stronger event enemy
-  const enemy = genEnemyBase();
-  enemy.name = "Event Enemy";
-  enemy.powerMastery = randomFrom(["Controlled","Mastered","Cosmic","Universal"]);
-  if(Math.random() < 0.9) enemy.powers.push(randomFrom(POWER_OPTIONS));
-
-  applyRaceBase(player, "pve_p_"); applyRigFraming(player, "pve_p_charFrame"); applyDemiTraits(player, "pve_p_"); applyIdleFx(player, "pve_p_");
-  applyRaceBase(enemy, "pve_e_"); applyRigFraming(enemy, "pve_e_charFrame"); applyDemiTraits(enemy, "pve_e_"); applyIdleFx(enemy, "pve_e_");
-
-  $("pve_p_roleTag").textContent = player.name ? player.name : "You";
-  $("pve_e_roleTag").textContent = enemy.name;
-
-  const pStats = computeFinalStats(player);
-  const eStats = computeFinalStats(enemy);
-
-  let pHP = computeHP(pStats);
-  let eHP = computeHP(eStats) + 40; // event buff
-  let pMax = pHP, eMax = eHP;
-
-  setHP("pve_p_hp", 1); setHP("pve_e_hp", 1);
-
-  logPVE(`PvE started vs ${enemy.race}.`);
-  if(pStats.isCursed) logPVE(`The enemy taunts your cursed aura…`);
-
-  let turn = 0;
-  while(pHP > 0 && eHP > 0 && turn < 70){
-    turn++;
-
-    // flee check
-    if(pHP / pMax <= FLEE_HP_THRESHOLD){
-      const flee = tryFlee(pStats, eStats, logPVE);
-      if(flee.fled){
-        logPVE("You escaped the event.");
-        return;
-      }
-    }
-
-    const playerFirst = (pStats.speed + Math.random()*3) >= (eStats.speed + Math.random()*3);
-
-    const hit = (att, def, target) => {
-      const dmg = computeDamage(att, def);
-      if(target === "enemy"){
-        eHP -= dmg;
-        logPVE(`You dealt ${dmg}.`);
-        setHP("pve_e_hp", eHP/eMax);
-      } else {
-        pHP -= dmg;
-        logPVE(`Enemy dealt ${dmg}.`);
-        setHP("pve_p_hp", pHP/pMax);
-      }
-    };
-
-    if(playerFirst){
-      hit(pStats, eStats, "enemy");
-      if(eHP > 0) hit(eStats, pStats, "player");
-    } else {
-      hit(eStats, pStats, "player");
-      if(pHP > 0) hit(pStats, eStats, "enemy");
-    }
-
-    await new Promise(r=>setTimeout(r, 80));
-  }
-
-  if(pHP <= 0){
-    logPVE("Defeat.");
-    playBlockSound();
-    return;
-  }
-
-  logPVE("Victory!");
-  state.currency.coins = (state.currency.coins || 0) + 12;
-  state.currency.xp = (state.currency.xp || 0) + 8;
-  applyAdaptationWin(player);
-
-  if(hasSoulStone(player) && Math.random() < 0.35){
-    await soulStonePickBonus();
-  }
-
-  saveState();
-
-  openLootModal({
-    title:"PvE Victory",
-    sub:`You won the event.`,
-    rewards:[
-      {label:"Coins", note:"+12", value:`${state.currency.coins}`},
-      {label:"XP", note:"+8", value:`${state.currency.xp}`},
-    ],
-    traitEvents:[
-      {label:"Adaptation", note: (player.powers||[]).includes("Adaptation") ? "+1 stack" : "—", value:`${state.progress.adaptationStacks||0}`},
-      {label:"Souls", note: hasSoulStone(player) ? "possible" : "—", value:`${state.progress.soulsCaptured||0}`},
-    ],
-    progress:[]
-  });
-
+/* ---------- buttons ---------- */
+$("spinBtn")?.addEventListener("click",()=>toast("Spin wired ✅"));
+$("finalizeBtn")?.addEventListener("click",()=>{
+  state.character.finalized = true;
+  toast("Build finalized");
   refreshUI();
-}
-
-/* =========================================================
-   LOOT MODAL RENDER
-========================================================= */
-function openLootModal({title, sub, rewards, traitEvents, progress}){
-  const modal = $("lootModal");
-  if(!modal) return;
-
-  $("lootTitle").textContent = title || "Victory";
-  $("lootSub").textContent = sub || "";
-
-  const makeRow = (x) => {
-    const row = document.createElement("div");
-    row.className = "lootRow";
-    row.innerHTML = `
-      <div class="lootLeft">
-        <div class="lootLabel">${escapeHtml(x.label||"")}</div>
-        <div class="lootNote">${escapeHtml(x.note||"")}</div>
-      </div>
-      <div class="lootValue">${escapeHtml(x.value||"")}</div>
-    `;
-    return row;
-  };
-
-  const rHost = $("lootRewards");
-  const tHost = $("lootTrait");
-  const pHost = $("lootProgress");
-
-  rHost.innerHTML = "";
-  tHost.innerHTML = "";
-  pHost.innerHTML = "";
-
-  (rewards||[]).forEach(x=>rHost.appendChild(makeRow(x)));
-  (traitEvents||[]).forEach(x=>tHost.appendChild(makeRow(x)));
-  (progress||[]).forEach(x=>pHost.appendChild(makeRow(x)));
-
-  modal.classList.remove("hidden");
-}
-
-/* =========================================================
-   Hook up buttons
-========================================================= */
+});
 $("pvpStartBtn")?.addEventListener("click", startPVP);
 $("pveStartBtn")?.addEventListener("click", startPVE);
 
-/* Refresh at end */
+/* ---------- init ---------- */
 refreshUI();
 </script>
-
-</body>
-</html>
