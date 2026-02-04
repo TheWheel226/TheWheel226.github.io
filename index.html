@@ -4780,3 +4780,128 @@ document.getElementById("pveStartBtn")?.addEventListener("click", ()=>{
 /* Final refresh */
 refreshUI();
 </script>
+<script>
+/* =========================
+HOTFIX — Phase never advancing
+Paste at VERY bottom of index.html
+========================= */
+
+/* 1/6 — Ensure every character has a phase */
+function ensurePhase(){
+  const c = getActiveChar?.();
+  if(!c) return null;
+
+  if(!Number.isFinite(c.phase) || c.phase < 1){
+    c.phase = 1;
+    saveNow?.();
+  }
+  return c;
+}
+
+/* 2/6 — Your real build order (NO transformation wheel) */
+const V1_PHASES = [
+  "Race",               // 1
+  "Race Detail",        // 2 (wheel depends on race)
+  "Height",             // 3 (wheel depends on race)
+  "Strength",           // 4
+  "Durability",         // 5
+  "Speed",              // 6
+  "IQ",                 // 7
+  "Fight",              // 8
+  "Power",              // 9
+  "Weapon",             // 10
+  "Trainer",            // 11
+  "Power Mastery",      // 12
+  "Weapon Mastery",     // 13
+  "Build Complete"      // 14 (no spinning here)
+];
+
+/* 3/6 — Advance phase safely */
+function advancePhase(){
+  const c = ensurePhase();
+  if(!c) return;
+
+  // Don’t advance if character is locked/completed
+  if(c.buildComplete) return;
+
+  // cap at last spin phase (13). phase 14 is Build Complete button only
+  if(c.phase < 13) c.phase += 1;
+
+  saveNow?.();
+  updateWheelForCurrentPhase?.();
+  refreshUI?.();
+}
+
+/* 4/6 — PATCH: wrap your spin result handler
+   We hook into the most common function names. */
+function patchSpinResultHandler(){
+  // try several likely handler names
+  const candidates = [
+    "handleSpinResult",
+    "onSpinResult",
+    "onWheelResult",
+    "commitSpinResult",
+    "applySpinResult",
+    "finishSpin"
+  ];
+
+  for(const name of candidates){
+    if(typeof window[name] === "function"){
+      const original = window[name];
+      window[name] = function(result){
+        const c = ensurePhase();
+        const before = c?.phase ?? 1;
+
+        // run your normal logic first (sets race/stat/etc)
+        const out = original.call(this, result);
+
+        // if phase didn’t change inside original, force advance
+        const after = c?.phase ?? before;
+        if(after === before){
+          advancePhase();
+        } else {
+          // even if it advanced, still refresh wheel/UI
+          saveNow?.();
+          updateWheelForCurrentPhase?.();
+          refreshUI?.();
+        }
+
+        return out;
+      };
+      console.log("✅ Phase hotfix attached to:", name);
+      return true;
+    }
+  }
+
+  console.warn("⚠️ Could not find spin result handler to patch.");
+  return false;
+}
+
+/* 5/6 — ALSO patch spinWheel so phase exists BEFORE spinning */
+(function patchSpinWheel(){
+  if(typeof window.spinWheel === "function"){
+    const origSpin = window.spinWheel;
+    window.spinWheel = function(){
+      ensurePhase();
+      return origSpin.call(this);
+    };
+  }
+})();
+
+/* 6/6 — Initialize + show phase name in UI (if you have a phase display element) */
+(function initPhaseHotfix(){
+  ensurePhase();
+  patchSpinResultHandler();
+
+  // If you have a phase badge element, update it.
+  // (Your UI shows "Phase: —" so this will help if the element exists.)
+  const phaseBadge = document.getElementById("phaseBadge");
+  const c = getActiveChar?.();
+  if(phaseBadge && c){
+    phaseBadge.textContent = `Phase: ${c.phase} — ${V1_PHASES[c.phase-1] || "?"}`;
+  }
+
+  updateWheelForCurrentPhase?.();
+  refreshUI?.();
+})();
+</script>
