@@ -4956,3 +4956,42 @@ function patchSpinResultHandler(){
   refreshUI?.();
 })();
 </script>
+<script>
+/* ===== Part 6 hotfix: stop spinning after Build Complete ===== */
+(function(){
+  function lockSpin(){
+    const c = ensureActiveChar?.();
+    const spinBtn = document.getElementById("spinBtn");
+    if(!c || !spinBtn) return;
+
+    // If build is complete OR dead, absolutely lock spinning
+    const locked = !!c.buildComplete || c.alive === false;
+    spinBtn.disabled = locked;
+    spinBtn.style.opacity = locked ? "0.55" : "1";
+    spinBtn.style.pointerEvents = locked ? "none" : "auto";
+
+    // Optional: change hint text so it’s obvious
+    const hint = document.getElementById("wheelHint");
+    if(hint && locked) hint.textContent = "Build Complete";
+  }
+
+  // Lock immediately + after every UI refresh
+  lockSpin();
+  if(typeof window.refreshUI === "function"){
+    const _rui = window.refreshUI;
+    window.refreshUI = function(){
+      _rui();
+      lockSpin();
+    };
+  }
+
+  // Also lock after every spin resolves (belt + suspenders)
+  if(typeof window.onSpinResult === "function"){
+    const _on = window.onSpinResult;
+    window.onSpinResult = function(result){
+      _on(result);
+      lockSpin();
+    };
+  }
+})();
+</script>
