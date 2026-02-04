@@ -6422,67 +6422,214 @@ $("volBtn").textContent = state.settings?.sound ? "🔊" : "🔇";
 </script>
     <script>
 /* =========================
-   SPIN FIX PATCH — shows errors + prevents empty wheel + unsticks spin
-   Paste at the VERY bottom
+   EMERGENCY SPINNER (works even if your main spin function is out-of-scope)
+   Paste at very bottom
    ========================= */
 
-// 1) Show any JS error as an in-game toast
-window.addEventListener("error", (e)=>{
-  try{ toast("JS Error: " + (e.message || "unknown")); }catch(_){}
-});
-window.addEventListener("unhandledrejection", (e)=>{
-  try{ toast("Promise Error: " + (e.reason?.message || e.reason || "unknown")); }catch(_){}
-});
+(function(){
+  const $ = (id)=>document.getElementById(id);
 
-// 2) Hard fallback so wheel never becomes empty (prevents "undefined" slice)
-function safeWheelOptions(){
-  try{
-    const ph = (typeof currentPhase==="function") ? currentPhase() : null;
-    const opts = ph?.options ? ph.options() : null;
-    if(Array.isArray(opts) && opts.length) return opts;
-  }catch(e){}
-  // fallback to races if something breaks
-  if(typeof RACE_OPTIONS !== "undefined" && Array.isArray(RACE_OPTIONS) && RACE_OPTIONS.length) return RACE_OPTIONS;
-  return ["(options missing)"];
-}
-
-// 3) Replace getWheelOptions used by the hotfix if it exists
-if(typeof getWheelOptions === "function"){
-  getWheelOptions = safeWheelOptions;
-}
-
-// 4) Unstick wheelSpinning if anything broke previously
-if(typeof wheelSpinning !== "undefined") wheelSpinning = false;
-
-// 5) Wrap spinWheel so it can’t get stuck on errors
-if(typeof spinWheel === "function"){
-  const __spinSafe = spinWheel;
-  spinWheel = async function(){
-    try{
-      if(typeof wheelSpinning !== "undefined") wheelSpinning = false; // allow re-press
-      return await __spinSafe();
-    }catch(e){
-      try{ toast("Spin failed: " + (e.message || "unknown")); }catch(_){}
-      if(typeof wheelSpinning !== "undefined") wheelSpinning = false;
+  // ---- helpers
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+  }
+  function toastSafe(msg){
+    try{ toast(msg); }
+    catch(_){
+      // fallback toast if toast() doesn't exist
+      let t = $("toast");
+      if(!t){
+        t = document.createElement("div");
+        t.id="toast";
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(()=>t.classList.remove("show"), 1400);
     }
-  };
-}
-
-// 6) Re-hook Spin button in the most direct way
-const sb = document.getElementById("spinBtn");
-if(sb){
-  sb.onclick = ()=>spinWheel?.();
-}
-
-// 7) Redraw wheel using safe options immediately
-try{
-  if(typeof drawWheelWithOptions === "function"){
-    drawWheelWithOptions(safeWheelOptions());
   }
-  if(typeof drawWheelForPhase === "function"){
-    drawWheelForPhase();
+  function logBuildSafe(msg){
+    try{ logBuild(msg); return; }catch(_){}
+    const el = $("buildLog");
+    if(!el) return;
+    const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    el.innerHTML = `<div><span class="muted">[${time}]</span> ${escapeHtml(msg)}</div>` + el.innerHTML;
   }
-}catch(e){}
+  function saveStateSafe(){
+    try{ saveState(); }catch(_){}
+  }
+
+  // ---- canvas + drawing
+  const canvas = $("wheel");
+  if(!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  function getPhase(){
+    try{
+      if(typeof currentPhase === "function"){
+        return currentPhase(); // expected { key, title, options(), applyPick(value), hint }
+      }
+    }catch(_){}
+    return null;
+  }
+
+  function getOptions(){
+    // Use your phase options if possible
+    try{
+      const ph = getPhase();
+      const opts = ph?.options?.();
+      if(Array.isArray(opts) && opts.length) return opts;
+    }catch(_){}
+    // Fallback to races
+    if(typeof RACE_OPTIONS !== "undefined" && Array.isArray(RACE_OPTIONS) && RACE_OPTIONS.length) return RACE_OPTIONS;
+    return ["(missing options)"];
+  }
+
+  function drawWheelLocal(options, angle){
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    const cx=w/2, cy=h/2;
+    const r=Math.min(cx,cy)-8;
+    const n=options.length;
+
+    // ring
+    ctx.beginPath();
+    ctx.arc(cx,cy,r+4,0,Math.PI*2);
+    ctx.strokeStyle="rgba(255,255,255,.15)";
+    ctx.lineWidth=10;
+    ctx.stroke();
+
+    for(let i=0;i<n;i++){
+      const a0 = angle + (i * (Math.PI*2/n));
+      const a1 = angle + ((i+1) * (Math.PI*2/n));
+
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,a0,a1);
+      ctx.closePath();
+      ctx.fillStyle = i%2===0 ? "rgba(122,168,255,.14)" : "rgba(255,255,255,.06)";
+      ctx.fill();
+
+      const mid=(a0+a1)/2;
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(mid);
+      ctx.textAlign="right";
+      ctx.fillStyle="rgba(232,238,252,.92)";
+      ctx.font="900 14px system-ui";
+      ctx.fillText(String(options[i]), r-14, 6);
+      ctx.restore();
+    }
+
+    // pointer top
+    ctx.beginPath();
+    ctx.moveTo(cx, 10);
+    ctx.lineTo(cx-12, 34);
+    ctx.lineTo(cx+12, 34);
+    ctx.closePath();
+    ctx.fillStyle="rgba(255,204,102,.95)";
+    ctx.fill();
+  }
+
+  function pickAtPointer(options, angle){
+    const n = options.length;
+    const slice = (Math.PI*2)/n;
+
+    // pointer is at TOP, which is -90deg from canvas x-axis,
+    // but our drawing uses angle directly, so we measure relative to top.
+    const topAngle = (-Math.PI/2);
+    const pointerAngle = (topAngle - angle) % (Math.PI*2);
+    const norm = (pointerAngle + Math.PI*2) % (Math.PI*2);
+    const idx = Math.floor(norm / slice);
+    return options[idx] ?? options[0];
+  }
+
+  // ---- emergency spin engine
+  let spinning = false;
+  let angle = window.__wfAngle || 0;
+
+  function refreshStatic(){
+    const opts = getOptions();
+    drawWheelLocal(opts, angle);
+  }
+
+  async function applyPick(value){
+    const ph = getPhase();
+
+    // If your phase system provides an applyPick, use it
+    if(ph && typeof ph.applyPick === "function"){
+      try{
+        ph.applyPick(value);
+        saveStateSafe();
+        return;
+      }catch(e){
+        toastSafe("Apply failed: " + (e.message||"unknown"));
+      }
+    }
+
+    // Otherwise fallback: if it looks like we're on race, store it
+    try{
+      if(typeof state !== "undefined" && state?.characters && state?.activeId){
+        const c = state.characters[state.activeId];
+        if(c && !c.race) c.race = value;
+      }else if(typeof state !== "undefined" && state?.character){
+        if(!state.character.race) state.character.race = value;
+      }
+      saveStateSafe();
+    }catch(_){}
+  }
+
+  function spinNow(){
+    if(spinning) return;
+    spinning = true;
+
+    const opts = getOptions();
+    let v = 0.35 + Math.random()*0.35;
+    const friction = 0.985 - Math.random()*0.006;
+    const minTicks = 70 + Math.floor(Math.random()*40);
+    let ticks = 0;
+
+    function step(){
+      ticks++;
+      angle += v;
+      v *= friction;
+      drawWheelLocal(opts, angle);
+
+      if(ticks > minTicks && v < 0.01){
+        spinning = false;
+        window.__wfAngle = angle;
+
+        const result = pickAtPointer(opts, angle);
+        const ph = getPhase();
+        const label = ph?.title || ph?.key || "Pick";
+
+        logBuildSafe(`${label} → ${result}`);
+        applyPick(result);
+
+        // update hint text if present
+        const hint = $("wheelHint");
+        if(hint) hint.textContent = `Result: ${result}`;
+
+        toastSafe(`Got: ${result}`);
+        return;
+      }
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---- hook button hard
+  const btn = $("spinBtn");
+  if(btn){
+    btn.addEventListener("click", (e)=>{
+      e.preventDefault();
+      spinNow();
+    }, {capture:true});
+  }
+
+  // draw once now
+  refreshStatic();
+})();
 </script>
 </body>
 </html>
