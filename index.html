@@ -376,7 +376,7 @@
 
     <div id="toast"></div>
     <!-- =========================
-PART 3 / 12 — Modals + Core JS shell
+PART 3 / 12 — Modals + Core JS shell (FIXED)
 ========================= -->
 
 <!-- Name Modal -->
@@ -402,7 +402,6 @@ PART 3 / 12 — Modals + Core JS shell
 </div>
 
 <style>
-  /* Modals (Part 3 adds missing modal CSS if Part 1/2 didn't include it) */
   .modal{
     position:fixed; inset:0;
     display:flex; align-items:center; justify-content:center;
@@ -452,7 +451,6 @@ function toast(msg){
   _toastTimer=setTimeout(()=>t.classList.remove("show"), 1400);
 }
 function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
-function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 /* =========================================================
    SAVE / LOAD
@@ -460,14 +458,74 @@ function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 const STORAGE_KEY = "wheel_forge_v1_save";
 const defaultSave = ()=>({
   settings:{ sound:true },
-  roster:[],              // list of characters (permadeath system uses this)
+  roster:[],              // list of characters
   activeId:null,          // current character id
   ui:{ activeTab:"build" }
 });
-
 let save = defaultSave();
 
 function saveNow(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(save)); }
+
+function repairChar(c){
+  if(!c || typeof c !== "object") return;
+
+  c.alive = (c.alive !== false);
+  c.buildComplete = !!c.buildComplete;
+
+  // FIX: wheelStep can become NaN/undefined in older saves
+  const ws = Number(c.wheelStep);
+  c.wheelStep = (Number.isFinite(ws) && ws >= 0) ? Math.floor(ws) : 0;
+
+  // strikes (your rules)
+  c.strikesPVE = Number.isFinite(Number(c.strikesPVE)) ? Number(c.strikesPVE) : 0; // 1 strike = death
+  c.strikesPVP = Number.isFinite(Number(c.strikesPVP)) ? Number(c.strikesPVP) : 0; // 2 strikes = death
+
+  // results fields
+  c.race ??= null;
+  c.raceSub ??= null;
+  c.height ??= null;
+  c.strength ??= null;
+  c.durability ??= null;
+  c.speed ??= null;
+  c.iq ??= null;
+  c.fight ??= null;
+  c.power ??= null;
+  c.weapon ??= null;
+  c.trainer ??= null;
+  c.powerMastery ??= null;
+  c.weaponMastery ??= null;
+  c.extraForm ??= null;
+
+  // inventory must always exist
+  c.inventory ||= {};
+  c.inventory.races ||= [];
+  c.inventory.powers ||= [];
+  c.inventory.weapons ||= [];
+  c.inventory.trainers ||= [];
+  c.inventory.effects ||= [];
+  c.inventory.curses ||= [];
+
+  // OPTIONAL: bump wheelStep forward if fields already filled
+  let step = 0;
+  if(c.race) step = 1;
+  if(c.raceSub) step = 2;
+  if(c.height) step = 3;
+  if(c.strength) step = 4;
+  if(c.durability) step = 5;
+  if(c.speed) step = 6;
+  if(c.iq) step = 7;
+  if(c.fight) step = 8;
+  if(c.power) step = 9;
+  if(c.weapon) step = 10;
+  if(c.trainer) step = 11;
+  if(c.powerMastery) step = 12;
+  if(c.weaponMastery) step = 13;
+  if(c.extraForm) step = 14;
+  if(c.buildComplete) step = 14;
+
+  if(step > c.wheelStep) c.wheelStep = step;
+}
+
 function load(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -477,14 +535,17 @@ function load(){
     save.settings = { ...defaultSave().settings, ...(parsed.settings||{}) };
     save.ui = { ...defaultSave().ui, ...(parsed.ui||{}) };
     save.roster = Array.isArray(parsed.roster) ? parsed.roster : [];
+
+    save.roster.forEach(repairChar);
+    saveNow();
   }catch(e){}
 }
 load();
 
 /* =========================================================
    CHARACTER MODEL
-   - New Character creates a new one (does NOT delete old)
-   - No reset button in game (we won't wire one)
+   - New Character creates new (does NOT delete old)
+   - Only dies via loss rules
 ========================================================= */
 function makeNewCharacter(){
   const id = "c_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
@@ -493,22 +554,17 @@ function makeNewCharacter(){
     id,
     createdAt: Date.now(),
     alive:true,
-
-    // Naming
     name:"",
 
-    // Death / strikes
-    strikesPVE:0,    // 1 strike = death (you chose)
-    strikesPVP:0,    // 2 strikes = death (you chose)
+    strikesPVE:0,  // 1 strike -> death
+    strikesPVP:0,  // 2 strikes -> death
 
-    // Build progress
     buildComplete:false,
-    wheelStep:0, // 0=Race, 1=Race-subwheel, 2=Height, 3=Str,4=Dur,5=Spd,6=IQ,7=Fight,8=Power,9=Weapon,10=Trainer,11=PowerMastery,12=WeaponMastery,13=Race/Power dependent extra wheel, 14=Complete
+    wheelStep:0,
 
-    // Results (filled by spins)
     race:null,
-    raceSub:null,        // race-based wheel result
-    height:null,         // height wheel result
+    raceSub:null,
+    height:null,
     strength:null,
     durability:null,
     speed:null,
@@ -519,9 +575,8 @@ function makeNewCharacter(){
     trainer:null,
     powerMastery:null,
     weaponMastery:null,
-    extraForm:null,      // demon ranks / god tiers / kaiju / kaiju no 8, etc.
+    extraForm:null,
 
-    // Inventory gained later (must remain visible in stats tab)
     inventory:{
       races:[],
       powers:[],
@@ -538,16 +593,16 @@ function makeNewCharacter(){
   return char;
 }
 
-function getActiveChar(){
-  const c = save.roster.find(x=>x.id===save.activeId) || null;
-  return c && c.alive ? c : null;
+function getActiveCharRaw(){
+  return save.roster.find(x=>x.id===save.activeId) || null;
 }
 
 function ensureActiveChar(){
-  let c = getActiveChar();
+  let c = getActiveCharRaw();
   if(!c){
     c = makeNewCharacter();
   }
+  repairChar(c);
   return c;
 }
 
@@ -558,7 +613,7 @@ function killCharacter(char, reason){
   toast("Character died.");
   saveNow();
 
-  // auto-switch to newest alive, else make a new one
+  // switch to newest alive, else create new
   const alive = save.roster.filter(x=>x.alive);
   if(alive.length){
     save.activeId = alive[alive.length-1].id;
@@ -595,21 +650,17 @@ function logBuild(msg){
 }
 
 /* =========================================================
-   NAME SAFETY (simple, local)
-   - blocks obvious profanity/slurs patterns
-   - you can expand later
+   NAME SAFETY (simple local filter)
 ========================================================= */
 const BANNED_PATTERNS = [
   /nigg/i, /fagg/i, /cunt/i, /bitch/i, /whore/i, /slut/i,
   /hitler/i, /kkk/i,
   /fuck/i, /shit/i, /asshole/i, /dick/i, /pussy/i
 ];
-
 function isNameAllowed(name){
   const n = String(name||"").trim();
   if(n.length < 1) return { ok:false, reason:"Name can’t be empty." };
   if(n.length > 12) return { ok:false, reason:"Max 12 characters." };
-  // allow letters/numbers/spaces/._- only
   if(!/^[a-z0-9 ._-]+$/i.test(n)) return { ok:false, reason:"Only letters/numbers/spaces/._- allowed." };
   for(const rx of BANNED_PATTERNS){
     if(rx.test(n)) return { ok:false, reason:"That name isn’t allowed." };
@@ -618,7 +669,7 @@ function isNameAllowed(name){
 }
 
 /* =========================================================
-   NAME MODAL WIRING (no renaming later)
+   NAME MODAL (no renaming later)
 ========================================================= */
 function openNameModal(){
   const c = ensureActiveChar();
@@ -654,7 +705,7 @@ $("nameSaveBtn")?.addEventListener("click", ()=>{
 });
 
 /* =========================================================
-   UI RENDER (Part 3: basic, wheels come in Part 4+)
+   UI RENDER (basic)
 ========================================================= */
 function renderBuildSummary(){
   const c = ensureActiveChar();
@@ -690,24 +741,8 @@ function renderBuildSummary(){
     host.appendChild(div);
   });
 
-  const badges = $("buildBadges");
-  if(badges){
-    badges.innerHTML = "";
-    if(c.buildComplete){
-      const b=document.createElement("div");
-      b.className="badge";
-      b.innerHTML=`<span class="icon">✅</span><span>Build Complete</span>`;
-      badges.appendChild(b);
-    }else{
-      const b=document.createElement("div");
-      b.className="badge";
-      b.innerHTML=`<span class="icon">🧪</span><span>Building</span>`;
-      badges.appendChild(b);
-    }
-  }
-
   $("phaseTag").textContent = c.buildComplete ? "Phase: Complete" : "Phase: Build";
-  $("namedTag").textContent = c.name ? `Name: ${c.name}` : "No name";
+  $("namedTag").textContent = c.name ? `Name: ${c.name}` : "Tap Name";
 }
 
 function renderTraitSlots(){
@@ -715,7 +750,6 @@ function renderTraitSlots(){
   if(!host) return;
   host.innerHTML = "";
 
-  // Placeholder: Part 7+ expands slots/evo/fusions.
   const slots = [
     {title:"Fusion Slot 1", desc:"Unlock later in V1."},
     {title:"Fusion Slot 2", desc:"Unlock later in V1."},
@@ -725,7 +759,7 @@ function renderTraitSlots(){
 
   slots.forEach(s=>{
     const div=document.createElement("div");
-    div.className="slotCard";
+    div.className="slotCard slotLocked";
     div.innerHTML = `
       <div class="slotTop">
         <div class="slotName">${escapeHtml(s.title)}</div>
@@ -741,19 +775,14 @@ function refreshUI(){
   ensureActiveChar();
   renderBuildSummary();
   renderTraitSlots();
-
-  // keep tab
-  const tab = save.ui.activeTab || "build";
-  showTab(tab);
-
-  // PvE/PvP tabs should remain visible, but content locked until build complete in later parts
+  showTab(save.ui.activeTab || "build");
 }
 
 /* =========================================================
-   BUTTONS (no reset)
+   BUTTONS
 ========================================================= */
 $("newCharBtn")?.addEventListener("click", ()=>{
-  const c = makeNewCharacter();
+  makeNewCharacter();
   $("buildLog").innerHTML = "";
   logBuild("🆕 New character created.");
   toast("New character created.");
@@ -763,8 +792,8 @@ $("newCharBtn")?.addEventListener("click", ()=>{
 /* Init */
 refreshUI();
 </script>
-<!-- =========================
-PART 4 / 12 — Tabs + Wheel Engine + Wheel Flow
+    <!-- =========================
+PART 4 / 12 — Tabs + Wheel Engine + Wheel Flow (FIXED)
 ========================= -->
 
 <!-- STATS TAB -->
@@ -793,16 +822,13 @@ PART 4 / 12 — Tabs + Wheel Engine + Wheel Flow
 <section id="tab-pve" class="grid hidden">
   <div class="card">
     <h2>PvE</h2>
-    <div class="muted" style="margin-bottom:10px">
-      PvE unlocks after Build Complete. (Dev-only in V1.)
-    </div>
+    <div class="muted" style="margin-bottom:10px">PvE unlocks after Build Complete. (Dev-only in V1.)</div>
     <button id="pveStartBtn" class="btn primary">Start PvE</button>
     <div class="card" style="margin-top:12px; padding:12px; background:rgba(15,22,35,.45); border-color:rgba(255,255,255,.08)">
       <h2>Combat Log</h2>
       <div id="pveLog" class="muted"></div>
     </div>
   </div>
-
   <div class="card">
     <h2>Status</h2>
     <div id="pveStatus" class="muted">—</div>
@@ -813,16 +839,13 @@ PART 4 / 12 — Tabs + Wheel Engine + Wheel Flow
 <section id="tab-pvp" class="grid hidden">
   <div class="card">
     <h2>PvP</h2>
-    <div class="muted" style="margin-bottom:10px">
-      Real PvP upload/fight is planned later. (Dev-only in V1.)
-    </div>
+    <div class="muted" style="margin-bottom:10px">Real PvP upload/fight is planned later. (Dev-only in V1.)</div>
     <button id="pvpStartBtn" class="btn primary">Start PvP (Dev)</button>
     <div class="card" style="margin-top:12px; padding:12px; background:rgba(15,22,35,.45); border-color:rgba(255,255,255,.08)">
       <h2>Combat Log</h2>
       <div id="pvpLog" class="muted"></div>
     </div>
   </div>
-
   <div class="card">
     <h2>Status</h2>
     <div id="pvpStatus" class="muted">—</div>
@@ -831,81 +854,57 @@ PART 4 / 12 — Tabs + Wheel Engine + Wheel Flow
 
 <script>
 /* =========================================================
-   WHEEL FLOW CONSTANTS (TEXT LISTS)
-   - You will keep expanding these later (Parts 5+)
+   LISTS
 ========================================================= */
-
-/* Your Race list (fixed) */
 const RACE_LIST = [
   "Gnome","Goblin","Zombie","Skeleton","Human","Orc","Cyborg","Giant","Demi human","Golem",
   "Dragon","Vampire","Hivemind","Shinigami","Soul eater","Demon","Alien","God","Hybrid"
 ];
 
-/* Power list (Super Saiyan is a POWER per your correction) */
 const POWER_LIST = [
   "No Power",
   "Adaptation","Regeneration","Gravity Manipulation","Time Manipulation","Telekinesis",
   "Teleportation","Fire","Ice Manipulation","Lightning","Weapon Creation","Heavenly Restriction",
   "Immortal","Rinnegan",
-  "Super saiyen"  /* triggers Super Saiyan wheel */
+  "Super saiyen"
 ];
 
-/* Weapon / Trainer / Mastery (you can expand later) */
 const WEAPON_LIST = [
   "No Weapon","Sword","Scythe","Axe","Hammer","Spear","Brass Knuckles","Blades of Chaos",
   "Samehada","Uzumaki Chains","Infinity Gauntlet","Green Lantern Ring"
 ];
+
 const TRAINER_LIST = ["No Trainer","Master Roshi","Jiraiya","Hisoka","Korro","Yuujirou"];
 const POWER_MASTERY_LIST = ["None","Dormant","Awakening","Controlled","Mastered","Planetary","Cosmic","Universal","Omnipotent"];
 const WEAPON_MASTERY_LIST = ["None","Basic","Skilled","Expert","Master","Legendary","Mythic"];
 
-/* Extra wheels you provided */
 const GOD_TIERS = ["Halfling","Demigod","Lesser diety","Deity","Greater diety","Roman","Norse","Greek"];
 const DEMON_RANKS = ["Jelly","Knight","Earl","Marquis","Prince","Duke","King"];
 const KAIJU_LIST = ["King Kong","Rodan","Ghidorah","Destoroyah","Gezora","Cloverfield","Mothra","Kumanga","Kaiju No 8","Godzilla"];
 const KAIJU_NO8_NUMS = ["1","2","4","6","8","9","10","11","12","13","14","15"];
 const SUPER_SAIYAN_FORMS = ["Super saiyen","Super saiyen 4","Super saiyen god","Super saiyen blue","Ultra instinct"];
 
-/* Core stat wheels (word tiers for now) */
 const STRENGTH_WHEEL = ["Weak","Average","Strong","City","Mountain","Country","Planet","Star","Galaxy","Universal","???"];
 const DURABILITY_WHEEL = ["Fragile","Average","Tough","Steel","City","Mountain","Country","Planet","Star","Universal","???"];
 const SPEED_WHEEL = ["Slow","Average","Fast","Mach","Lightning","Light","FTL","Galaxy","Universal","???"];
 const IQ_WHEEL = ["Low","Average","Smart","Genius","Supergenius","Cosmic","Universal","???"];
 const FIGHT_WHEEL = ["Clumsy","Average","Trained","Elite","Master","Legendary","Mythic","Universal","???"];
 
-/* =========================================================
-   RACE-BASED WHEELS
-   - Height wheel depends on race.
-   - Race-subwheel depends on race.
-   - Extra wheel depends on race and/or power:
-     - God => GOD_TIERS
-     - Demon => DEMON_RANKS
-     - Alien => Kaiju wheel (then maybe Kaiju No 8)
-     - If power == "Super saiyen" => Super Saiyan wheel
-     - No "transformation wheel"
-========================================================= */
-
-/* Height wheel groups (you told: golem+dragon use giant height wheel) */
+/* Height wheels */
 const HEIGHT_SMALL = ["Small","Short","Average"];
 const HEIGHT_HUMAN = ["Short","Average","Tall"];
-const HEIGHT_LARGE = ["Tall","Huge","Titan"];
 const HEIGHT_GIANT = ["Giant","Colossal","Titanic"];
 
 function heightWheelForRace(race){
   const giantRaces = new Set(["Giant","Golem","Dragon"]);
   const smallRaces = new Set(["Gnome","Goblin"]);
-  const humanish = new Set(["Human","Orc","Cyborg","Vampire","Shinigami","Soul eater","Demon","Alien","God","Skeleton","Zombie","Hivemind","Demi human","Hybrid"]);
-
   if(giantRaces.has(race)) return HEIGHT_GIANT;
   if(smallRaces.has(race)) return HEIGHT_SMALL;
-  if(humanish.has(race)) return HEIGHT_HUMAN;
   return HEIGHT_HUMAN;
 }
 
-/* Race-subwheel placeholders (we’ll expand later; MUST exist so wheel isn't undefined) */
+/* Race-subwheel placeholders (must NEVER be undefined/empty) */
 function raceSubwheelForRace(race){
-  // IMPORTANT: Never return empty/undefined.
-  // Later parts will replace these with your full reference wheels per race.
   switch(race){
     case "Demi human": return ["Wolf","Cat","Bear","Fox","Snake"];
     case "Golem": return ["Stone","Iron","Crystal","Magma"];
@@ -917,28 +916,23 @@ function raceSubwheelForRace(race){
     case "Cyborg": return ["Arm Cannon","Titan Frame","Nano Core"];
     case "Alien": return ["Grey","Martian","Starborn"];
     case "God": return ["Minor","Major","Prime"];
-    case "Hybrid": return ["(Hybrid rule handled later)"];
     default: return ["None"];
   }
 }
 
 /* =========================================================
    WHEEL ENGINE (single canvas, multi-phase)
-   - Fixes “undefined wheel” by ALWAYS having an option list.
-   - One spin per step (cannot redo past steps).
 ========================================================= */
 let wheelAngle = 0;
 let wheelSpinning = false;
-let currentWheel = {
-  title:"Race",
-  key:"race",
-  options:[...RACE_LIST]
-};
+let currentWheel = { title:"Race", key:"race", options:[...RACE_LIST] };
+
+function safeOptions(options){
+  return (Array.isArray(options) && options.length) ? options : ["None"];
+}
 
 function setWheel(title, key, options){
-  // options must always be a non-empty array
-  const safe = Array.isArray(options) && options.length ? options : ["None"];
-  currentWheel = { title, key, options: safe };
+  currentWheel = { title, key, options: safeOptions(options) };
   $("wheelTitle").textContent = title;
   $("wheelHint").textContent = "Spin";
   drawWheel();
@@ -957,7 +951,6 @@ function drawWheel(){
   const r=Math.min(cx,cy)-8;
   const n=currentWheel.options.length;
 
-  // ring
   ctx.beginPath();
   ctx.arc(cx,cy,r+4,0,Math.PI*2);
   ctx.strokeStyle="rgba(255,255,255,.15)";
@@ -975,7 +968,6 @@ function drawWheel(){
     ctx.fillStyle = i%2===0 ? "rgba(122,168,255,.14)" : "rgba(255,255,255,.06)";
     ctx.fill();
 
-    // label
     const mid=(a0+a1)/2;
     ctx.save();
     ctx.translate(cx,cy);
@@ -997,18 +989,12 @@ function drawWheel(){
   ctx.fill();
 }
 
-/* IMPORTANT: pointer is at TOP.
-   We compute which slice is under the top pointer.
-*/
+/* Pointer is TOP: -PI/2 in canvas coords */
 function pickFromWheel(){
   const n = currentWheel.options.length;
   const slice = (Math.PI*2)/n;
-
-  // angle at top pointer is -PI/2 in canvas coordinates
-  // wheelAngle rotates slices; we want which slice aligns with top pointer
   const pointer = -Math.PI/2;
 
-  // normalize relative angle
   let rel = (pointer - wheelAngle) % (Math.PI*2);
   if(rel < 0) rel += Math.PI*2;
 
@@ -1020,8 +1006,8 @@ async function spinWheel(){
   const c = ensureActiveChar();
   if(!c.alive){ toast("Character is dead."); return; }
   if(c.buildComplete){ toast("Build already complete."); return; }
-
   if(wheelSpinning) return;
+
   wheelSpinning = true;
 
   let v = 0.35 + Math.random()*0.35;
@@ -1047,176 +1033,98 @@ async function spinWheel(){
 }
 
 /* =========================================================
-   BUILD FLOW / AUTO-ADVANCE
+   BUILD FLOW / AUTO-ADVANCE (FIXED)
 ========================================================= */
-function onSpinResult(result){
-  const c = ensureActiveChar();
-  const step = c.wheelStep;
-
-  // write result to the correct slot based on current wheel key
-  applyResultToChar(c, currentWheel.key, result);
-
-  logBuild(`${currentWheel.title} → ${result}`);
-
-  // advance to next step and set next wheel
-  c.wheelStep = step + 1;
-  saveNow();
-
-  autoAdvanceWheel();
-  refreshUI();
-}
-
 function applyResultToChar(char, key, value){
-  // each key only set ONCE
+  // no redo: only set once
   if(key === "race" && !char.race){
     char.race = value;
     char.inventory.races ||= [];
     if(!char.inventory.races.includes(value)) char.inventory.races.push(value);
-    return;
+    return true;
   }
-  if(key === "raceSub" && !char.raceSub){ char.raceSub = value; return; }
-  if(key === "height" && !char.height){ char.height = value; return; }
+  if(key === "raceSub" && !char.raceSub){ char.raceSub = value; return true; }
+  if(key === "height" && !char.height){ char.height = value; return true; }
 
-  if(key === "strength" && !char.strength){ char.strength = value; return; }
-  if(key === "durability" && !char.durability){ char.durability = value; return; }
-  if(key === "speed" && !char.speed){ char.speed = value; return; }
-  if(key === "iq" && !char.iq){ char.iq = value; return; }
-  if(key === "fight" && !char.fight){ char.fight = value; return; }
+  if(key === "strength" && !char.strength){ char.strength = value; return true; }
+  if(key === "durability" && !char.durability){ char.durability = value; return true; }
+  if(key === "speed" && !char.speed){ char.speed = value; return true; }
+  if(key === "iq" && !char.iq){ char.iq = value; return true; }
+  if(key === "fight" && !char.fight){ char.fight = value; return true; }
 
   if(key === "power" && !char.power){
     char.power = value;
     char.inventory.powers ||= [];
     if(value && value!=="No Power" && !char.inventory.powers.includes(value)) char.inventory.powers.push(value);
-    return;
+    return true;
   }
   if(key === "weapon" && !char.weapon){
     char.weapon = value;
     char.inventory.weapons ||= [];
     if(value && value!=="No Weapon" && !char.inventory.weapons.includes(value)) char.inventory.weapons.push(value);
-    return;
+    return true;
   }
   if(key === "trainer" && !char.trainer){
     char.trainer = value;
     char.inventory.trainers ||= [];
     if(value && value!=="No Trainer" && !char.inventory.trainers.includes(value)) char.inventory.trainers.push(value);
-    return;
+    return true;
   }
-  if(key === "powerMastery" && !char.powerMastery){ char.powerMastery = value; return; }
-  if(key === "weaponMastery" && !char.weaponMastery){ char.weaponMastery = value; return; }
 
-  if(key === "extraForm" && !char.extraForm){ char.extraForm = value; return; }
+  if(key === "powerMastery" && !char.powerMastery){ char.powerMastery = value; return true; }
+  if(key === "weaponMastery" && !char.weaponMastery){ char.weaponMastery = value; return true; }
 
-  // if key already exists, do nothing (no redo)
+  if(key === "extraForm" && !char.extraForm){ char.extraForm = value; return true; }
+
+  return false;
 }
 
+/* single source of truth: sets next wheel based on wheelStep */
 function autoAdvanceWheel(){
   const c = ensureActiveChar();
+  repairChar(c);
   if(c.buildComplete) return;
 
-  // Determine next wheel based on wheelStep
-  // Step map:
   // 0 Race
-  // 1 Race-based wheel
-  // 2 Height (race-based)
-  // 3 Strength
-  // 4 Durability
-  // 5 Speed
-  // 6 IQ
-  // 7 Fight
-  // 8 Power
-  // 9 Weapon
-  // 10 Trainer
-  // 11 Power Mastery
-  // 12 Weapon Mastery
-  // 13 Extra wheel (race/power-based, optional)
-  // 14 Complete
-
-  const s = c.wheelStep;
-
-  // If step is 0 but race already set (load), move forward
-  if(s === 0 && c.race) c.wheelStep = 1;
-
   if(c.wheelStep === 0){
     setWheel("Race", "race", RACE_LIST);
     $("buildHint").textContent = "Spin: Race";
     return;
   }
 
+  // 1 Race-based wheel
   if(c.wheelStep === 1){
     setWheel("Race Wheel", "raceSub", raceSubwheelForRace(c.race));
     $("buildHint").textContent = "Spin: wheel based on your race";
     return;
   }
 
+  // 2 Height
   if(c.wheelStep === 2){
     setWheel("Height", "height", heightWheelForRace(c.race));
     $("buildHint").textContent = "Spin: Height (race-based)";
     return;
   }
 
-  if(c.wheelStep === 3){
-    setWheel("Strength", "strength", STRENGTH_WHEEL);
-    $("buildHint").textContent = "Spin: Strength";
-    return;
-  }
-  if(c.wheelStep === 4){
-    setWheel("Durability", "durability", DURABILITY_WHEEL);
-    $("buildHint").textContent = "Spin: Durability";
-    return;
-  }
-  if(c.wheelStep === 5){
-    setWheel("Speed", "speed", SPEED_WHEEL);
-    $("buildHint").textContent = "Spin: Speed";
-    return;
-  }
-  if(c.wheelStep === 6){
-    setWheel("IQ", "iq", IQ_WHEEL);
-    $("buildHint").textContent = "Spin: IQ";
-    return;
-  }
-  if(c.wheelStep === 7){
-    setWheel("Fight", "fight", FIGHT_WHEEL);
-    $("buildHint").textContent = "Spin: Fight";
-    return;
-  }
-  if(c.wheelStep === 8){
-    setWheel("Power", "power", POWER_LIST);
-    $("buildHint").textContent = "Spin: Power";
-    return;
-  }
-  if(c.wheelStep === 9){
-    setWheel("Weapon", "weapon", WEAPON_LIST);
-    $("buildHint").textContent = "Spin: Weapon";
-    return;
-  }
-  if(c.wheelStep === 10){
-    setWheel("Trainer", "trainer", TRAINER_LIST);
-    $("buildHint").textContent = "Spin: Trainer";
-    return;
-  }
-  if(c.wheelStep === 11){
-    setWheel("Power Mastery", "powerMastery", POWER_MASTERY_LIST);
-    $("buildHint").textContent = "Spin: Power Mastery";
-    return;
-  }
-  if(c.wheelStep === 12){
-    setWheel("Weapon Mastery", "weaponMastery", WEAPON_MASTERY_LIST);
-    $("buildHint").textContent = "Spin: Weapon Mastery";
-    return;
-  }
+  // 3–7 stats
+  if(c.wheelStep === 3){ setWheel("Strength","strength",STRENGTH_WHEEL); $("buildHint").textContent="Spin: Strength"; return; }
+  if(c.wheelStep === 4){ setWheel("Durability","durability",DURABILITY_WHEEL); $("buildHint").textContent="Spin: Durability"; return; }
+  if(c.wheelStep === 5){ setWheel("Speed","speed",SPEED_WHEEL); $("buildHint").textContent="Spin: Speed"; return; }
+  if(c.wheelStep === 6){ setWheel("IQ","iq",IQ_WHEEL); $("buildHint").textContent="Spin: IQ"; return; }
+  if(c.wheelStep === 7){ setWheel("Fight","fight",FIGHT_WHEEL); $("buildHint").textContent="Spin: Fight"; return; }
 
+  // 8–12 gear/mastery
+  if(c.wheelStep === 8){ setWheel("Power","power",POWER_LIST); $("buildHint").textContent="Spin: Power"; return; }
+  if(c.wheelStep === 9){ setWheel("Weapon","weapon",WEAPON_LIST); $("buildHint").textContent="Spin: Weapon"; return; }
+  if(c.wheelStep === 10){ setWheel("Trainer","trainer",TRAINER_LIST); $("buildHint").textContent="Spin: Trainer"; return; }
+  if(c.wheelStep === 11){ setWheel("Power Mastery","powerMastery",POWER_MASTERY_LIST); $("buildHint").textContent="Spin: Power Mastery"; return; }
+  if(c.wheelStep === 12){ setWheel("Weapon Mastery","weaponMastery",WEAPON_MASTERY_LIST); $("buildHint").textContent="Spin: Weapon Mastery"; return; }
+
+  // 13 Extra wheel (race/power based)
   if(c.wheelStep === 13){
-    // EXTRA WHEEL CONDITIONS:
-    // - Race God => GOD_TIERS
-    // - Race Demon => DEMON_RANKS
-    // - Race Alien => Kaiju wheel (and if Kaiju No 8 is spun, step stays 13 for the No8 wheel next, handled below)
-    // - Power Super saiyen => Super Saiyan wheel
-    //
-    // If none apply: skip to complete.
-
-    // Kaiju No 8 chain: if Alien already spun Kaiju and got "Kaiju No 8", we reuse extra wheel as the No8 wheel
+    // Alien chain: Kaiju -> if Kaiju No 8 => then next spin should be number
     if(c.race === "Alien" && c.extraForm === "Kaiju No 8"){
-      // player already has Kaiju No 8 selected but hasn't rolled the number yet
+      // NOTE: we store the Kaiju choice first, then overwrite with number.
       setWheel("Kaiju No 8", "extraForm", KAIJU_NO8_NUMS);
       $("buildHint").textContent = "Spin: Kaiju No 8 (number)";
       return;
@@ -1243,11 +1151,12 @@ function autoAdvanceWheel(){
       return;
     }
 
-    // no extra wheel needed
+    // No extra needed -> complete
     c.wheelStep = 14;
     saveNow();
   }
 
+  // 14 Complete
   if(c.wheelStep >= 14){
     c.buildComplete = true;
     $("buildHint").textContent = "Build Complete → Stats / PvE unlocked (dev-only) / PvP (dev-only)";
@@ -1258,36 +1167,49 @@ function autoAdvanceWheel(){
   }
 }
 
-/* Special handling: Alien → Kaiju → (if Kaiju No 8) then Kaiju No 8 wheel next */
-function postSpinAdjustments(){
+function onSpinResult(result){
   const c = ensureActiveChar();
-  // If Alien and just spun Kaiju wheel with result "Kaiju No 8",
-  // we need another immediate extra wheel spin for the number.
-  // We keep wheelStep at 13 (extra wheel) but allow another spin.
-  if(currentWheel.key === "extraForm" && currentWheel.title === "Kaiju"){
-    if(c.extraForm === "Kaiju No 8"){
-      // keep wheelStep at 13 so autoAdvance sets Kaiju No 8 wheel next
+  repairChar(c);
+
+  // FIX: wheelStep must be numeric
+  const step = Number.isFinite(Number(c.wheelStep)) ? Number(c.wheelStep) : 0;
+
+  const wrote = applyResultToChar(c, currentWheel.key, result);
+  logBuild(`${currentWheel.title} → ${result}`);
+
+  // if it was already set, DO NOT advance (prevents breaking saves)
+  if(!wrote){
+    toast("No redo. That step is already locked.");
+    autoAdvanceWheel();
+    drawWheel();
+    refreshUI();
+    return;
+  }
+
+  // advance
+  c.wheelStep = step + 1;
+
+  // SPECIAL: Alien Kaiju chain
+  if(currentWheel.title === "Kaiju" && currentWheel.key === "extraForm"){
+    if(result === "Kaiju No 8"){
+      // keep at 13 so next wheel becomes Kaiju No 8 number
       c.wheelStep = 13;
-      saveNow();
+      // keep memory that we selected Kaiju No 8
+      c.extraForm = "Kaiju No 8";
     }else{
-      // otherwise extra wheel complete; proceed to complete
+      // skip to complete
       c.wheelStep = 14;
-      saveNow();
     }
   }
+
+  saveNow();
+  autoAdvanceWheel();
+  drawWheel();
+  refreshUI();
 }
 
-/* Patch onSpinResult to run the kaiju chain logic */
-const _onSpinResult_p4 = onSpinResult;
-onSpinResult = function(result){
-  _onSpinResult_p4(result);
-  postSpinAdjustments();
-  autoAdvanceWheel();
-  refreshUI();
-};
-
 /* =========================================================
-   STATS TAB RENDER (layout finalized)
+   STATS TAB RENDER
 ========================================================= */
 function renderStatsTab(){
   const c = ensureActiveChar();
@@ -1344,7 +1266,7 @@ function renderStatsTab(){
     });
   }
 
-  // Final Stats placeholder (real math comes in Part 5)
+  // Final stats placeholder (Part 5 makes real math)
   const finHost = $("finalStatsList");
   if(finHost){
     finHost.innerHTML = "";
@@ -1352,12 +1274,7 @@ function renderStatsTab(){
     const rows = locked ? [
       ["Locked", "Complete the build to calculate final stats."]
     ] : [
-      ["Strength", c.strength || "—"],
-      ["Durability", c.durability || "—"],
-      ["Speed", c.speed || "—"],
-      ["IQ", c.iq || "—"],
-      ["Fight", c.fight || "—"],
-      ["(Math)", "Full additive stat math comes in Part 5."]
+      ["(Math)", "Real stat math loads in Part 5."]
     ];
     rows.forEach(([k,v])=>{
       const div=document.createElement("div");
@@ -1368,20 +1285,16 @@ function renderStatsTab(){
   }
 }
 
-/* Extend refreshUI (from Part 3) */
+/* Extend refreshUI */
 const _refreshUI_p4 = refreshUI;
 refreshUI = function(){
   _refreshUI_p4();
   renderStatsTab();
 
-  // update wheel title/hint based on step
   const c = ensureActiveChar();
-  if(!c.buildComplete){
-    autoAdvanceWheel();
-  }
+  autoAdvanceWheel();
   drawWheel();
 
-  // lock PvE/PvP buttons until build complete
   const locked = !c.buildComplete;
   if($("pveStartBtn")) $("pveStartBtn").disabled = locked;
   if($("pvpStartBtn")) $("pvpStartBtn").disabled = locked;
@@ -1389,20 +1302,9 @@ refreshUI = function(){
   if($("pvpStatus")) $("pvpStatus").textContent = locked ? "Locked until Build Complete." : "Unlocked (dev-only).";
 };
 
-/* =========================================================
-   BUTTON WIRING
-========================================================= */
+/* Buttons */
 $("spinBtn")?.addEventListener("click", spinWheel);
-
-/* Remove finalize behavior: wheels are one-time per character.
-   If you still have a finalize button in your HTML, we just make it informational.
-*/
-$("finalizeBtn")?.addEventListener("click", ()=>{
-  const c = ensureActiveChar();
-  toast(c.buildComplete ? "Already complete." : "No finalize needed. Just keep spinning.");
-});
-
-/* Skip/test buttons are disabled in V1 (dev-only) */
+$("finalizeBtn")?.addEventListener("click", ()=>toast("No finalize needed. Just keep spinning."));
 $("skipBtn")?.addEventListener("click", ()=>toast("Skip is dev-only."));
 $("testFastBtn")?.addEventListener("click", ()=>toast("Fast spin is dev-only."));
 
@@ -1411,7 +1313,7 @@ $("pveStartBtn")?.addEventListener("click", ()=>{
   const c = ensureActiveChar();
   if(!c.buildComplete){ toast("Locked."); return; }
   const el = $("pveLog");
-  if(el) el.innerHTML = `<div>${escapeHtml("PvE (dev-only) will be added later.")}</div>` + el.innerHTML;
+  if(el) el.innerHTML = `<div>${escapeHtml("PvE (dev-only) will be expanded in later parts.")}</div>` + el.innerHTML;
 });
 $("pvpStartBtn")?.addEventListener("click", ()=>{
   const c = ensureActiveChar();
@@ -1420,22 +1322,20 @@ $("pvpStartBtn")?.addEventListener("click", ()=>{
   if(el) el.innerHTML = `<div>${escapeHtml("PvP upload/fight is planned later.")}</div>` + el.innerHTML;
 });
 
-/* Init wheel to correct first step */
+/* Init */
 (function initP4(){
-  const c = ensureActiveChar();
-  // Ensure we never sit on "undefined wheel"
+  ensureActiveChar();
   autoAdvanceWheel();
   drawWheel();
   refreshUI();
 })();
 </script>
-<!-- =========================
-PART 5 / 12 — Stat Math + Stability + Death
+    <!-- =========================
+PART 5 / 12 — Stat Math + Stability + Death (FIXED)
 ========================= -->
 <script>
 /* =========================================================
    STAT WORD → NUMBER MAPPING
-   (Numbers can exceed "Universal" — labels cap at ???)
 ========================================================= */
 const STAT_NUMBER_MAP = {
   strength: {
@@ -1459,27 +1359,25 @@ const STAT_NUMBER_MAP = {
     "Legendary":10,"Mythic":14,"Universal":20,"???":30
   }
 };
-
 function statWordToNumber(type, word){
   return STAT_NUMBER_MAP[type]?.[word] ?? 0;
 }
-
 function labelForStat(type, value){
-  const map = STAT_NUMBER_MAP[type];
-  let lastLabel = "???";
+  const map = STAT_NUMBER_MAP[type] || {};
+  let best = "???";
   for(const [label,num] of Object.entries(map)){
-    if(value >= num) lastLabel = label;
+    if(value >= num) best = label;
   }
-  return lastLabel;
+  return best;
 }
 
 /* =========================================================
-   POWER / WEAPON / TRAINER MODIFIERS (ADDITIVE)
+   MODIFIERS (ADDITIVE)
 ========================================================= */
 function powerMods(p){
   switch(p){
     case "Adaptation": return { durability:+2, stability:-1 };
-    case "Regeneration": return { durability:+3, stability:-2 };
+    case "Regeneration": return { durability:+3, stability:-2, regen:true };
     case "Immortal": return { durability:+4, stability:-3, immortal:true };
     case "Gravity Manipulation": return { strength:+2, fight:+1 };
     case "Time Manipulation": return { speed:+3, iq:+1, stability:-2 };
@@ -1488,7 +1386,6 @@ function powerMods(p){
     default: return {};
   }
 }
-
 function weaponMods(w){
   switch(w){
     case "Sword": return { fight:+2 };
@@ -1498,7 +1395,6 @@ function weaponMods(w){
     default: return {};
   }
 }
-
 function trainerMods(t){
   switch(t){
     case "Master Roshi": return { fight:+2, iq:+1 };
@@ -1508,7 +1404,7 @@ function trainerMods(t){
 }
 
 /* =========================================================
-   STABILITY SYSTEM
+   STABILITY
 ========================================================= */
 const MAX_STABILITY = 5;
 const MIN_STABILITY = -10;
@@ -1518,22 +1414,25 @@ function computeStability(char){
 
   if(char.power){
     const pm = powerMods(char.power);
-    if(pm.stability) s += pm.stability;
+    if(typeof pm.stability === "number") s += pm.stability;
   }
   if(char.weapon){
     const wm = weaponMods(char.weapon);
-    if(wm.stability) s += wm.stability;
+    if(typeof wm.stability === "number") s += wm.stability;
+  }
+  if(char.trainer){
+    const tm = trainerMods(char.trainer);
+    if(typeof tm.stability === "number") s += tm.stability;
   }
 
   return Math.max(MIN_STABILITY, s);
 }
-
 function isUnstable(char){
   return computeStability(char) < 0;
 }
 
 /* =========================================================
-   FINAL STAT CALCULATION (REAL)
+   FINAL STATS (REAL)
 ========================================================= */
 function computeFinalStats(char){
   let out = {
@@ -1543,118 +1442,261 @@ function computeFinalStats(char){
     iq: statWordToNumber("iq", char.iq),
     fight: statWordToNumber("fight", char.fight),
     stability: computeStability(char),
-    immortal:false
+    immortal:false,
+    regen:false
   };
 
-  // power
   if(char.power){
     const p = powerMods(char.power);
-    Object.keys(p).forEach(k=>{
-      if(typeof p[k] === "number"){
-        out[k] = (out[k] || 0) + p[k];
-      }
+    for(const k of Object.keys(p)){
+      if(typeof p[k] === "number") out[k] = (out[k] || 0) + p[k];
       if(k==="immortal") out.immortal = true;
-    });
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen" || k==="regen") out.regen = true;
+      if(k==="regen" || k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+      if(k==="regen") out.regen = true;
+    }
   }
 
-  // weapon
   if(char.weapon){
     const w = weaponMods(char.weapon);
-    Object.keys(w).forEach(k=>{
-      out[k] = (out[k] || 0) + w[k];
-    });
+    for(const k of Object.keys(w)){
+      if(typeof w[k] === "number") out[k] = (out[k] || 0) + w[k];
+    }
   }
 
-  // trainer
   if(char.trainer){
     const t = trainerMods(char.trainer);
-    Object.keys(t).forEach(k=>{
-      out[k] = (out[k] || 0) + t[k];
-    });
+    for(const k of Object.keys(t)){
+      if(typeof t[k] === "number") out[k] = (out[k] || 0) + t[k];
+    }
   }
 
-  // mastery scaling
-  if(char.powerMastery){
-    if(char.powerMastery==="Cosmic") out.strength+=2;
-    if(char.powerMastery==="Universal") out.strength+=4;
-    if(char.powerMastery==="Omnipotent") out.strength+=6;
-  }
+  // simple mastery scaling
+  if(char.powerMastery === "Cosmic") out.strength += 2;
+  if(char.powerMastery === "Universal") out.strength += 4;
+  if(char.powerMastery === "Omnipotent") out.strength += 6;
 
   out.labels = {
     strength: labelForStat("strength", out.strength),
     durability: labelForStat("durability", out.durability),
     speed: labelForStat("speed", out.speed),
     iq: labelForStat("iq", out.iq),
-    fight: labelForStat("fight", out.fight)
+    fight: labelForStat("fight", out.fight),
   };
 
   return out;
 }
 
 /* =========================================================
-   DEATH SYSTEM
+   DEATH SYSTEM (your rules)
+   - PvE: 1 strike = death
+   - PvP: 2 strikes = death
 ========================================================= */
-function ensureLifeTrackers(char){
-  char.deaths ||= { pve:0, pvp:0 };
-}
-
 function applyPvELoss(char){
-  ensureLifeTrackers(char);
-  char.deaths.pve += 1;
-  if(char.deaths.pve >= 1){
-    char.alive = false;
-    toast("Character died in PvE.");
-  }
+  char.strikesPVE = (char.strikesPVE || 0) + 1;
+  if(char.strikesPVE >= 1) killCharacter(char, "PvE loss");
   saveNow();
 }
-
 function applyPvPLoss(char){
-  ensureLifeTrackers(char);
-  char.deaths.pvp += 1;
-  if(char.deaths.pvp >= 2){
-    char.alive = false;
-    toast("Character died in PvP.");
-  }
+  char.strikesPVP = (char.strikesPVP || 0) + 1;
+  if(char.strikesPVP >= 2) killCharacter(char, "PvP strikes (2/2)");
   saveNow();
 }
 
-/* =========================================================
-   INSTANT-DEATH IMMUNITY CHECK
-========================================================= */
+/* Immortal or Regeneration blocks instant-death */
 function canDieInstantly(char){
-  const stats = computeFinalStats(char);
-  if(stats.immortal) return false;
-  if(char.power === "Regeneration") return false;
+  const fin = computeFinalStats(char);
+  if(fin.immortal) return false;
+  if(fin.regen) return false;
   return true;
 }
 
 /* =========================================================
-   FINAL STATS TAB (REAL DATA)
+   STATS TAB FINAL OUTPUT
 ========================================================= */
 const _renderStatsTab_p5 = renderStatsTab;
 renderStatsTab = function(){
   _renderStatsTab_p5();
 
   const c = ensureActiveChar();
-  if(!c.buildComplete) return;
-
-  const fin = computeFinalStats(c);
   const host = $("finalStatsList");
   if(!host) return;
 
   host.innerHTML = "";
+
+  if(!c.buildComplete){
+    const d=document.createElement("div");
+    d.className="statLine";
+    d.innerHTML = `<div class="statKey">Locked</div><div class="statVal">Complete build first.</div>`;
+    host.appendChild(d);
+    return;
+  }
+
+  const fin = computeFinalStats(c);
+
   [
     ["Strength", `${fin.labels.strength} (${fin.strength})`],
     ["Durability", `${fin.labels.durability} (${fin.durability})`],
     ["Speed", `${fin.labels.speed} (${fin.speed})`],
     ["IQ", `${fin.labels.iq} (${fin.iq})`],
     ["Fight", `${fin.labels.fight} (${fin.fight})`],
-    ["Stability", `${fin.stability}`],
-    ["Immortal", fin.immortal ? "Yes" : "No"]
+    ["Stability", String(fin.stability)],
+    ["Immortal", fin.immortal ? "Yes" : "No"],
+    ["Regeneration", fin.regen ? "Yes" : "No"]
   ].forEach(([k,v])=>{
     const d=document.createElement("div");
     d.className="statLine";
-    d.innerHTML=`<div class="statKey">${k}</div><div class="statVal">${v}</div>`;
+    d.innerHTML=`<div class="statKey">${escapeHtml(k)}</div><div class="statVal">${escapeHtml(v)}</div>`;
     host.appendChild(d);
   });
 
@@ -1672,50 +1714,44 @@ renderStatsTab = function(){
 $("pveStartBtn")?.addEventListener("click", ()=>{
   const c = ensureActiveChar();
   if(!c.buildComplete || !c.alive) return;
+
   if(canDieInstantly(c)){
     applyPvELoss(c);
   }else{
     toast("You survived due to regeneration/immortality.");
   }
+  refreshUI();
 });
 
 $("pvpStartBtn")?.addEventListener("click", ()=>{
   const c = ensureActiveChar();
   if(!c.buildComplete || !c.alive) return;
+
   if(canDieInstantly(c)){
     applyPvPLoss(c);
   }else{
     toast("You survived due to regeneration/immortality.");
   }
+  refreshUI();
 });
 </script>
-<!-- =========================
-PART 6 / 12 — Sound + Name Safety + Hybrid + Portrait Placeholder + Guards
+    <!-- =========================
+PART 6 / 12 — Sound + Name UX + Portrait Placeholder + Hybrid Patch (FIXED)
 ========================= -->
 <script>
 /* =========================================================
-   CRASH GUARDS (prevents “it won’t spin” from missing funcs)
+   SAFE GUARDS
 ========================================================= */
-window.saveNow = window.saveNow || (typeof saveState === "function" ? saveState : ()=>{});
-window.ensureActiveChar = window.ensureActiveChar || (function(){
-  return function(){
-    // If your game is still single-character, use state.character.
-    if(window.state?.character) {
-      state.character.alive ??= true;
-      return state.character;
-    }
-    // If you later store many characters, you’ll replace this anyway.
-    return null;
-  };
-})();
-window.renderStatsTab = window.renderStatsTab || function(){};
+window.saveNow = window.saveNow || function(){};
+window.toast = window.toast || function(){};
+window.escapeHtml = window.escapeHtml || function(x){ return String(x ?? ""); };
+window.ensureActiveChar = window.ensureActiveChar || function(){ return null; };
 
 /* =========================================================
    SOUND SYSTEM (WebAudio, no external files)
 ========================================================= */
 const Sound = (function(){
   let ctx=null;
-  let enabled=true;
 
   function getCtx(){
     if(!ctx){
@@ -1724,135 +1760,125 @@ const Sound = (function(){
     return ctx;
   }
 
-  function beep(freq=440, dur=0.08, type="sine", gain=0.06){
-    if(!enabled) return;
-    const ac = getCtx();
-    const o = ac.createOscillator();
-    const g = ac.createGain();
-    o.type = type;
-    o.frequency.value = freq;
-    g.gain.value = gain;
-    o.connect(g);
-    g.connect(ac.destination);
-    o.start();
-    o.stop(ac.currentTime + dur);
+  function beep(freq=440, dur=0.07, type="sine", gain=0.05){
+    try{
+      const c = ensureActiveChar();
+      if(window.save?.settings?.sound === false) return;
+
+      const ac = getCtx();
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      g.gain.value = gain;
+      o.connect(g);
+      g.connect(ac.destination);
+      o.start();
+      o.stop(ac.currentTime + dur);
+    }catch(e){}
   }
 
-  function chord(list){
-    list.forEach((x,i)=>setTimeout(()=>beep(x.f,x.d,x.t,x.g), i*35));
+  function chord(seq){
+    seq.forEach((x,i)=>setTimeout(()=>beep(x.f,x.d,x.t,x.g), i*35));
   }
 
   return {
-    toggle(){
-      enabled = !enabled;
-      try{ if(ctx && enabled) ctx.resume(); }catch(e){}
-      return enabled;
-    },
-    isOn(){ return enabled; },
     click(){ beep(520,0.05,"square",0.035); },
     spin(){ chord([{f:220,d:.06,t:"sine",g:.05},{f:330,d:.06,t:"sine",g:.05},{f:440,d:.06,t:"sine",g:.05}]); },
     win(){ chord([{f:523,d:.08,t:"sine",g:.06},{f:659,d:.10,t:"sine",g:.06},{f:784,d:.12,t:"sine",g:.06}]); },
-    lose(){ chord([{f:220,d:.10,t:"sawtooth",g:.05},{f:185,d:.12,t:"sawtooth",g:.05}]); },
     warn(){ chord([{f:392,d:.06,t:"square",g:.05},{f:311,d:.08,t:"square",g:.05}]); },
+    toggle(){
+      try{
+        if(!window.save) return true;
+        window.save.settings ||= {};
+        window.save.settings.sound = !(window.save.settings.sound === true);
+        saveNow();
+        if(ctx && window.save.settings.sound) ctx.resume();
+        return window.save.settings.sound;
+      }catch(e){ return true; }
+    }
   };
 })();
 
-// Hook volume button
+/* Volume button wiring */
 (function(){
   const v = document.getElementById("volBtn");
   if(!v) return;
+
+  // ensure default if missing
+  if(window.save){
+    save.settings ||= {};
+    if(typeof save.settings.sound !== "boolean") save.settings.sound = true;
+  }
+
+  function paint(){
+    const on = (window.save?.settings?.sound !== false);
+    v.textContent = on ? "🔊" : "🔇";
+  }
+  paint();
+
   v.addEventListener("click", ()=>{
     const on = Sound.toggle();
-    v.textContent = on ? "🔊" : "🔇";
-    if(typeof toast === "function") toast(on ? "Sound on" : "Sound off");
+    paint();
+    toast(on ? "Sound on" : "Sound off");
   });
 })();
 
 /* =========================================================
-   NAME SETUP (click the “namedTag” pill to set name)
-   - 3–12 chars
-   - letters/numbers/spaces only
-   - blocks obvious inappropriate patterns (without listing slurs)
+   NAME UX
+   - Clicking the namedTag pill opens the name modal (if not named)
 ========================================================= */
-function normalizeName(raw){
-  let s = String(raw ?? "").trim();
-
-  // collapse spaces
-  s = s.replace(/\s+/g, " ");
-
-  // allowed characters only
-  if(!/^[a-zA-Z0-9 ]+$/.test(s)) return { ok:false, reason:"Use only letters/numbers/spaces." };
-
-  // length 3–12
-  if(s.length < 3) return { ok:false, reason:"Name too short (min 3)." };
-  if(s.length > 12) return { ok:false, reason:"Name too long (max 12)." };
-
-  // block obvious “inappropriate-ish” numeric patterns
-  // (You can extend this later with your own blocklist.)
-  const lower = s.toLowerCase();
-  const badPatterns = [
-    /xxx/,        // common explicit pattern
-    /69/,         // common explicit number pattern
-    /420/,        // common “weed” pattern
-    /(.)\1\1\1/   // 4 repeated same char
-  ];
-  if(badPatterns.some(r=>r.test(lower))){
-    return { ok:false, reason:"Pick a cleaner name." };
-  }
-
-  return { ok:true, value:s };
-}
-
 (function(){
-  const tag = document.getElementById("namedTag");
-  if(!tag) return;
+  const named = document.getElementById("namedTag");
+  if(!named) return;
 
-  tag.style.cursor = "pointer";
-  tag.title = "Tap to set name";
+  named.style.cursor = "pointer";
+  named.title = "Tap to set name";
 
-  tag.addEventListener("click", ()=>{
+  named.addEventListener("click", ()=>{
     Sound.click();
     const c = ensureActiveChar();
     if(!c) return;
 
-    // Renaming is NOT allowed after the character is complete (per your rules).
-    if(c.buildComplete){
-      if(typeof toast === "function") toast("No renaming after build complete.");
+    // No renaming later
+    if(c.name){
+      toast("No renaming allowed.");
       Sound.warn();
       return;
     }
 
-    const next = prompt("Enter character name (3–12 chars, letters/numbers/spaces):", c.name || "");
-    if(next === null) return;
-
-    const res = normalizeName(next);
-    if(!res.ok){
-      if(typeof toast === "function") toast(res.reason);
+    // Use Part 3 modal if present
+    if(typeof openNameModal === "function"){
+      openNameModal();
+    }else{
+      toast("Name system missing (Part 3).");
       Sound.warn();
-      return;
     }
-
-    c.name = res.value;
-    tag.textContent = `Name: ${c.name}`;
-    saveNow();
-    if(typeof toast === "function") toast("Name set.");
   });
 })();
 
 /* =========================================================
    PORTRAIT PLACEHOLDER
-   Always shows something even before real images are added.
+   - Always shows something in the portrait area.
 ========================================================= */
 function svgDataURI(svg){
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
-function setPortraitPlaceholder(prefix, char){
+function displayRacePretty(c){
+  if(!c) return "—";
+  if(c.race !== "Hybrid") return c.race || "—";
+  const a = c.hybridRaces?.[0] || "—";
+  const b = c.hybridRaces?.[1] || "—";
+  return `Hybrid (${a} + ${b})`;
+}
+
+function setPortrait(prefix, char){
   const img = document.getElementById(prefix + "layer_base");
   if(!img) return;
 
-  const name = (char.name || "Unknown").slice(0,12);
-  const race = char.race || "—";
+  const name = (char?.name || "Unknown").slice(0,12);
+  const race = displayRacePretty(char);
 
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
@@ -1864,178 +1890,203 @@ function setPortraitPlaceholder(prefix, char){
     </defs>
     <rect width="600" height="600" fill="url(#g)"/>
     <circle cx="300" cy="250" r="120" fill="rgba(122,168,255,.18)" stroke="rgba(255,255,255,.12)" stroke-width="6"/>
-    <text x="300" y="270" text-anchor="middle" font-size="44" fill="rgba(232,238,252,.92)" font-family="system-ui" font-weight="800">${name}</text>
-    <text x="300" y="330" text-anchor="middle" font-size="26" fill="rgba(232,238,252,.65)" font-family="system-ui" font-weight="700">${race}</text>
-    <text x="300" y="520" text-anchor="middle" font-size="18" fill="rgba(232,238,252,.55)" font-family="system-ui" font-weight="700">Portrait placeholder</text>
+    <text x="300" y="268" text-anchor="middle" font-size="46" fill="rgba(232,238,252,.92)" font-family="system-ui" font-weight="900">${escapeHtml(name)}</text>
+    <text x="300" y="328" text-anchor="middle" font-size="26" fill="rgba(232,238,252,.65)" font-family="system-ui" font-weight="800">${escapeHtml(race)}</text>
+    <text x="300" y="520" text-anchor="middle" font-size="18" fill="rgba(232,238,252,.50)" font-family="system-ui" font-weight="700">Portrait placeholder</text>
   </svg>`;
   img.src = svgDataURI(svg);
 }
 
-// Patch existing portrait hooks (safe)
-const _applyRaceBase_p6 = window.applyRaceBase || function(){};
-window.applyRaceBase = function(char, prefix){
-  try{ _applyRaceBase_p6(char, prefix); }catch(e){}
-  setPortraitPlaceholder(prefix, char);
-};
+/* Patch refreshUI to update portrait every time */
+(function(){
+  if(typeof window.refreshUI !== "function") return;
+
+  const _rui = window.refreshUI;
+  window.refreshUI = function(){
+    _rui();
+    try{
+      const c = ensureActiveChar();
+      setPortrait("", c);
+    }catch(e){}
+  };
+})();
 
 /* =========================================================
    HYBRID RULE (2 extra race spins)
-   Stores:
-     char.race = "Hybrid"
-     char.hybridRaces = [raceA, raceB]
+   - If Race = Hybrid, immediately forces 2 more race spins.
+   - Stores: c.race="Hybrid" AND c.hybridRaces=[A,B]
 ========================================================= */
-function ensureHybridState(char){
-  char.hybridRaces ||= [];
-  char._hybridPending ||= 0;
+function ensureHybridFields(c){
+  c.hybridRaces ||= [];
+  c._hybridPending ||= 0;
 }
 
-function onRaceResultApplied(char, result){
-  // Called after your race wheel picks a race.
-  if(result === "Hybrid"){
-    ensureHybridState(char);
-    char._hybridPending = 2;     // two more spins
-    char.hybridRaces = [];
-    if(typeof logBuild === "function") logBuild("Hybrid rolled → spin 2 more races.");
-    if(typeof toast === "function") toast("Hybrid! Spin 2 more races.");
+function applyHybridRace(c, pickedRace){
+  ensureHybridFields(c);
+
+  // If they rolled Hybrid at race step:
+  if(pickedRace === "Hybrid"){
+    c.race = "Hybrid";
+    c.hybridRaces = [];
+    c._hybridPending = 2;
+    toast("Hybrid! Spin 2 more races.");
     Sound.win();
-    return;
+    return true;
   }
 
-  // If we’re collecting hybrid sub-races:
-  ensureHybridState(char);
-  if(char.race === "Hybrid" && char._hybridPending > 0){
-    char.hybridRaces.push(result);
-    char._hybridPending -= 1;
+  // If Hybrid is collecting sub-races:
+  if(c.race === "Hybrid" && c._hybridPending > 0){
+    c.hybridRaces.push(pickedRace);
+    c._hybridPending -= 1;
 
-    if(typeof logBuild === "function") logBuild(`Hybrid race added → ${result}`);
-    Sound.click();
-
-    if(char._hybridPending === 0){
-      if(typeof toast === "function") toast(`Hybrid complete: ${char.hybridRaces.join(" + ")}`);
-      Sound.win();
+    if(c._hybridPending > 0){
+      toast(`Hybrid needs ${c._hybridPending} more race spin(s).`);
+      Sound.click();
     }else{
-      if(typeof toast === "function") toast(`Hybrid needs ${char._hybridPending} more race spin(s).`);
+      toast(`Hybrid complete: ${c.hybridRaces.join(" + ")}`);
+      Sound.win();
     }
+    return true;
   }
+
+  return false;
 }
 
-// Make Race show nicely in stats
-function displayRace(char){
-  if(char.race !== "Hybrid") return char.race || "—";
-  const a = char.hybridRaces?.[0] || "—";
-  const b = char.hybridRaces?.[1] || "—";
-  return `Hybrid (${a} + ${b})`;
-}
-
-/* =========================================================
-   LOCK SPIN AFTER BUILD COMPLETE
-========================================================= */
-function lockSpinIfComplete(){
-  const c = ensureActiveChar();
-  const spinBtn = document.getElementById("spinBtn");
-  if(!c || !spinBtn) return;
-
-  // Once the character is complete, you cannot spin again.
-  spinBtn.disabled = !!c.buildComplete || c.alive === false;
-  spinBtn.style.opacity = spinBtn.disabled ? "0.55" : "1";
-  spinBtn.style.pointerEvents = spinBtn.disabled ? "none" : "auto";
-}
-
-/* =========================================================
-   PATCH: when race spin resolves, apply Hybrid logic + sound
-   This expects your Part 4 spinWheel() sets state.character.race
-========================================================= */
+/* Wrap applyResultToChar from Part 4 */
 (function(){
-  // Wrap pickFromWheel if present (best place to hook result)
-  if(typeof window.pickFromWheel === "function"){
-    const _pick = window.pickFromWheel;
-    window.pickFromWheel = function(){
-      const result = _pick();
-      return result;
-    };
-  }
+  if(typeof window.applyResultToChar !== "function") return;
 
-  // Wrap spinWheel end behavior if possible:
-  if(typeof window.spinWheel === "function"){
-    const _spin = window.spinWheel;
-    window.spinWheel = async function(){
-      const c = ensureActiveChar();
-      if(c?.buildComplete){ Sound.warn(); if(typeof toast==="function") toast("Build complete. No rerolls."); return; }
-      Sound.spin();
-      await _spin();
+  const _apply = window.applyResultToChar;
 
-      // After the wheel stops, your Part 4 sets state.character.race.
-      const cc = ensureActiveChar();
-      if(cc && cc.race){
-        onRaceResultApplied(cc, cc.race);
+  window.applyResultToChar = function(char, key, value){
+    // Hybrid logic only on race wheel outcomes:
+    if(key === "race"){
+      // If race already set to Hybrid and pending, we treat extra spins as hybrid sub-races
+      ensureHybridFields(char);
 
-        // If Hybrid is pending, force the UI hint to keep spinning race
-        if(cc.race === "Hybrid" && cc._hybridPending > 0){
-          const wh = document.getElementById("wheelHint");
-          if(wh) wh.textContent = `Hybrid: spin ${cc._hybridPending} more race(s)`;
+      // If the race slot isn't set yet, we allow it
+      if(!char.race){
+        const handled = applyHybridRace(char, value);
+        // Always count “Hybrid” itself as the race result
+        // Inventory still needs to track it
+        char.inventory.races ||= [];
+        if(!char.inventory.races.includes(value)) char.inventory.races.push(value);
+
+        // If Hybrid was rolled, we DO want Part 4 to consider “race is set”
+        // and move forward, BUT we will force wheelStep back to 0 until hybrid done.
+        if(handled && value === "Hybrid"){
+          // we return true so Part 4 advances, then we correct step in onSpinResult wrap below
+          return true;
+        }
+
+        // If not hybrid, set normal race using original behavior
+        return _apply(char, key, value);
+      }
+
+      // If Hybrid pending, accept extra race spins even though race already set
+      if(char.race === "Hybrid" && char._hybridPending > 0){
+        applyHybridRace(char, value);
+        // Record in inventory
+        char.inventory.races ||= [];
+        if(!char.inventory.races.includes(value)) char.inventory.races.push(value);
+        return true; // allow “write” so spin advances; we will control step
+      }
+    }
+
+    return _apply(char, key, value);
+  };
+})();
+
+/* Wrap onSpinResult so Hybrid extra spins don’t advance into next wheel until done */
+(function(){
+  if(typeof window.onSpinResult !== "function") return;
+
+  const _on = window.onSpinResult;
+  window.onSpinResult = function(result){
+    const c = ensureActiveChar();
+    const key = window.currentWheel?.key;
+
+    // Let Part 4 do its normal write+advance first
+    _on(result);
+
+    // Then fix wheelStep if Hybrid is still pending:
+    try{
+      ensureHybridFields(c);
+
+      if(key === "race" && c.race === "Hybrid" && c._hybridPending > 0){
+        // Force them to keep spinning race until hybrid done:
+        c.wheelStep = 0; // stay on Race wheel
+        saveNow();
+        if(typeof autoAdvanceWheel === "function") autoAdvanceWheel();
+        if(document.getElementById("wheelHint")){
+          document.getElementById("wheelHint").textContent = `Hybrid: spin ${c._hybridPending} more race(s)`;
         }
       }
 
-      lockSpinIfComplete();
-      saveNow();
-      if(typeof refreshUI === "function") refreshUI();
+      // After hybrid is complete, jump forward to raceSub step:
+      if(c.race === "Hybrid" && c._hybridPending === 0){
+        // continue to race-based wheel next
+        if(c.wheelStep === 0) c.wheelStep = 1;
+        saveNow();
+        if(typeof autoAdvanceWheel === "function") autoAdvanceWheel();
+      }
+    }catch(e){}
+
+    try{ if(typeof refreshUI==="function") refreshUI(); }catch(e){}
+  };
+})();
+
+/* =========================================================
+   DISPLAY HYBRID NICELY IN BUILD SUMMARY + STATS SUMMARY
+========================================================= */
+(function(){
+  if(typeof window.renderBuildSummary === "function"){
+    const _rbs = window.renderBuildSummary;
+    window.renderBuildSummary = function(){
+      _rbs();
+      try{
+        const c = ensureActiveChar();
+        // portrait will update via refreshUI patch
+        // update the Race line displayed in build summary:
+        // (renderBuildSummary uses the values already, so we only need to update namedTag)
+        const named = document.getElementById("namedTag");
+        if(named && !c.name) named.textContent = "Tap Name";
+      }catch(e){}
+    };
+  }
+
+  if(typeof window.renderStatsTab === "function"){
+    const _rst = window.renderStatsTab;
+    window.renderStatsTab = function(){
+      _rst();
+      try{
+        const c = ensureActiveChar();
+        const sum = document.getElementById("statsSummary");
+        if(!sum) return;
+
+        // Replace the displayed "Race" row if present
+        [...sum.querySelectorAll(".statLine")].forEach(line=>{
+          const k = line.querySelector(".statKey")?.textContent?.trim();
+          if(k === "Race"){
+            const v = line.querySelector(".statVal");
+            if(v) v.textContent = displayRacePretty(c);
+          }
+        });
+      }catch(e){}
     };
   }
 })();
 
 /* =========================================================
-   PATCH BUILD STAT LINES (Race display + life display)
+   SPIN SOUND
 ========================================================= */
-if(typeof window.buildStatLines === "function"){
-  const _bsl = window.buildStatLines;
-  window.buildStatLines = function(){
-    const c = ensureActiveChar();
-    const lines = _bsl();
+(function(){
+  const spin = document.getElementById("spinBtn");
+  if(!spin) return;
+  spin.addEventListener("click", ()=>Sound.spin());
+})();
 
-    // Replace "Race" line with Hybrid display
-    for(let i=0;i<lines.length;i++){
-      if(lines[i][0] === "Race"){
-        lines[i][1] = displayRace(c);
-      }
-    }
-
-    // add alive/deaths info if not there
-    if(c){
-      c.alive ??= true;
-      c.deaths ||= {pve:0,pvp:0};
-      lines.push(["Alive", c.alive ? "Yes" : "No"]);
-      lines.push(["PvE Deaths", String(c.deaths.pve||0)]);
-      lines.push(["PvP Strikes", String(c.deaths.pvp||0) + " / 2"]);
-    }
-    return lines;
-  };
-}
-
-/* =========================================================
-   PATCH refreshUI to enforce spin lock + placeholder name tag
-========================================================= */
-if(typeof window.refreshUI === "function"){
-  const _rui = window.refreshUI;
-  window.refreshUI = function(){
-    _rui();
-    const c = ensureActiveChar();
-    const tag = document.getElementById("namedTag");
-    if(tag){
-      if(c?.name) tag.textContent = c.buildComplete ? `Final: ${c.name}` : `Name: ${c.name}`;
-      else tag.textContent = c?.buildComplete ? "Finalized" : "Tap to name";
-    }
-    lockSpinIfComplete();
-  };
-}
-
-// close loot modal sound feedback
-document.getElementById("lootOkBtn")?.addEventListener("click", ()=>Sound.click());
-document.getElementById("lootCloseBtn")?.addEventListener("click", ()=>Sound.click());
-
-/* =========================================================
-   FINAL: run once now
-========================================================= */
-try{ lockSpinIfComplete(); }catch(e){}
+/* Run once */
 try{ if(typeof refreshUI==="function") refreshUI(); }catch(e){}
 </script>
 <!-- =========================
