@@ -5955,6 +5955,470 @@ PASTE THIS DIRECTLY AFTER PART 11
 
 })();
 </script>
+<script>
+/* =========================
+   HOTFIX 1/6 — Phase Engine Constants
+   ========================= */
 
+const PHASES = [
+  { key:"race",   label:"Race",   options: ()=>RACE_OPTIONS,    pickKey:"race" },
+  { key:"power",  label:"Power",  options: ()=>POWER_OPTIONS,   pickKey:"powers",  mode:"addList" },
+  { key:"weapon", label:"Weapon", options: ()=>WEAPON_OPTIONS,  pickKey:"weapons", mode:"addList" },
+  { key:"armor",  label:"Armor",  options: ()=>ARMOR_OPTIONS,   pickKey:"armors",  mode:"addList" },
+  { key:"clan",   label:"Clan",   options: ()=>CLAN_OPTIONS,    pickKey:"clan" },
+  { key:"trainer",label:"Trainer",options: ()=>TRAINER_OPTIONS, pickKey:"trainer" },
+  { key:"mastery",label:"Mastery",options: ()=>POWER_MASTERY_OPTIONS, pickKey:"powerMastery" },
+  { key:"transform",label:"Transform",options: ()=>TRANSFORM_OPTIONS, pickKey:"transformation" },
+];
+
+function getPhaseIndex(){
+  const idx = Number(state?.ui?.phaseIndex ?? 0);
+  return Math.max(0, Math.min(PHASES.length-1, idx));
+}
+function setPhaseIndex(i){
+  state.ui ||= {};
+  state.ui.phaseIndex = Math.max(0, Math.min(PHASES.length-1, i));
+  saveState();
+}
+function currentPhase(){
+  return PHASES[getPhaseIndex()];
+}
+</script>
+    <script>
+/* =========================
+   HOTFIX 2/6 — Roster + Active Character
+   ========================= */
+
+function uid(){
+  return Math.random().toString(16).slice(2) + Date.now().toString(16);
+}
+
+function ensureRoster(){
+  state.roster ||= { activeId:null, living:{}, dead:{} };
+
+  // migrate old single-character saves into roster once
+  if(!state.roster.activeId && state.character){
+    const id = uid();
+    state.roster.living[id] = structuredClone(state.character);
+    state.roster.activeId = id;
+  }
+
+  // ensure an active character exists
+  if(!state.roster.activeId){
+    const id = uid();
+    state.roster.living[id] = defaultState().character;
+    state.roster.activeId = id;
+  }
+
+  // sync state.character pointer (UI uses this)
+  const a = state.roster.living[state.roster.activeId] || defaultState().character;
+  state.character = a;
+}
+
+ensureRoster();
+saveState();
+
+function newCharacter(){
+  ensureRoster();
+  const id = uid();
+  state.roster.living[id] = defaultState().character; // fresh character
+  state.roster.activeId = id;
+
+  // reset build progress
+  state.ui ||= {};
+  state.ui.phaseIndex = 0;
+  state.character = state.roster.living[id];
+
+  // clean build log and wheel hint
+  $("buildLog").innerHTML = "";
+  logBuild("New character created.");
+  saveState();
+  refreshUI();
+}
+
+function setActiveCharacter(id){
+  ensureRoster();
+  if(state.roster.living[id]){
+    state.roster.activeId = id;
+    state.character = state.roster.living[id];
+    saveState();
+    refreshUI();
+  }
+}
+</script>
+    <script>
+/* =========================
+   HOTFIX 3/6 — Wheel uses current phase + auto-advance + correct pointer pick
+   ========================= */
+
+function getWheelOptions(){
+  const ph = currentPhase();
+  const opts = ph.options();
+  return Array.isArray(opts) ? opts : [];
+}
+
+function drawWheelForPhase(){
+  const ph = currentPhase();
+  const opts = getWheelOptions();
+  if(!$("wheelTitle")) return;
+
+  $("wheelTitle").textContent = ph.label;
+  $("wheelHint").textContent = `Spin for ${ph.label}`;
+  $("buildHint").textContent = `Spin for ${ph.label}.`;
+
+  // re-draw with NEW labels
+  drawWheelWithOptions(opts);
+}
+
+function drawWheelWithOptions(options){
+  if(!ctx || !wheel) return;
+  const w = wheel.width, h = wheel.height;
+  ctx.clearRect(0,0,w,h);
+
+  const cx=w/2, cy=h/2;
+  const r=Math.min(cx,cy)-8;
+  const n=Math.max(1, options.length);
+
+  ctx.beginPath();
+  ctx.arc(cx,cy,r+4,0,Math.PI*2);
+  ctx.strokeStyle="rgba(255,255,255,.15)";
+  ctx.lineWidth=10;
+  ctx.stroke();
+
+  for(let i=0;i<n;i++){
+    const a0 = wheelAngle + (i * (Math.PI*2/n));
+    const a1 = wheelAngle + ((i+1) * (Math.PI*2/n));
+
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,a0,a1);
+    ctx.closePath();
+    ctx.fillStyle = i%2===0 ? "rgba(122,168,255,.14)" : "rgba(255,255,255,.06)";
+    ctx.fill();
+
+    const mid=(a0+a1)/2;
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(mid);
+    ctx.textAlign="right";
+    ctx.fillStyle="rgba(232,238,252,.92)";
+    ctx.font="900 14px system-ui";
+    ctx.fillText(String(options[i] ?? "—"), r-14, 6);
+    ctx.restore();
+  }
+
+  // pointer triangle at TOP
+  ctx.beginPath();
+  ctx.moveTo(cx, 10);
+  ctx.lineTo(cx-12, 34);
+  ctx.lineTo(cx+12, 34);
+  ctx.closePath();
+  ctx.fillStyle="rgba(255,204,102,.95)";
+  ctx.fill();
+}
+
+/* Correct pick: pointer is at TOP, so pointerAngle = -PI/2 in canvas coordinates */
+function pickFromWheelOptions(options){
+  const n = Math.max(1, options.length);
+  const slice = (Math.PI*2)/n;
+
+  // pointer angle relative to wheelAngle
+  const pointer = (-Math.PI/2);
+  // we want which slice is under the pointer
+  let a = (pointer - wheelAngle) % (Math.PI*2);
+  if(a < 0) a += Math.PI*2;
+  const idx = Math.floor(a / slice);
+  return options[idx] ?? options[0];
+}
+
+function applySpinResultToCharacter(result){
+  const ph = currentPhase();
+  const c = state.character;
+  if(!c) return;
+
+  if(ph.pickKey === "race"){
+    c.race = result;
+    logBuild(`Race → ${result}`);
+  } else if(ph.mode === "addList"){
+    c[ph.pickKey] ||= [];
+    if(result && !String(result).startsWith("No ")){
+      if(!c[ph.pickKey].includes(result)) c[ph.pickKey].push(result);
+      logBuild(`${ph.label} + ${result}`);
+    } else {
+      logBuild(`${ph.label} → ${result}`);
+    }
+  } else {
+    c[ph.pickKey] = result;
+    logBuild(`${ph.label} → ${result}`);
+  }
+
+  // if transform, create detail
+  if(ph.key === "transform"){
+    c.transformDetail = null;
+    if(c.transformation==="Kaioken") c.transformDetail={kind:"kaioken", value:randomFrom(KAIOKEN_OPTIONS)};
+    if(c.transformation==="Eight Gates") c.transformDetail={kind:"gates", value:randomFrom(GATES_OPTIONS)};
+    if(c.transformation==="Super Saiyan") c.transformDetail={kind:"ssj", value:randomFrom(SAIYAN_FORM_OPTIONS)};
+    if(c.transformation==="Titan Transformation") c.transformDetail={kind:"titan", value:randomFrom(TITAN_TYPE_OPTIONS)};
+    if(c.transformation==="Tailed Beast") c.transformDetail={kind:"tailed", value:randomFrom(TAILED_BEAST_OPTIONS)};
+  }
+
+  saveState();
+}
+
+async function spinWheel(){
+  if(wheelSpinning) return;
+  ensureRoster();
+  wheelSpinning = true;
+
+  const options = getWheelOptions();
+  if(!options.length){
+    wheelSpinning = false;
+    toast("Wheel has no options (bug).");
+    return;
+  }
+
+  let v = 0.35 + Math.random()*0.35;
+  const friction = 0.985 - Math.random()*0.006;
+  const minTicks = 60 + Math.floor(Math.random()*40);
+  let ticks=0;
+
+  function step(){
+    ticks++;
+    wheelAngle += v;
+    v *= friction;
+    drawWheelWithOptions(options);
+
+    if(ticks > minTicks && v < 0.01){
+      wheelSpinning=false;
+
+      const result = pickFromWheelOptions(options);
+      applySpinResultToCharacter(result);
+
+      // AUTO-ADVANCE
+      if(getPhaseIndex() < PHASES.length-1){
+        setPhaseIndex(getPhaseIndex()+1);
+        drawWheelForPhase();
+      }else{
+        $("wheelHint").textContent = "Build complete. Ready for battles.";
+        $("buildHint").textContent = "Build complete. Go to STATS / PvE / PvP.";
+      }
+
+      refreshUI();
+      return;
+    }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* Hook buttons (overwrite older handlers safely) */
+$("spinBtn")?.addEventListener("click", spinWheel);
+$("testFastBtn")?.addEventListener("click", ()=>{
+  wheelAngle += 2.2;
+  drawWheelForPhase();
+});
+$("skipBtn")?.addEventListener("click", ()=>{
+  if(getPhaseIndex() < PHASES.length-1) setPhaseIndex(getPhaseIndex()+1);
+  drawWheelForPhase();
+  refreshUI();
+});
+$("newBuildBtn")?.addEventListener("click", newCharacter);
+
+/* Ensure wheel renders correct phase on load */
+drawWheelForPhase();
+</script>
+    <script>
+/* =========================
+   HOTFIX 4/6 — Ensure PvE/PvP tabs exist (minimal inject)
+   ========================= */
+
+function ensureBattleTabs(){
+  if(!$("tab-pve")){
+    const pve = document.createElement("section");
+    pve.id = "tab-pve";
+    pve.className = "grid hidden";
+    pve.innerHTML = `
+      <div class="card">
+        <h2>PvE Event</h2>
+        <div class="muted" style="margin-bottom:10px">Fight an event enemy for coins/XP.</div>
+        <button id="pveStartBtn" class="btn primary">Start PvE</button>
+        <div class="card" style="margin-top:12px; padding:12px; background:rgba(15,22,35,.45); border-color:rgba(255,255,255,.08)">
+          <h2>Combat Log</h2><div id="pveLog" class="muted"></div>
+        </div>
+      </div>
+      <div class="card"><h2>Battle</h2><div class="muted">PvE UI will render here.</div></div>
+    `;
+    document.querySelector(".app")?.appendChild(pve);
+  }
+
+  if(!$("tab-pvp")){
+    const pvp = document.createElement("section");
+    pvp.id = "tab-pvp";
+    pvp.className = "grid hidden";
+    pvp.innerHTML = `
+      <div class="card">
+        <h2>PvP Match</h2>
+        <div class="muted" style="margin-bottom:10px">Fight a generated opponent.</div>
+        <button id="pvpStartBtn" class="btn primary">Start PvP</button>
+        <div class="card" style="margin-top:12px; padding:12px; background:rgba(15,22,35,.45); border-color:rgba(255,255,255,.08)">
+          <h2>Combat Log</h2><div id="pvpLog" class="muted"></div>
+        </div>
+      </div>
+      <div class="card"><h2>Battle</h2><div class="muted">PvP UI will render here.</div></div>
+    `;
+    document.querySelector(".app")?.appendChild(pvp);
+  }
+}
+ensureBattleTabs();
+</script>
+    <script>
+/* =========================
+   HOTFIX 5/6 — Portrait fallback renderer (SVG)
+   ========================= */
+
+function setPortraitFallback(){
+  const c = state.character || {};
+  const race = c.race || "Unknown";
+  const p = (c.powers||[]).slice(0,2).join(" • ") || "No Power";
+  const w = (c.weapons||[]).slice(0,2).join(" • ") || "No Weapon";
+  const a = (c.armors||[]).slice(0,2).join(" • ") || "No Armor";
+
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
+    <defs>
+      <linearGradient id="g" x1="0" x2="1">
+        <stop offset="0" stop-color="rgba(122,168,255,.35)"/>
+        <stop offset="1" stop-color="rgba(46,229,157,.18)"/>
+      </linearGradient>
+    </defs>
+    <rect width="600" height="600" rx="40" fill="rgba(15,22,35,.85)"/>
+    <circle cx="300" cy="260" r="170" fill="url(#g)" opacity="0.35"/>
+    <circle cx="300" cy="250" r="120" fill="rgba(255,255,255,.06)"/>
+    <text x="300" y="110" text-anchor="middle" font-size="42" font-family="system-ui" fill="rgba(232,238,252,.95)" font-weight="800">${race}</text>
+    <text x="300" y="420" text-anchor="middle" font-size="22" font-family="system-ui" fill="rgba(232,238,252,.80)" font-weight="700">${p}</text>
+    <text x="300" y="455" text-anchor="middle" font-size="22" font-family="system-ui" fill="rgba(232,238,252,.80)" font-weight="700">${w}</text>
+    <text x="300" y="490" text-anchor="middle" font-size="22" font-family="system-ui" fill="rgba(232,238,252,.80)" font-weight="700">${a}</text>
+  </svg>`;
+
+  const data = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  const base = $("layer_base");
+  if(base) base.src = data;
+
+  // clear other layers so it looks clean
+  ["layer_body","layer_back","layer_legs","layer_arms","layer_head","layer_armor","layer_weapon","layer_fx"]
+    .forEach(id=>{ const el=$(id); if(el) el.src=""; });
+}
+
+/* call portrait fallback inside refreshUI (wrap existing) */
+const _refreshUI_hotfixPortrait = refreshUI;
+refreshUI = function(){
+  _refreshUI_hotfixPortrait();
+  setPortraitFallback();
+};
+refreshUI();
+</script>
+    <script>
+/* =========================
+   HOTFIX 6/6 — Sound + Name Safety
+   ========================= */
+
+function audioBeep(freq=440, ms=60, type="sine", vol=0.05){
+  if(!state.settings?.sound) return;
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = new AC();
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.value = vol;
+    o.connect(g); g.connect(ac.destination);
+    o.start();
+    setTimeout(()=>{ o.stop(); ac.close(); }, ms);
+  }catch(e){}
+}
+function sfxClick(){ audioBeep(520, 35, "square", 0.03); }
+function sfxSpin(){ audioBeep(220, 80, "sawtooth", 0.02); }
+function sfxWin(){ audioBeep(660, 70, "triangle", 0.04); setTimeout(()=>audioBeep(880, 70, "triangle", 0.04), 90); }
+
+$("volBtn")?.addEventListener("click", ()=>{
+  state.settings ||= {};
+  state.settings.sound = !state.settings.sound;
+  saveState();
+  $("volBtn").textContent = state.settings.sound ? "🔊" : "🔇";
+  toast(state.settings.sound ? "Sound ON" : "Sound OFF");
+  sfxClick();
+});
+
+/* Name safety: strict allowed characters, length, and normalized-blocklist hook */
+const MANUAL_BLOCKLIST = [
+  // Add your own blocked words here if you want.
+  // (Keep it private / don’t paste slurs into chat.)
+];
+
+function normalizeName(s){
+  return String(s||"")
+    .toLowerCase()
+    .replace(/\s+/g," ")
+    .trim()
+    .replace(/[0-9]/g, "")      // no numbers
+    .replace(/[^a-z ]/g, "");   // letters + spaces only
+}
+
+function isNameAllowed(name){
+  const raw = String(name||"").trim();
+
+  // length
+  if(raw.length < 2 || raw.length > 16) return { ok:false, reason:"2–16 characters." };
+
+  // only letters/spaces (blocks most bad stuff + bypass attempts)
+  if(!/^[A-Za-z ]+$/.test(raw)) return { ok:false, reason:"Letters/spaces only." };
+
+  // no double-spaces, no leading/trailing handled by trim; also block super repetitive spam
+  if(/(.)\1\1\1/.test(raw.toLowerCase())) return { ok:false, reason:"Too repetitive." };
+
+  const norm = normalizeName(raw);
+
+  // manual blocklist hook
+  for(const w of MANUAL_BLOCKLIST){
+    const bw = normalizeName(w);
+    if(bw && norm.includes(bw)) return { ok:false, reason:"Not allowed." };
+  }
+
+  return { ok:true };
+}
+
+/* Add a Set Name prompt if you have a button (safe even if not) */
+function setNameFlow(){
+  const name = prompt("Enter character name (2–16 letters):", state.character?.name || "");
+  if(name === null) return;
+  const chk = isNameAllowed(name);
+  if(!chk.ok){
+    toast(`Name blocked: ${chk.reason}`);
+    return;
+  }
+  state.character.name = name.trim();
+  $("namedTag").textContent = `Active: ${state.character.name}`;
+  saveState();
+  refreshUI();
+  toast("Name set.");
+  sfxClick();
+}
+
+/* If you already have a button, wire it. If not, it won’t do anything. */
+document.querySelectorAll("[data-action='set-name'], #setNameBtn").forEach(b=>{
+  b.addEventListener("click", setNameFlow);
+});
+
+/* Add sound cues to spin + victory if you later hook PvE/PvP wins */
+const _spinWheel_sfx = spinWheel;
+spinWheel = async function(){
+  sfxSpin();
+  return _spinWheel_sfx();
+};
+
+/* make sure vol icon is correct on load */
+$("volBtn").textContent = state.settings?.sound ? "🔊" : "🔇";
+</script>
 </body>
 </html>
