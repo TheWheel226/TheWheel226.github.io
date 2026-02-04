@@ -6420,5 +6420,69 @@ spinWheel = async function(){
 /* make sure vol icon is correct on load */
 $("volBtn").textContent = state.settings?.sound ? "🔊" : "🔇";
 </script>
+    <script>
+/* =========================
+   SPIN FIX PATCH — shows errors + prevents empty wheel + unsticks spin
+   Paste at the VERY bottom
+   ========================= */
+
+// 1) Show any JS error as an in-game toast
+window.addEventListener("error", (e)=>{
+  try{ toast("JS Error: " + (e.message || "unknown")); }catch(_){}
+});
+window.addEventListener("unhandledrejection", (e)=>{
+  try{ toast("Promise Error: " + (e.reason?.message || e.reason || "unknown")); }catch(_){}
+});
+
+// 2) Hard fallback so wheel never becomes empty (prevents "undefined" slice)
+function safeWheelOptions(){
+  try{
+    const ph = (typeof currentPhase==="function") ? currentPhase() : null;
+    const opts = ph?.options ? ph.options() : null;
+    if(Array.isArray(opts) && opts.length) return opts;
+  }catch(e){}
+  // fallback to races if something breaks
+  if(typeof RACE_OPTIONS !== "undefined" && Array.isArray(RACE_OPTIONS) && RACE_OPTIONS.length) return RACE_OPTIONS;
+  return ["(options missing)"];
+}
+
+// 3) Replace getWheelOptions used by the hotfix if it exists
+if(typeof getWheelOptions === "function"){
+  getWheelOptions = safeWheelOptions;
+}
+
+// 4) Unstick wheelSpinning if anything broke previously
+if(typeof wheelSpinning !== "undefined") wheelSpinning = false;
+
+// 5) Wrap spinWheel so it can’t get stuck on errors
+if(typeof spinWheel === "function"){
+  const __spinSafe = spinWheel;
+  spinWheel = async function(){
+    try{
+      if(typeof wheelSpinning !== "undefined") wheelSpinning = false; // allow re-press
+      return await __spinSafe();
+    }catch(e){
+      try{ toast("Spin failed: " + (e.message || "unknown")); }catch(_){}
+      if(typeof wheelSpinning !== "undefined") wheelSpinning = false;
+    }
+  };
+}
+
+// 6) Re-hook Spin button in the most direct way
+const sb = document.getElementById("spinBtn");
+if(sb){
+  sb.onclick = ()=>spinWheel?.();
+}
+
+// 7) Redraw wheel using safe options immediately
+try{
+  if(typeof drawWheelWithOptions === "function"){
+    drawWheelWithOptions(safeWheelOptions());
+  }
+  if(typeof drawWheelForPhase === "function"){
+    drawWheelForPhase();
+  }
+}catch(e){}
+</script>
 </body>
 </html>
